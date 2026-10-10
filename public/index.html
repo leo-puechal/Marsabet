@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Marsabet — Casino Virtuel Récréatif BDE Epitech</title>
+  <meta name="description" content="Marsabet : Casino virtuel récréatif étudiant à monnaie 100% fictive. Jouez aux machines à sous, blackjack, roulette, dés, roue de la fortune et plinko.">
+  
+  <!-- Polices Google Fonts : Cinzel & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  
+  <!-- CSS Modulaire -->
+  <link rel="stylesheet" href="/css/variables.css">
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/lobby.css">
+  <link rel="stylesheet" href="/css/games.css">
+  <link rel="stylesheet" href="/css/slots.css">
+  <link rel="stylesheet" href="/css/blackjack.css">
+  <link rel="stylesheet" href="/css/roulette.css">
+  <link rel="stylesheet" href="/css/dice.css">
+  <link rel="stylesheet" href="/css/wheel.css">
+  <link rel="stylesheet" href="/css/plinko.css">
+  <link rel="stylesheet" href="/css/leaderboard.css">
+  <link rel="stylesheet" href="/css/profile.css">
+</head>
+<body>
+
+  <!-- Canvas Confettis plein écran -->
+  <canvas id="confettiCanvas" style="position:fixed; top:0; left:0; width:100vw; height:100vh; pointer-events:none; z-index:9999;"></canvas>
+
+  <!-- En-tête Principal -->
+  <header class="header">
+    <div class="header-container">
+      <div class="brand" onclick="window.UI.switchView('lobby')">
+        <div class="brand-logo-icon">🪐</div>
+        <div>
+          <div class="brand-name">MARSABET</div>
+          <div class="brand-tag">Virtual Casino • BDE Epitech</div>
+        </div>
+      </div>
+
+      <nav>
+        <ul class="nav-menu">
+          <li><a class="nav-link active" data-view="lobby"><span>🏠</span> Lobby</a></li>
+          <li><a class="nav-link" data-view="leaderboard"><span>🏆</span> Classement</a></li>
+          <li><a class="nav-link" data-view="shop"><span>🛍️</span> Boutique BDE</a></li>
+          <li><a class="nav-link" data-view="profile"><span>👤</span> Mon Profil</a></li>
+        </ul>
+      </nav>
+
+      <div class="header-actions">
+        <!-- Son Toggle -->
+        <button id="soundToggleBtn" class="btn-sound" title="Activer / Couper le son">🔊</button>
+
+        <!-- Solde de Jetons Virtuels -->
+        <div class="coins-badge" id="headerCoinsBadge" title="Ton solde de jetons virtuels">
+          <span class="coins-icon">🪙</span>
+          <span class="coins-amount" id="userCoinsDisplay">1 000</span>
+          <span class="coins-currency">Coins</span>
+        </div>
+
+        <!-- Bouton Connexion / Profil -->
+        <button class="btn btn-gold" id="headerAuthBtn">Se Connecter</button>
+
+        <div class="user-profile-btn" id="headerUserMenu" style="display: none;" onclick="window.UI.switchView('profile');">
+          <div class="user-avatar">👤</div>
+          <span id="headerUsername" style="font-weight: 600; font-size: 0.9rem;">Joueur</span>
+          <button id="logoutBtn" style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:1rem; margin-left:4px;" title="Déconnexion">🚪</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Contenu Principal (Single Page Views) -->
+  <main class="main-content">
+
+    <!-- ==================== VUE LOBBY ==================== -->
+    <section id="view-lobby" class="section-view active">
+      <!-- Bannière Hero -->
+      <div class="hero-banner">
+        <div class="hero-text">
+          <div class="hero-badge">✨ Monnaie 100% Virtuelle & Gratuite</div>
+          <h1 class="hero-title">Le Casino Fictif Officiel <span>Marsabet</span></h1>
+          <p class="hero-description">
+            Prépare-toi à tenter ta chance sans aucun risque financier. 1000 jetons offerts à l'inscription, bonus quotidien de streak, 6 jeux de casino équilibrés avec statistiques temps réel !
+          </p>
+          <div style="display:flex; gap:1rem; flex-wrap:wrap;">
+            <button class="btn btn-gold" onclick="document.getElementById('casinoGamesGrid').scrollIntoView({behavior:'smooth'})">
+              🎮 Découvrir les Jeux
+            </button>
+            <button class="btn btn-outline" onclick="window.UI.switchView('leaderboard')">
+              🏆 Voir le Podium
+            </button>
+          </div>
+        </div>
+
+        <!-- Widget Bonus Quotidien -->
+        <div class="daily-bonus-card">
+          <div class="daily-bonus-title">🎁 Bonus Quotidien de Connexion</div>
+          <div class="streak-indicator">
+            <div class="streak-dot" title="Jour 1">1</div>
+            <div class="streak-dot" title="Jour 2">2</div>
+            <div class="streak-dot" title="Jour 3">3</div>
+            <div class="streak-dot" title="Jour 4">4</div>
+            <div class="streak-dot" title="Jour 5">5</div>
+            <div class="streak-dot" title="Jour 6">6</div>
+            <div class="streak-dot" title="Jour 7">7</div>
+          </div>
+          <div class="daily-bonus-amount">+100 à +250 🪙</div>
+          <button class="btn btn-gold" id="claimDailyBtn" style="width: 100%;">
+            🎁 Réclamer mon Bonus !
+          </button>
+        </div>
+      </div>
+
+      <!-- Ticker défilant des derniers gains -->
+      <div class="recent-ticker-container">
+        <div class="ticker-label">⚡ Derniers Gros Gains :</div>
+        <div class="ticker-scroll" id="recentWinsTicker">
+          <div class="ticker-item"><span class="ticker-player">MarsPlayer</span> <span class="ticker-game">🎰 Machine à sous</span> <span class="ticker-win">+1,200 🪙</span></div>
+          <div class="ticker-item"><span class="ticker-player">EpiGambler</span> <span class="ticker-game">🃏 Blackjack</span> <span class="ticker-win">+500 🪙</span></div>
+          <div class="ticker-item"><span class="ticker-player">AlexBDE</span> <span class="ticker-game">🎡 Roulette</span> <span class="ticker-win">+1,800 🪙</span></div>
+        </div>
+      </div>
+
+      <!-- Section Jeux -->
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">🎰 Jeux Disponibles sur Marsabet</h2>
+          <p class="section-subtitle">Chaque jeu est certifié équitable avec calcul sécurisé côté serveur.</p>
+        </div>
+      </div>
+
+      <div class="games-grid" id="casinoGamesGrid">
+        <!-- Jeu 1 : Slots -->
+        <div class="game-card" data-game="slots">
+          <div>
+            <div class="game-card-top">
+              <div class="game-icon-box">🎰</div>
+              <div class="game-badges">
+                <span class="game-badge hot">🔥 Populaire</span>
+                <span class="game-badge rtp">RTP 96.5%</span>
+              </div>
+            </div>
+            <div class="game-card-body">
+              <h3>Machine à sous</h3>
+              <p>5 rouleaux scintillants, 8 symboles cosmiques et 10 lignes de paiement. Aligne les Planètes Mars pour remporter le Jackpot x100 !</p>
+            </div>
+          </div>
+          <div class="game-card-footer">
+            <span class="game-min-bet">Mise min : <strong>10 🪙</strong></span>
+            <button class="btn btn-gold btn-play">Jouer ▶</button>
+          </div>
+        </div>
+
+        <!-- Jeu 2 : Blackjack -->
+        <div class="game-card" data-game="blackjack">
+          <div>
+            <div class="game-card-top">
+              <div class="game-icon-box">🃏</div>
+              <div class="game-badges">
+                <span class="game-badge rtp">RTP 99.4%</span>
+              </div>
+            </div>
+            <div class="game-card-body">
+              <h3>Blackjack</h3>
+              <p>Défie le croupier de la maison. Tire, reste ou double ta mise. Blackjack naturel payé 3:2 avec règles de table officielles.</p>
+            </div>
+          </div>
+          <div class="game-card-footer">
+            <span class="game-min-bet">Mise min : <strong>25 🪙</strong></span>
+            <button class="btn btn-gold btn-play">Jouer ▶</button>
+          </div>
+        </div>
+
+        <!-- Jeu 3 : Roulette -->
+        <div class="game-card" data-game="roulette">
+          <div>
+            <div class="game-card-top">
+              <div class="game-icon-box">🎡</div>
+              <div class="game-badges">
+                <span class="game-badge rtp">RTP 97.3%</span>
+              </div>
+            </div>
+            <div class="game-card-body">
+              <h3>Roulette Européenne</h3>
+              <p>Roue animée à 37 cases avec le fameux zéro vert. Parie sur tes numéros fétiches, le rouge/noir ou les douzaines.</p>
+            </div>
+          </div>
+          <div class="game-card-footer">
+            <span class="game-min-bet">Mise min : <strong>10 🪙</strong></span>
+            <button class="btn btn-gold btn-play">Jouer ▶</button>
+          </div>
+        </div>
+
+        <!-- Jeu 4 : Dés (Dice) -->
+        <div class="game-card" data-game="dice">
+          <div>
+            <div class="game-card-top">
+              <div class="game-icon-box">🎲</div>
+              <div class="game-badges">
+                <span class="game-badge rtp">RTP 97.0%</span>
+              </div>
+            </div>
+            <div class="game-card-body">
+              <h3>Jeu de Dés (Craps & Slider)</h3>
+              <p>Deux dés 3D lancés sur le tapis ou curseur Over/Under personnalisable. Ajuste ton multiplicateur jusqu'à x50 !</p>
+            </div>
+          </div>
+          <div class="game-card-footer">
+            <span class="game-min-bet">Mise min : <strong>10 🪙</strong></span>
+            <button class="btn btn-gold btn-play">Jouer ▶</button>
+          </div>
+        </div>
+
+        <!-- Jeu 5 : Roue de la fortune -->
+        <div class="game-card" data-game="wheel">
+          <div>
+            <div class="game-card-top">
+              <div class="game-icon-box">🎪</div>
+              <div class="game-badges">
+                <span class="game-badge hot">Jackpot 25x</span>
+                <span class="game-badge rtp">RTP 96.0%</span>
+              </div>
+            </div>
+            <div class="game-card-body">
+              <h3>Roue de la Fortune</h3>
+              <p>Fais tourner la grande roue segmentée avec inertie physique réaliste et vise le segment Couronne Royale d'Or.</p>
+            </div>
+          </div>
+          <div class="game-card-footer">
+            <span class="game-min-bet">Mise min : <strong>25 🪙</strong></span>
+            <button class="btn btn-gold btn-play">Jouer ▶</button>
+          </div>
+        </div>
+
+        <!-- Jeu 6 : Plinko -->
+        <div class="game-card" data-game="plinko">
+          <div>
+            <div class="game-card-top">
+              <div class="game-icon-box">💧</div>
+              <div class="game-badges">
+                <span class="game-badge hot">Jusqu'à 50x</span>
+                <span class="game-badge rtp">RTP 96.5%</span>
+              </div>
+            </div>
+            <div class="game-card-body">
+              <h3>Plinko Cosmique</h3>
+              <p>Lâche la bille dorée à travers une pyramide de clous physiques et regarde-la dévier vers les multiplicateurs extrêmes !</p>
+            </div>
+          </div>
+          <div class="game-card-footer">
+            <span class="game-min-bet">Mise min : <strong>10 🪙</strong></span>
+            <button class="btn btn-gold btn-play">Jouer ▶</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== VUE JEU 1 : SLOTS ==================== -->
+    <section id="view-slots" class="section-view">
+      <div class="game-view-container">
+        <div class="game-header-bar">
+          <div class="game-title-group">
+            <button class="btn btn-outline btn-back-lobby">◀ Lobby</button>
+            <span class="game-title-icon">🎰</span>
+            <h2 class="game-title-name">Machine à sous Marsabet</h2>
+          </div>
+          <div class="game-badges">
+            <span class="game-badge rtp">10 Lignes • RTP 96.5%</span>
+          </div>
+        </div>
+
+        <div class="game-layout">
+          <!-- Zone Rouleaux -->
+          <div class="game-stage">
+            <div id="slotsResultBanner" class="result-banner"></div>
+            
+            <div class="slots-cabinet">
+              <div class="slots-header-lights">
+                <div class="slot-light"></div>
+                <div class="slot-light"></div>
+                <div class="slot-light"></div>
+                <div class="slot-light"></div>
+                <div class="slot-light"></div>
+              </div>
+
+              <div class="slots-reels-container">
+                <div class="slot-reel" id="slot-reel-0"></div>
+                <div class="slot-reel" id="slot-reel-1"></div>
+                <div class="slot-reel" id="slot-reel-2"></div>
+                <div class="slot-reel" id="slot-reel-3"></div>
+                <div class="slot-reel" id="slot-reel-4"></div>
+              </div>
+
+              <div class="slots-paytable">
+                <div class="paytable-item">🪐 Mars : <strong>x100</strong></div>
+                <div class="paytable-item">💎 Diamant : <strong>x60</strong></div>
+                <div class="paytable-item">👑 Couronne : <strong>x40</strong></div>
+                <div class="paytable-item">🎰 777 : <strong>x25</strong></div>
+                <div class="paytable-item">🍒 Cerises : <strong>x5</strong></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Panneau de Mise -->
+          <div class="bet-panel">
+            <h3 class="panel-title">Mise de la partie</h3>
+            
+            <div class="bet-input-box">
+              <input type="number" id="slotsBetInput" class="bet-input" value="20" min="10" step="10">
+            </div>
+
+            <div class="quick-bet-chips">
+              <button class="casino-chip chip-10" data-val="10">10</button>
+              <button class="casino-chip chip-25" data-val="25">25</button>
+              <button class="casino-chip chip-50" data-val="50">50</button>
+              <button class="casino-chip chip-100" data-val="100">100</button>
+            </div>
+
+            <div class="bet-multipliers">
+              <button class="btn-mult" data-action="half">½</button>
+              <button class="btn-mult" data-action="double">2×</button>
+              <button class="btn-mult" data-action="max">MAX</button>
+            </div>
+
+            <button class="btn btn-gold" id="slotsSpinBtn" style="padding: 1rem; font-size: 1.15rem; margin-top: auto;">
+              🎰 TOURNER (SPIN)
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== VUE JEU 2 : BLACKJACK ==================== -->
+    <section id="view-blackjack" class="section-view">
+      <div class="game-view-container">
+        <div class="game-header-bar">
+          <div class="game-title-group">
+            <button class="btn btn-outline btn-back-lobby">◀ Lobby</button>
+            <span class="game-title-icon">🃏</span>
+            <h2 class="game-title-name">Table de Blackjack</h2>
+          </div>
+          <span class="game-badge rtp">Blackjack paie 3:2 • Croupier reste à 17</span>
+        </div>
+
+        <div class="game-layout">
+          <!-- Zone Table Feutrée -->
+          <div class="game-stage">
+            <div id="bjResultBanner" class="result-banner"></div>
+
+            <div class="bj-table">
+              <!-- Main Croupier -->
+              <div class="bj-dealer-area">
+                <div class="bj-area-label">
+                  Croupier <span class="bj-score-badge" id="bjDealerScore">-</span>
+                </div>
+                <div class="bj-cards-row" id="bjDealerCards"></div>
+              </div>
+
+              <!-- Main Joueur -->
+              <div class="bj-player-area">
+                <div class="bj-area-label">
+                  Ta Main <span class="bj-score-badge" id="bjPlayerScore">-</span>
+                </div>
+                <div class="bj-cards-row" id="bjPlayerCards"></div>
+              </div>
+
+              <!-- Actions de jeu en direct -->
+              <div class="bj-actions-bar" id="bjActionsBar">
+                <button class="btn btn-gold btn-bj-action" id="bjHitBtn" style="display:none;">Tirer (+1)</button>
+                <button class="btn btn-outline btn-bj-action" id="bjStandBtn" style="display:none;">Rester</button>
+                <button class="btn btn-gold btn-bj-action" id="bjDoubleBtn" style="display:none; background: #8B5CF6; color:#FFF;">Doubler (x2)</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Panneau de Mise -->
+          <div class="bet-panel">
+            <h3 class="panel-title">Mise de Blackjack</h3>
+
+            <div class="bet-input-box">
+              <input type="number" id="bjBetInput" class="bet-input" value="50" min="10" step="10">
+            </div>
+
+            <div class="quick-bet-chips">
+              <button class="casino-chip chip-25" data-val="25">25</button>
+              <button class="casino-chip chip-50" data-val="50">50</button>
+              <button class="casino-chip chip-100" data-val="100">100</button>
+              <button class="casino-chip chip-500" data-val="500">500</button>
+            </div>
+
+            <div class="bet-multipliers">
+              <button class="btn-mult" data-action="half">½</button>
+              <button class="btn-mult" data-action="double">2×</button>
+              <button class="btn-mult" data-action="max">MAX</button>
+            </div>
+
+            <button class="btn btn-gold" id="bjDealBtn" style="padding: 1rem; font-size: 1.15rem; margin-top: auto;">
+              🃏 DISTRIBUER (DEAL)
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== VUE JEU 3 : ROULETTE ==================== -->
+    <section id="view-roulette" class="section-view">
+      <div class="game-view-container">
+        <div class="game-header-bar">
+          <div class="game-title-group">
+            <button class="btn btn-outline btn-back-lobby">◀ Lobby</button>
+            <span class="game-title-icon">🎡</span>
+            <h2 class="game-title-name">Roulette Européenne</h2>
+          </div>
+          <span class="game-badge rtp">Numéro plein x36 • Couleurs x2</span>
+        </div>
+
+        <div class="game-layout">
+          <!-- Zone Tapis & Roue Canvas -->
+          <div class="game-stage">
+            <div id="rouletteResultBanner" class="result-banner"></div>
+
+            <div class="roulette-wrapper">
+              <div class="roulette-wheel-container">
+                <canvas id="rouletteCanvas"></canvas>
+                <div class="roulette-center-hub">🪐</div>
+              </div>
+
+              <!-- Tapis de Paris -->
+              <div class="roulette-board">
+                <div class="board-top-row">
+                  <div class="board-cell-zero" id="roulette-num-0" data-type="number" data-value="0">0 (Zéro Vert)</div>
+                </div>
+
+                <div class="board-grid-numbers" id="rouletteNumbersGrid"></div>
+
+                <!-- Douzaines -->
+                <div class="board-outside-row">
+                  <div class="outside-btn" data-type="dozen" data-value="1">1ère 12 (1-12)</div>
+                  <div class="outside-btn" data-type="dozen" data-value="2">2ème 12 (13-24)</div>
+                  <div class="outside-btn" data-type="dozen" data-value="3">3ème 12 (25-36)</div>
+                </div>
+
+                <!-- Paris Extérieurs 50/50 -->
+                <div class="board-even-row">
+                  <div class="outside-btn" data-type="low" data-value="low">1 à 18</div>
+                  <div class="outside-btn" data-type="even" data-value="even">PAIR</div>
+                  <div class="outside-btn red-opt" data-type="red" data-value="red">ROUGE</div>
+                  <div class="outside-btn black-opt" data-type="black" data-value="black">NOIR</div>
+                  <div class="outside-btn" data-type="odd" data-value="odd">IMPAIR</div>
+                  <div class="outside-btn" data-type="high" data-value="high">19 à 36</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Panneau de Mise Roulette -->
+          <div class="bet-panel">
+            <h3 class="panel-title">Jetons sur le Tapis</h3>
+
+            <div style="font-size:0.9rem; color:var(--text-secondary);">
+              Total misé : <strong id="rouletteTotalBet" style="color:var(--gold-light); font-size:1.3rem;">0</strong> 🪙
+            </div>
+
+            <p style="font-size:0.8rem; color:var(--text-muted);">
+              Choisis la valeur de ton jeton puis clique sur le tapis pour le déposer :
+            </p>
+
+            <div class="quick-bet-chips">
+              <button class="casino-chip chip-10" data-val="10">10</button>
+              <button class="casino-chip chip-25" data-val="25" style="transform:translateY(-6px) scale(1.1);">25</button>
+              <button class="casino-chip chip-50" data-val="50">50</button>
+              <button class="casino-chip chip-100" data-val="100">100</button>
+            </div>
+
+            <div style="display:flex; gap:0.5rem;">
+              <button class="btn btn-outline" id="rouletteClearBtn" style="flex:1;">🗑️ Effacer</button>
+            </div>
+
+            <button class="btn btn-gold" id="rouletteSpinBtn" style="padding: 1rem; font-size: 1.15rem; margin-top: auto;">
+              🎡 LANCER LA BILLE
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== VUE JEU 4 : DÉS ==================== -->
+    <section id="view-dice" class="section-view">
+      <div class="game-view-container">
+        <div class="game-header-bar">
+          <div class="game-title-group">
+            <button class="btn btn-outline btn-back-lobby">◀ Lobby</button>
+            <span class="game-title-icon">🎲</span>
+            <h2 class="game-title-name">Jeu de Dés (Craps & Slider)</h2>
+          </div>
+          <div class="dice-mode-selector">
+            <div class="dice-mode-tab active" id="tabDiceClassic">Double Dés (Craps)</div>
+            <div class="dice-mode-tab" id="tabDiceSlider">Curseur Over/Under</div>
+          </div>
+        </div>
+
+        <div class="game-layout">
+          <!-- Zone Table de Dés -->
+          <div class="game-stage">
+            <div id="diceResultBanner" class="result-banner"></div>
+
+            <div class="dice-arena">
+              <!-- Dés 3D -->
+              <div class="dice-box">
+                <div class="die-cube" id="die1">⚂</div>
+                <div class="die-cube" id="die2">⚃</div>
+              </div>
+
+              <!-- Options Mode Craps -->
+              <div id="diceClassicArea" style="width:100%;">
+                <div class="dice-bets-grid" style="margin: 0 auto;">
+                  <div class="dice-bet-btn active" data-type="seven">
+                    <div class="dice-bet-name">7 Chanceux</div>
+                    <div class="dice-bet-mult">x4.00</div>
+                  </div>
+                  <div class="dice-bet-btn" data-type="craps">
+                    <div class="dice-bet-name">Craps (2, 3, 12)</div>
+                    <div class="dice-bet-mult">x5.00</div>
+                  </div>
+                  <div class="dice-bet-btn" data-type="double">
+                    <div class="dice-bet-name">Double (Identiques)</div>
+                    <div class="dice-bet-mult">x6.00</div>
+                  </div>
+                  <div class="dice-bet-btn" data-type="low">
+                    <div class="dice-bet-name">Bas (2 à 6)</div>
+                    <div class="dice-bet-mult">x2.00</div>
+                  </div>
+                  <div class="dice-bet-btn" data-type="high">
+                    <div class="dice-bet-name">Haut (8 à 12)</div>
+                    <div class="dice-bet-mult">x2.00</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Options Mode Slider Over/Under -->
+              <div id="diceSliderArea" style="display:none; width:100%;">
+                <div class="over-under-container" style="margin: 0 auto;">
+                  <div class="dice-roll-result" id="diceRollNumberDisplay">50.00</div>
+                  <div class="slider-group">
+                    <div style="display:flex; justify-content:space-between; font-size:0.9rem;">
+                      <span>Condition :</span>
+                      <select id="diceConditionSelect" style="background:#0a1f44; color:#FFF; border:1px solid var(--gold-primary); border-radius:4px; padding:2px 8px;">
+                        <option value="over">Rouler AU-DESSUS (&gt;)</option>
+                        <option value="under">Rouler EN-DESSOUS (&lt;)</option>
+                      </select>
+                    </div>
+                    <input type="range" min="5" max="95" value="50" class="dice-slider" id="diceTargetSlider">
+                    <div style="display:flex; justify-content:space-between; font-size:0.85rem; color:var(--text-muted);">
+                      <span>Cible : <strong id="diceTargetDisplay" style="color:#FFF;">50</strong></span>
+                      <span>Multiplicateur : <strong id="diceMultDisplay" style="color:var(--gold-light);">1.94x</strong></span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Panneau Mise Dés -->
+          <div class="bet-panel">
+            <h3 class="panel-title">Mise de Dés</h3>
+
+            <div class="bet-input-box">
+              <input type="number" id="diceBetInput" class="bet-input" value="25" min="10" step="5">
+            </div>
+
+            <div class="quick-bet-chips">
+              <button class="casino-chip chip-10" data-val="10">10</button>
+              <button class="casino-chip chip-25" data-val="25">25</button>
+              <button class="casino-chip chip-50" data-val="50">50</button>
+              <button class="casino-chip chip-100" data-val="100">100</button>
+            </div>
+
+            <div class="bet-multipliers">
+              <button class="btn-mult" data-action="half">½</button>
+              <button class="btn-mult" data-action="double">2×</button>
+              <button class="btn-mult" data-action="max">MAX</button>
+            </div>
+
+            <button class="btn btn-gold" id="diceRollBtn" style="padding: 1rem; font-size: 1.15rem; margin-top: auto;">
+              🎲 LANCER LES DÉS
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== VUE JEU 5 : ROUE DE LA FORTUNE ==================== -->
+    <section id="view-wheel" class="section-view">
+      <div class="game-view-container">
+        <div class="game-header-bar">
+          <div class="game-title-group">
+            <button class="btn btn-outline btn-back-lobby">◀ Lobby</button>
+            <span class="game-title-icon">🎪</span>
+            <h2 class="game-title-name">Roue de la Fortune</h2>
+          </div>
+          <span class="game-badge hot">Jackpot 25x • Multiplicateurs jusqu'à x10</span>
+        </div>
+
+        <div class="game-layout">
+          <div class="game-stage">
+            <div id="wheelResultBanner" class="result-banner"></div>
+
+            <div class="wheel-container">
+              <div class="wheel-pointer">
+                <svg viewBox="0 0 24 24"><path d="M12 22 L2 4 L22 4 Z"/></svg>
+              </div>
+              <canvas id="wheelCanvas"></canvas>
+              <div class="wheel-center-pin">🪐</div>
+            </div>
+          </div>
+
+          <div class="bet-panel">
+            <h3 class="panel-title">Mise de la Roue</h3>
+
+            <div class="bet-input-box">
+              <input type="number" id="wheelBetInput" class="bet-input" value="50" min="10" step="10">
+            </div>
+
+            <div class="quick-bet-chips">
+              <button class="casino-chip chip-25" data-val="25">25</button>
+              <button class="casino-chip chip-50" data-val="50">50</button>
+              <button class="casino-chip chip-100" data-val="100">100</button>
+              <button class="casino-chip chip-500" data-val="500">500</button>
+            </div>
+
+            <div class="bet-multipliers">
+              <button class="btn-mult" data-action="half">½</button>
+              <button class="btn-mult" data-action="double">2×</button>
+              <button class="btn-mult" data-action="max">MAX</button>
+            </div>
+
+            <button class="btn btn-gold" id="wheelSpinBtn" style="padding: 1rem; font-size: 1.15rem; margin-top: auto;">
+              🎪 TOURNER LA ROUE
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== VUE JEU 6 : PLINKO ==================== -->
+    <section id="view-plinko" class="section-view">
+      <div class="game-view-container">
+        <div class="game-header-bar">
+          <div class="game-title-group">
+            <button class="btn btn-outline btn-back-lobby">◀ Lobby</button>
+            <span class="game-title-icon">💧</span>
+            <h2 class="game-title-name">Plinko Cosmique</h2>
+          </div>
+          <span class="game-badge rtp">Physique Canvas • Jusqu'à x50</span>
+        </div>
+
+        <div class="game-layout">
+          <div class="game-stage">
+            <div id="plinkoResultBanner" class="result-banner"></div>
+
+            <div class="plinko-wrapper">
+              <canvas id="plinkoCanvas"></canvas>
+              <div class="plinko-controls-bar">
+                <button class="risk-btn" data-risk="low">Risque Faible</button>
+                <button class="risk-btn active" data-risk="medium">Risque Moyen</button>
+                <button class="risk-btn" data-risk="high">Risque Élevé</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="bet-panel">
+            <h3 class="panel-title">Mise Plinko</h3>
+
+            <div class="bet-input-box">
+              <input type="number" id="plinkoBetInput" class="bet-input" value="25" min="10" step="5">
+            </div>
+
+            <div class="quick-bet-chips">
+              <button class="casino-chip chip-10" data-val="10">10</button>
+              <button class="casino-chip chip-25" data-val="25">25</button>
+              <button class="casino-chip chip-50" data-val="50">50</button>
+              <button class="casino-chip chip-100" data-val="100">100</button>
+            </div>
+
+            <div class="bet-multipliers">
+              <button class="btn-mult" data-action="half">½</button>
+              <button class="btn-mult" data-action="double">2×</button>
+              <button class="btn-mult" data-action="max">MAX</button>
+            </div>
+
+            <button class="btn btn-gold" id="plinkoDropBtn" style="padding: 1rem; font-size: 1.15rem; margin-top: auto;">
+              💧 LÂCHER LA BILLE
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== VUE CLASSEMENT ==================== -->
+    <section id="view-leaderboard" class="section-view">
+      <div class="leaderboard-container">
+        <div class="section-header">
+          <div>
+            <h2 class="section-title">🏆 Classement des Joueurs Marsabet</h2>
+            <p class="section-subtitle">Les fortunes virtuelles les plus impressionnantes de l'école.</p>
+          </div>
+        </div>
+
+        <!-- Podium Top 3 -->
+        <div class="podium">
+          <div class="podium-place second">
+            <div class="podium-avatar">🥈</div>
+            <div class="podium-name" id="podiumP2Name">-</div>
+            <div class="podium-score" id="podiumP2Score">-</div>
+            <div class="podium-pedestal">2</div>
+          </div>
+
+          <div class="podium-place first">
+            <div class="crown-icon">👑</div>
+            <div class="podium-avatar" style="border: 2px solid #FFF;">🥇</div>
+            <div class="podium-name" id="podiumP1Name">-</div>
+            <div class="podium-score" id="podiumP1Score">-</div>
+            <div class="podium-pedestal">1</div>
+          </div>
+
+          <div class="podium-place third">
+            <div class="podium-avatar">🥉</div>
+            <div class="podium-name" id="podiumP3Name">-</div>
+            <div class="podium-score" id="podiumP3Score">-</div>
+            <div class="podium-pedestal">3</div>
+          </div>
+        </div>
+
+        <!-- Tableau complet -->
+        <div class="leaderboard-table-card">
+          <table class="leader-table">
+            <thead>
+              <tr>
+                <th>Rang</th>
+                <th>Joueur</th>
+                <th>Solde Virtuel</th>
+                <th>Série Quotidienne</th>
+                <th>Plus Gros Gain</th>
+              </tr>
+            </thead>
+            <tbody id="leaderboardList"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== VUE PROFIL ==================== -->
+    <section id="view-profile" class="section-view">
+      <div class="profile-container">
+        <div class="profile-header-card">
+          <div class="profile-user-info">
+            <div class="profile-big-avatar">👤</div>
+            <div>
+              <h2 class="profile-name" id="profileUsername">Mon Profil</h2>
+              <div class="profile-rank-tag" id="profileRank">Rang #1</div>
+            </div>
+          </div>
+          <div>
+            <div style="font-size:0.85rem; color:var(--text-muted); text-align:right;">Solde Disponible</div>
+            <div class="coins-amount" id="profileCoins" style="font-size:2rem; text-align:right;">1 000 🪙</div>
+          </div>
+        </div>
+
+        <!-- Statistiques -->
+        <div class="stats-grid">
+          <div class="stat-box">
+            <div class="stat-label">Parties Jouées</div>
+            <div class="stat-val" id="profileGamesPlayed">0</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Plus Gros Gain</div>
+            <div class="stat-val gold" id="profileBiggestWin">0 🪙</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Total des Gains</div>
+            <div class="stat-val green" id="profileTotalWon">0 🪙</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Série Connexion</div>
+            <div class="stat-val" id="profileStreak">0 jour</div>
+          </div>
+        </div>
+
+        <!-- Historique des parties -->
+        <div class="history-card">
+          <h3 class="panel-title" style="margin-bottom: 1rem;">📜 Historique Récent des Parties</h3>
+          <table class="leader-table">
+            <thead>
+              <tr>
+                <th>Jeu</th>
+                <th>Mise</th>
+                <th>Gain Brut</th>
+                <th>Bénéfice Net</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody id="profileHistoryList"></tbody>
+          </table>
+        </div>
+
+        <!-- Inventaire Boutique BDE -->
+        <div class="history-card">
+          <h3 class="panel-title" style="margin-bottom: 1rem;">🎒 Mon Inventaire BDE (Articles Échangés)</h3>
+          <div class="shop-grid" id="profileInventoryGrid"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== VUE BOUTIQUE BDE ==================== -->
+    <section id="view-shop" class="section-view">
+      <div class="profile-container">
+        <div class="section-header">
+          <div>
+            <h2 class="section-title">🛍️ Boutique Fictive du BDE Epitech Marseille</h2>
+            <p class="section-subtitle">
+              Convertis tes jetons gagnés au casino en récompenses et privilèges virtuels pour le fun !
+            </p>
+          </div>
+        </div>
+
+        <div class="shop-grid" id="shopItemsGrid"></div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Pied de page & Mentions Légales -->
+  <footer class="footer">
+    <div class="footer-container">
+      <div class="footer-top">
+        <div>
+          <div class="brand-name" style="font-size: 1.3rem;">MARSABET</div>
+          <p style="color:var(--text-muted); font-size:0.85rem; margin-top:0.25rem;">
+            Projet récréatif étudiant — BDE Epitech Marseille
+          </p>
+        </div>
+
+        <div class="footer-legal-banner">
+          <div class="legal-icon">🛡️</div>
+          <div class="legal-text">
+            <h4>Avertissement Jeu Récréatif & Fictif</h4>
+            <p>
+              Ce site est un simulateur purement ludique et éducatif. <strong>Aucun argent réel n'est engagé ni retirable.</strong>
+              Tous les jetons sont 100% virtuels et gratuits.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <div>&copy; 2026 Marsabet Casino • Conçu pour l'usage scolaire et récréatif</div>
+        <div style="display:flex; gap:1.5rem;">
+          <span>Serveur Node.js / Express</span>
+          <span>Base de données SQLite Persistante</span>
+          <span>Sécurité Côté Serveur</span>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Modale Connexion / Inscription -->
+  <div class="modal-overlay" id="authModal">
+    <div class="modal-content">
+      <button class="modal-close" id="closeAuthModal">&times;</button>
+      
+      <div style="display:flex; gap:0.5rem; margin-bottom:1.5rem; border-bottom:1px solid rgba(212,175,55,0.25); padding-bottom:0.75rem;">
+        <button id="tabLogin" class="btn-mult active" style="font-size:0.95rem; font-weight:700;">Connexion</button>
+        <button id="tabRegister" class="btn-mult" style="font-size:0.95rem; font-weight:700;">Inscription (1000 🪙)</button>
+      </div>
+
+      <!-- Formulaire Connexion -->
+      <form id="formLogin">
+        <div class="form-group">
+          <label class="form-label" for="loginUsername">Pseudo Étudiant</label>
+          <input type="text" id="loginUsername" class="form-input" placeholder="ex: neo_epitech" required autocomplete="username">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="loginPassword">Mot de passe</label>
+          <input type="password" id="loginPassword" class="form-input" placeholder="••••••••" required autocomplete="current-password">
+        </div>
+        <button type="submit" class="btn btn-gold" style="width:100%; padding:0.8rem; margin-top:0.5rem;">
+          Entrer au Casino ▶
+        </button>
+      </form>
+
+      <!-- Formulaire Inscription -->
+      <form id="formRegister" style="display:none;">
+        <div class="form-group">
+          <label class="form-label" for="regUsername">Choisis un Pseudo</label>
+          <input type="text" id="regUsername" class="form-input" placeholder="3 à 20 caractères" required minlength="3" maxlength="20" autocomplete="username">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="regPassword">Mot de passe</label>
+          <input type="password" id="regPassword" class="form-input" placeholder="4 caractères minimum" required minlength="4" autocomplete="new-password">
+        </div>
+        <button type="submit" class="btn btn-gold" style="width:100%; padding:0.8rem; margin-top:0.5rem;">
+          Créer mon compte & Recevoir 1000 🪙
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Conteneur Toasts -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Scripts JavaScript Modulaires -->
+  <script src="/js/audio.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/state.js"></script>
+  <script src="/js/ui.js"></script>
+  <script src="/js/games/slots.js"></script>
+  <script src="/js/games/blackjack.js"></script>
+  <script src="/js/games/roulette.js"></script>
+  <script src="/js/games/dice.js"></script>
+  <script src="/js/games/wheel.js"></script>
+  <script src="/js/games/plinko.js"></script>
+  <script src="/js/app.js"></script>
+</body>
+</html>

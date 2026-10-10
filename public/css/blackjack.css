@@ -1,0 +1,141 @@
+/* Blackjack Table */
+.bj-table {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  align-items: center;
+}
+
+.bj-dealer-area,
+.bj-player-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.bj-area-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  color: var(--gold-light);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.bj-score-badge {
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid var(--gold-primary);
+  border-radius: var(--radius-full);
+  padding: 0.2rem 0.65rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #FFF;
+}
+
+.bj-cards-row {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  min-height: 140px;
+  perspective: 1000px;
+  flex-wrap: wrap;
+}
+
+/* Playing Cards */
+.bj-card {
+  width: 90px;
+  height: 130px;
+  background: #FFF;
+  border-radius: 10px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 8px;
+  font-family: var(--font-display);
+  font-weight: 800;
+  user-select: none;
+  animation: dealCard 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  position: relative;
+}
+
+@keyframes dealCard {
+  0% { transform: translateY(-50px) scale(0.7) rotate(-10deg); opacity: 0; }
+  100% { transform: translateY(0) scale(1) rotate(0deg); opacity: 1; }
+}
+
+.bj-card.red {
+  color: #DC2626;
+}
+
+.bj-card.black {
+  color: #111827;
+}
+
+.card-top {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1;
+}
+
+.card-center {
+  font-size: 2.2rem;
+  text-align: center;
+}
+
+.card-bottom {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1;
+  transform: rotate(180deg);
+}
+
+.card-rank {
+  font-size: 1.1rem;
+}
+
+.card-suit {
+  font-size: 0.9rem;
+}
+
+/* Hidden Dealer Card */
+.bj-card.card-hidden {
+  background: repeating-linear-gradient(
+    45deg,
+    #1E3A8A,
+    #1E3A8A 10px,
+    #172554 10px,
+    #172554 20px
+  );
+  border: 2px solid var(--gold-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bj-card.card-hidden::after {
+  content: '🪐';
+  font-size: 2rem;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+}
+
+/* Actions Controls */
+.bj-actions-bar {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.btn-bj-action {
+  padding: 0.75rem 1.75rem;
+  font-size: 1rem;
+  font-weight: 700;
+  border-radius: var(--radius-full);
+}

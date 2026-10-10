@@ -1,0 +1,139 @@
+/* Dice Game Design */
+.dice-arena {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+  width: 100%;
+}
+
+.dice-mode-selector {
+  display: flex;
+  gap: 0.5rem;
+  background: rgba(4, 12, 28, 0.7);
+  padding: 0.35rem;
+  border-radius: var(--radius-full);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+}
+
+.dice-mode-tab {
+  padding: 0.5rem 1.25rem;
+  border-radius: var(--radius-full);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.dice-mode-tab.active {
+  background: var(--gold-gradient);
+  color: #000;
+  font-weight: 700;
+}
+
+/* 3D Dice Display */
+.dice-box {
+  display: flex;
+  gap: 2rem;
+  perspective: 600px;
+  min-height: 140px;
+  align-items: center;
+  justify-content: center;
+}
+
+.die-cube {
+  width: 90px;
+  height: 90px;
+  background: #FFF;
+  border-radius: 16px;
+  box-shadow: 0 12px 25px rgba(0, 0, 0, 0.5), inset 0 0 8px rgba(0,0,0,0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3.5rem;
+  color: #0F172A;
+  transition: transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.die-cube.rolling {
+  animation: rollAnim 0.6s infinite ease-in-out;
+}
+
+@keyframes rollAnim {
+  0% { transform: rotate(0deg) scale(0.9); }
+  50% { transform: rotate(180deg) scale(1.1); }
+  100% { transform: rotate(360deg) scale(0.9); }
+}
+
+/* Craps Bet Options */
+.dice-bets-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+  width: 100%;
+  max-width: 500px;
+}
+
+.dice-bet-btn {
+  background: rgba(14, 39, 84, 0.6);
+  border: 1px solid rgba(212, 175, 55, 0.25);
+  border-radius: var(--radius-sm);
+  padding: 0.8rem 0.5rem;
+  text-align: center;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.dice-bet-btn:hover,
+.dice-bet-btn.active {
+  border-color: var(--gold-light);
+  background: rgba(212, 175, 55, 0.15);
+}
+
+.dice-bet-name {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #FFF;
+  margin-bottom: 0.2rem;
+}
+
+.dice-bet-mult {
+  font-size: 0.75rem;
+  color: var(--gold-light);
+  font-weight: 600;
+}
+
+/* Over Under Slider */
+.over-under-container {
+  width: 100%;
+  max-width: 500px;
+  background: rgba(6, 18, 40, 0.6);
+  border: 1px solid rgba(212, 175, 55, 0.25);
+  border-radius: var(--radius-md);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.dice-roll-result {
+  font-family: var(--font-display);
+  font-size: 3rem;
+  font-weight: 800;
+  text-align: center;
+  color: var(--gold-light);
+}
+
+.slider-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.dice-slider {
+  width: 100%;
+  accent-color: var(--gold-primary);
+  height: 8px;
+  border-radius: 4px;
+}

@@ -1,0 +1,41 @@
+/* Plinko Board */
+.plinko-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+#plinkoCanvas {
+  max-width: 480px;
+  width: 100%;
+  height: 480px;
+  border-radius: var(--radius-lg);
+  background: radial-gradient(circle at 50% 20%, #0d285a 0%, #040e21 100%);
+  border: 2px solid var(--gold-primary);
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.7);
+}
+
+.plinko-controls-bar {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.risk-btn {
+  padding: 0.4rem 1rem;
+  border-radius: var(--radius-full);
+  font-size: 0.8rem;
+  font-weight: 700;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.risk-btn.active {
+  background: var(--gold-gradient);
+  color: #000;
+  border-color: #FFF;
+}

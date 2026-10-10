@@ -1,0 +1,216 @@
+/* Game View Wrapper */
+.game-view-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.game-header-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  background: rgba(14, 39, 84, 0.4);
+  border: 1px solid var(--bg-glass-border);
+  border-radius: var(--radius-md);
+  padding: 0.8rem 1.25rem;
+}
+
+.game-title-group {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.game-title-icon {
+  font-size: 1.8rem;
+}
+
+.game-title-name {
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #FFF;
+}
+
+.game-layout {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 1.5rem;
+}
+
+@media (max-width: 980px) {
+  .game-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Stage / Table Canvas Area */
+.game-stage {
+  background: radial-gradient(circle at 50% 40%, #0d285a 0%, #061530 100%);
+  border: 2px solid var(--gold-primary);
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6), inset 0 0 50px rgba(0, 0, 0, 0.4);
+  border-radius: var(--radius-xl);
+  padding: 2rem;
+  min-height: 480px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Casino Felt Pattern */
+.game-stage::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(212, 175, 55, 0.08) 1px, transparent 0);
+  background-size: 24px 24px;
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* Betting Panel */
+.bet-panel {
+  background: rgba(10, 26, 56, 0.9);
+  border: 1.5px solid rgba(212, 175, 55, 0.25);
+  border-radius: var(--radius-xl);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  box-shadow: var(--shadow-card);
+}
+
+.panel-title {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--gold-light);
+  border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+  padding-bottom: 0.6rem;
+}
+
+.bet-input-box {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.bet-input {
+  width: 100%;
+  padding: 0.8rem 1rem 0.8rem 2.5rem;
+  background: #040d1c;
+  border: 1.5px solid rgba(212, 175, 55, 0.4);
+  border-radius: var(--radius-sm);
+  color: #FFF;
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.bet-input-box::before {
+  content: '🪙';
+  position: absolute;
+  left: 0.8rem;
+  font-size: 1.1rem;
+}
+
+.quick-bet-chips {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+}
+
+.casino-chip {
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 3px dashed rgba(255, 255, 255, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: var(--transition-bounce);
+  color: #FFF;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+  background: #1e3a8a;
+}
+
+.casino-chip:hover {
+  transform: translateY(-4px) scale(1.05);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.6);
+}
+
+.casino-chip.chip-10 { background: radial-gradient(circle, #3b82f6 40%, #1d4ed8 100%); }
+.casino-chip.chip-25 { background: radial-gradient(circle, #10b981 40%, #047857 100%); }
+.casino-chip.chip-50 { background: radial-gradient(circle, #f59e0b 40%, #b45309 100%); }
+.casino-chip.chip-100 { background: radial-gradient(circle, #ef4444 40%, #b91c1c 100%); }
+.casino-chip.chip-500 { background: radial-gradient(circle, #8b5cf6 40%, #6d28d9 100%); }
+.casino-chip.chip-1000 { background: radial-gradient(circle, #D4AF37 40%, #997505 100%); color: #000; border-color: #000; }
+
+.bet-multipliers {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn-mult {
+  flex: 1;
+  padding: 0.4rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.btn-mult:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #FFF;
+}
+
+/* Result Overlay Banner */
+.result-banner {
+  position: absolute;
+  top: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(6, 18, 40, 0.95);
+  border: 1.5px solid var(--gold-primary);
+  border-radius: var(--radius-full);
+  padding: 0.5rem 1.5rem;
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--gold-light);
+  display: none;
+  animation: bounceIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6), var(--gold-glow);
+  z-index: 10;
+  white-space: nowrap;
+}
+
+.result-banner.win {
+  border-color: var(--win-green);
+  color: #6EE7B7;
+  display: block;
+}
+
+.result-banner.lose {
+  border-color: var(--lose-red);
+  color: #FCA5A5;
+  display: block;
+}
+
+@keyframes bounceIn {
+  0% { transform: translateX(-50%) scale(0.6); opacity: 0; }
+  100% { transform: translateX(-50%) scale(1); opacity: 1; }
+}
