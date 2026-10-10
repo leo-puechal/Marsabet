@@ -7,7 +7,10 @@ const authMiddleware = require('../middlewares/authMiddleware');
 router.use(authMiddleware);
 
 // Slots
+router.get('/slots/state', gameController.getSlotsState);
 router.post('/slots/spin', gameController.playSlots);
+router.post('/slots/gamble', gameController.gambleSlots);
+router.post('/slots/collect', gameController.collectSlotsGamble);
 
 // Blackjack
 router.get('/blackjack/state', gameController.getBlackjackState);

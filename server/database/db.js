@@ -78,6 +78,18 @@ function initDb() {
     CREATE INDEX IF NOT EXISTS idx_users_coins ON users(coins DESC);
     CREATE INDEX IF NOT EXISTS idx_orders_code ON shop_orders(claim_code);
     CREATE INDEX IF NOT EXISTS idx_orders_user ON shop_orders(user_id, status);
+
+    CREATE TABLE IF NOT EXISTS slot_sessions (
+      user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+      free_spins_remaining INTEGER NOT NULL DEFAULT 0,
+      free_spins_total INTEGER NOT NULL DEFAULT 0,
+      free_spins_multiplier INTEGER NOT NULL DEFAULT 3,
+      free_spins_accumulated_win INTEGER NOT NULL DEFAULT 0,
+      free_spins_bet_per_line INTEGER NOT NULL DEFAULT 1,
+      free_spins_lines INTEGER NOT NULL DEFAULT 20,
+      pending_gamble_amount INTEGER NOT NULL DEFAULT 0,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
   `);
 
   // Assainissement préalable : aucun solde existant ne doit être inférieur à 0

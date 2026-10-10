@@ -57,35 +57,301 @@ function recordGameResult(userId, gameType, bet, payout, details, alreadyDeducte
   return runTx();
 }
 
-// ======================== SLOTS ========================
+// ======================== SLOTS (5x3 VIDÉO SLOT) ========================
+
+// Récupérer l'état actuel de la machine (Free Spins actifs, gamble en attente, etc.)
+exports.getSlotsState = (req, res) => {
+  try {
+    const userId = req.user.id;
+    const session = db.prepare('SELECT * FROM slot_sessions WHERE user_id = ?').get(userId);
+
+    return res.json({
+      session: session || {
+        free_spins_remaining: 0,
+        free_spins_total: 0,
+        free_spins_multiplier: 3,
+        free_spins_accumulated_win: 0,
+        pending_gamble_amount: 0
+      },
+      symbols: slotsEngine.SYMBOLS,
+      paylines: slotsEngine.PAYLINES
+    });
+  } catch (err) {
+    console.error('Erreur getSlotsState:', err);
+    return res.status(500).json({ error: 'Impossible de récupérer l\'état des slots.' });
+  }
+};
+
 exports.playSlots = (req, res) => {
   try {
     const userId = req.user.id;
-    const bet = Number(req.body.bet);
 
-    if (!Number.isInteger(bet) || bet <= 0) {
-      return res.status(400).json({ error: 'Mise invalide (minimum 1 jeton).' });
+    // Vérifier si l'utilisateur est dans une session de Free Spins
+    let session = db.prepare('SELECT * FROM slot_sessions WHERE user_id = ?').get(userId);
+    const isFreeSpin = !!(session && session.free_spins_remaining > 0);
+
+    let betPerLine = 1;
+    let linesCount = 20;
+    let totalBet = 20;
+
+    if (isFreeSpin) {
+      // Tour gratuit : aucune déduction de jetons !
+      betPerLine = session.free_spins_bet_per_line || 1;
+      linesCount = session.free_spins_lines || 20;
+      totalBet = 0;
+    } else {
+      // Tour régulier : calcul de la mise totale
+      if (req.body.betPerLine !== undefined) {
+        betPerLine = Math.max(1, Math.floor(Number(req.body.betPerLine)));
+        linesCount = Math.min(20, Math.max(1, Math.floor(Number(req.body.linesCount || 20))));
+        totalBet = betPerLine * linesCount;
+      } else {
+        const rawBet = Number(req.body.bet || 20);
+        if (!Number.isInteger(rawBet) || rawBet <= 0) {
+          return res.status(400).json({ error: 'Mise invalide (minimum 1 jeton).' });
+        }
+        linesCount = 20;
+        betPerLine = Math.max(1, Math.floor(rawBet / linesCount));
+        totalBet = betPerLine * linesCount;
+      }
+
+      const user = db.prepare('SELECT coins FROM users WHERE id = ?').get(userId);
+      if (!user || user.coins < totalBet) {
+        return res.status(400).json({ error: 'Solde insuffisant pour cette mise.' });
+      }
     }
 
-    const user = db.prepare('SELECT coins FROM users WHERE id = ?').get(userId);
-    if (!user || user.coins < bet) {
-      return res.status(400).json({ error: 'Solde insuffisant.' });
+    // Exécution du spin côté serveur
+    const freeSpinMult = isFreeSpin ? (session.free_spins_multiplier || 3) : 1;
+    const result = slotsEngine.spin(betPerLine, linesCount, isFreeSpin, freeSpinMult);
+
+    let newCoins = 0;
+
+    if (isFreeSpin) {
+      // Enregistrer le gain des tours gratuits
+      const runTx = db.transaction(() => {
+        const user = db.prepare('SELECT coins, biggest_win, total_wagered FROM users WHERE id = ?').get(userId);
+        const updatedCoins = user.coins + result.payout;
+        const newBiggest = Math.max(user.biggest_win, result.payout);
+
+        db.prepare(`
+          UPDATE users
+          SET coins = ?,
+              total_won = total_won + ?,
+              games_played = games_played + 1,
+              biggest_win = ?
+          WHERE id = ?
+        `).run(updatedCoins, result.payout, newBiggest, userId);
+
+        db.prepare(`
+          INSERT INTO game_history (user_id, game_type, bet, payout, profit, details)
+          VALUES (?, 'slots_freespin', 0, ?, ?, ?)
+        `).run(userId, result.payout, result.payout, JSON.stringify({
+          grid: result.grid,
+          linesWon: result.winningLines.length,
+          multiplier: freeSpinMult
+        }));
+
+        // Mettre à jour la session Free Spins
+        const remainingAfter = session.free_spins_remaining - 1 + result.scatter.freeSpinsWon;
+        const totalAfter = session.free_spins_total + result.scatter.freeSpinsWon;
+        const accumAfter = session.free_spins_accumulated_win + result.payout;
+
+        db.prepare(`
+          UPDATE slot_sessions
+          SET free_spins_remaining = ?,
+              free_spins_total = ?,
+              free_spins_accumulated_win = ?,
+              updated_at = CURRENT_TIMESTAMP
+          WHERE user_id = ?
+        `).run(remainingAfter, totalAfter, accumAfter, userId);
+
+        return {
+          coins: updatedCoins,
+          remainingSpins: remainingAfter,
+          accumulatedBonus: accumAfter,
+          bonusCompleted: remainingAfter <= 0
+        };
+      });
+
+      const txRes = runTx();
+      newCoins = txRes.coins;
+
+      return res.json({
+        ...result,
+        coins: newCoins,
+        freeSpinsState: {
+          isActive: true,
+          remaining: txRes.remainingSpins,
+          total: session.free_spins_total + result.scatter.freeSpinsWon,
+          multiplier: freeSpinMult,
+          accumulatedWin: txRes.accumulatedBonus,
+          justFinished: txRes.bonusCompleted
+        }
+      });
+    } else {
+      // Tour régulier : enregistrement complet du résultat
+      const { newCoins: updatedCoins } = recordGameResult(userId, 'slots', totalBet, result.payout, {
+        grid: result.grid,
+        betPerLine,
+        linesCount,
+        winningLinesCount: result.winningLines.length,
+        isBigWin: result.isBigWin,
+        scatters: result.scatter.count
+      });
+
+      newCoins = updatedCoins;
+
+      // Gestion du déclenchement du bonus Free Spins
+      if (result.scatter.triggeredBonus) {
+        db.prepare(`
+          INSERT INTO slot_sessions (
+            user_id, free_spins_remaining, free_spins_total, free_spins_multiplier,
+            free_spins_accumulated_win, free_spins_bet_per_line, free_spins_lines, pending_gamble_amount
+          )
+          VALUES (?, ?, ?, 3, 0, ?, ?, 0)
+          ON CONFLICT(user_id) DO UPDATE SET
+            free_spins_remaining = excluded.free_spins_remaining,
+            free_spins_total = excluded.free_spins_total,
+            free_spins_multiplier = 3,
+            free_spins_accumulated_win = 0,
+            free_spins_bet_per_line = excluded.free_spins_bet_per_line,
+            free_spins_lines = excluded.free_spins_lines,
+            pending_gamble_amount = 0,
+            updated_at = CURRENT_TIMESTAMP
+        `).run(userId, result.scatter.freeSpinsWon, result.scatter.freeSpinsWon, betPerLine, linesCount);
+      } else {
+        // Enregistrer la possibilité de Quitte ou Double si gain
+        db.prepare(`
+          INSERT INTO slot_sessions (user_id, pending_gamble_amount)
+          VALUES (?, ?)
+          ON CONFLICT(user_id) DO UPDATE SET
+            pending_gamble_amount = ?,
+            updated_at = CURRENT_TIMESTAMP
+        `).run(userId, result.payout, result.payout);
+      }
+
+      return res.json({
+        ...result,
+        coins: newCoins,
+        freeSpinsState: {
+          isActive: false,
+          remaining: result.scatter.freeSpinsWon,
+          total: result.scatter.freeSpinsWon,
+          multiplier: 3,
+          accumulatedWin: 0,
+          justTriggered: result.scatter.triggeredBonus
+        },
+        canGamble: result.payout > 0
+      });
+    }
+  } catch (err) {
+    console.error('Erreur slots spin:', err);
+    return res.status(500).json({ error: err.message || 'Erreur lors du spin.' });
+  }
+};
+
+// ======================== GAMBLE (QUITTE OU DOUBLE) ========================
+exports.gambleSlots = (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { choice } = req.body; // 'red' ou 'black'
+
+    if (choice !== 'red' && choice !== 'black') {
+      return res.status(400).json({ error: 'Choix invalide : choisis Rouge ou Noir.' });
     }
 
-    const result = slotsEngine.spin(bet);
-    const { newCoins } = recordGameResult(userId, 'slots', bet, result.payout, {
-      grid: result.grid,
-      winningLinesCount: result.winningLines.length,
-      isBigWin: result.isBigWin
+    const session = db.prepare('SELECT * FROM slot_sessions WHERE user_id = ?').get(userId);
+    if (!session || !session.pending_gamble_amount || session.pending_gamble_amount <= 0) {
+      return res.status(400).json({ error: 'Aucun gain en attente à risquer.' });
+    }
+
+    const currentGamble = session.pending_gamble_amount;
+
+    // Tirage d'une carte aléatoire
+    const SUITS = [
+      { name: 'hearts', symbol: '♥️', color: 'red' },
+      { name: 'diamonds', symbol: '♦️', color: 'red' },
+      { name: 'spades', symbol: '♠️', color: 'black' },
+      { name: 'clubs', symbol: '♣️', color: 'black' }
+    ];
+    const RANKS = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
+
+    const suit = SUITS[crypto.randomInt(0, SUITS.length)];
+    const rank = RANKS[crypto.randomInt(0, RANKS.length)];
+    const drawnCard = {
+      rank,
+      suit: suit.symbol,
+      color: suit.color,
+      label: `${rank}${suit.symbol}`
+    };
+
+    const isWin = suit.color === choice;
+
+    const runTx = db.transaction(() => {
+      const user = db.prepare('SELECT coins FROM users WHERE id = ?').get(userId);
+
+      if (isWin) {
+        // Double le montant du gain : l'élève gagne currentGamble supplémentaire
+        const newCoins = user.coins + currentGamble;
+        const newGambleAmount = currentGamble * 2;
+
+        db.prepare('UPDATE users SET coins = ?, total_won = total_won + ? WHERE id = ?')
+          .run(newCoins, currentGamble, userId);
+
+        db.prepare('UPDATE slot_sessions SET pending_gamble_amount = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?')
+          .run(newGambleAmount, userId);
+
+        db.prepare(`
+          INSERT INTO game_history (user_id, game_type, bet, payout, profit, details)
+          VALUES (?, 'slots_gamble', ?, ?, ?, ?)
+        `).run(userId, currentGamble, newGambleAmount, currentGamble, JSON.stringify({ choice, card: drawnCard, win: true }));
+
+        return { coins: newCoins, newAmount: newGambleAmount, isWin: true };
+      } else {
+        // Perdu : le gain précédent est perdu
+        const newCoins = Math.max(0, user.coins - currentGamble);
+
+        db.prepare('UPDATE users SET coins = ? WHERE id = ?').run(newCoins, userId);
+        db.prepare('UPDATE slot_sessions SET pending_gamble_amount = 0, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?')
+          .run(userId);
+
+        db.prepare(`
+          INSERT INTO game_history (user_id, game_type, bet, payout, profit, details)
+          VALUES (?, 'slots_gamble', ?, 0, ?, ?)
+        `).run(userId, currentGamble, -currentGamble, JSON.stringify({ choice, card: drawnCard, win: false }));
+
+        return { coins: newCoins, newAmount: 0, isWin: false };
+      }
     });
+
+    const result = runTx();
 
     return res.json({
-      ...result,
-      coins: newCoins
+      success: true,
+      won: result.isWin,
+      choice,
+      drawnCard,
+      newAmount: result.newAmount,
+      coins: result.coins,
+      message: result.isWin
+        ? `🎉 Bravo ! C'est ${drawnCard.label} (${drawnCard.color === 'red' ? 'Rouge' : 'Noir'}). Gain doublé à ${result.newAmount.toLocaleString()} 🪙 !`
+        : `❌ Dommage ! C'est ${drawnCard.label}. Gain perdu pour cette fois.`
     });
   } catch (err) {
-    console.error('Erreur slots:', err);
-    return res.status(500).json({ error: 'Erreur lors du spin.' });
+    console.error('Erreur slots gamble:', err);
+    return res.status(500).json({ error: 'Erreur lors du Quitte ou Double.' });
+  }
+};
+
+// Encaisser définitivement le gain sans risquer de gamble
+exports.collectSlotsGamble = (req, res) => {
+  try {
+    const userId = req.user.id;
+    db.prepare('UPDATE slot_sessions SET pending_gamble_amount = 0 WHERE user_id = ?').run(userId);
+    return res.json({ success: true, message: 'Gain sécurisé et conservé !' });
+  } catch (err) {
+    return res.status(500).json({ error: 'Erreur lors de l\'encaissement.' });
   }
 };
 

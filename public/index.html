@@ -558,76 +558,178 @@
           </div>
         </section>
 
-    <!-- ==================== VUE JEU 1 : SLOTS ==================== -->
+    <!-- ==================== VUE JEU 1 : SLOTS (5x3 VIDÉO SLOT) ==================== -->
     <section id="view-slots" class="section-view">
       <div class="game-view-container">
         <div class="game-header-bar">
           <div class="game-title-group">
             <button class="btn btn-outline btn-back-lobby">◀ Lobby</button>
             <span class="game-title-icon">🎰</span>
-            <h2 class="game-title-name">Machine à sous Marsabet</h2>
+            <div>
+              <h2 class="game-title-name" style="margin:0;">Machine à Sous Cosmique Marsabet</h2>
+              <div style="font-size:0.8rem; color:var(--text-muted);">5 Rouleaux × 3 Lignes • Wilds Multiplicateurs • Free Spins x3</div>
+            </div>
           </div>
-          <div class="game-badges">
-            <span class="game-badge rtp">10 Lignes • RTP 96.5%</span>
+          <div class="game-badges" style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
+            <button class="btn btn-outline" id="btnOpenPaytable" style="font-size:0.8rem; padding:0.4rem 0.8rem; border-color:var(--gold-primary); color:var(--gold-light);">
+              📋 Table des Gains & Règles
+            </button>
+            <span class="game-badge rtp" id="slotsActiveLinesBadge">20 Lignes • RTP 95.2%</span>
           </div>
         </div>
 
         <div class="game-layout">
-          <!-- Zone Rouleaux -->
+          <!-- Zone Rouleaux & Cabinet -->
           <div class="game-stage">
-            <div id="slotsResultBanner" class="result-banner"></div>
-            
-            <div class="slots-cabinet">
+            <div id="slotsResultBanner" class="result-banner" style="display:none;"></div>
+
+            <div class="slots-cabinet" id="slotsCabinet">
+              <!-- Lumières de Casino -->
               <div class="slots-header-lights">
                 <div class="slot-light"></div>
                 <div class="slot-light"></div>
                 <div class="slot-light"></div>
                 <div class="slot-light"></div>
                 <div class="slot-light"></div>
+                <div class="slot-light"></div>
+                <div class="slot-light"></div>
               </div>
 
-              <div class="slots-reels-container">
-                <div class="slot-reel" id="slot-reel-0"></div>
-                <div class="slot-reel" id="slot-reel-1"></div>
-                <div class="slot-reel" id="slot-reel-2"></div>
-                <div class="slot-reel" id="slot-reel-3"></div>
-                <div class="slot-reel" id="slot-reel-4"></div>
+              <!-- Bannière Tour Bonus Free Spins -->
+              <div class="slots-freespins-banner" id="slotsFreeSpinsBanner">
+                <div style="font-size:1.15rem; font-weight:800; color:#38BDF8; letter-spacing:0.5px;">
+                  ⚡ TOURS GRATUITS EN COURS • MULTIPLICATEUR x3
+                </div>
+                <div style="font-size:0.9rem; color:#FFF; margin-top:2px;">
+                  Tour <strong id="fsCurrentNum" style="color:var(--gold-light);">1</strong> sur <strong id="fsTotalNum" style="color:var(--gold-light);">10</strong> • Gains cumulés : <strong id="fsAccumulatedWin" style="color:#38BDF8;">0</strong> 🪙
+                </div>
               </div>
 
-              <div class="slots-paytable">
-                <div class="paytable-item">🪐 Mars : <strong>x100</strong></div>
-                <div class="paytable-item">💎 Diamant : <strong>x60</strong></div>
-                <div class="paytable-item">👑 Couronne : <strong>x40</strong></div>
-                <div class="paytable-item">🎰 777 : <strong>x25</strong></div>
-                <div class="paytable-item">🍒 Cerises : <strong>x5</strong></div>
+              <!-- Arène des 5 Rouleaux avec Flancs Numérotés -->
+              <div class="slots-reels-stage">
+                <!-- Flanc gauche : Lignes 1 à 10 -->
+                <div class="payline-indicators-column" id="paylinesLeft">
+                  <div class="line-tag" data-line="1" style="--line-color:#FFD700;">1</div>
+                  <div class="line-tag" data-line="2" style="--line-color:#38BDF8;">2</div>
+                  <div class="line-tag" data-line="3" style="--line-color:#F43F5E;">3</div>
+                  <div class="line-tag" data-line="4" style="--line-color:#A855F7;">4</div>
+                  <div class="line-tag" data-line="5" style="--line-color:#22C55E;">5</div>
+                  <div class="line-tag" data-line="6" style="--line-color:#F97316;">6</div>
+                  <div class="line-tag" data-line="7" style="--line-color:#EC4899;">7</div>
+                  <div class="line-tag" data-line="8" style="--line-color:#EAB308;">8</div>
+                  <div class="line-tag" data-line="9" style="--line-color:#06B6D4;">9</div>
+                  <div class="line-tag" data-line="10" style="--line-color:#84CC16;">10</div>
+                </div>
+
+                <!-- Grille 5x3 des Rouleaux -->
+                <div class="slots-reels-container" id="slotsReelsContainer">
+                  <svg class="slots-paylines-svg" id="slotsPaylinesSvg"></svg>
+                  <div class="slot-reel" id="slot-reel-0"></div>
+                  <div class="slot-reel" id="slot-reel-1"></div>
+                  <div class="slot-reel" id="slot-reel-2"></div>
+                  <div class="slot-reel" id="slot-reel-3"></div>
+                  <div class="slot-reel" id="slot-reel-4"></div>
+                </div>
+
+                <!-- Flanc droit : Lignes 11 à 20 -->
+                <div class="payline-indicators-column" id="paylinesRight">
+                  <div class="line-tag" data-line="11" style="--line-color:#8B5CF6;">11</div>
+                  <div class="line-tag" data-line="12" style="--line-color:#F59E0B;">12</div>
+                  <div class="line-tag" data-line="13" style="--line-color:#10B981;">13</div>
+                  <div class="line-tag" data-line="14" style="--line-color:#6366F1;">14</div>
+                  <div class="line-tag" data-line="15" style="--line-color:#EF4444;">15</div>
+                  <div class="line-tag" data-line="16" style="--line-color:#14B8A6;">16</div>
+                  <div class="line-tag" data-line="17" style="--line-color:#D946EF;">17</div>
+                  <div class="line-tag" data-line="18" style="--line-color:#F472B6;">18</div>
+                  <div class="line-tag" data-line="19" style="--line-color:#38BDF8;">19</div>
+                  <div class="line-tag" data-line="20" style="--line-color:#FBBF24;">20</div>
+                </div>
+              </div>
+
+              <!-- Barre Quitte ou Double (Gamble) apparaissant après un gain -->
+              <div class="slots-gamble-bar" id="slotsGambleBar" style="display:none;">
+                <div style="display:flex; align-items:center; gap:0.5rem;">
+                  <span style="font-size:1.5rem;">🎉</span>
+                  <div>
+                    <div style="font-size:0.8rem; color:var(--text-muted);">Gain disponible :</div>
+                    <strong style="color:var(--gold-light); font-size:1.1rem;" id="gambleCurrentWinAmount">0 🪙</strong>
+                  </div>
+                </div>
+                <div style="display:flex; gap:0.5rem;">
+                  <button class="btn btn-outline" id="btnCollectGamble" style="font-size:0.85rem; padding:0.4rem 0.8rem;">
+                    💰 Encaisser
+                  </button>
+                  <button class="btn btn-gold" id="btnTriggerGamble" style="font-size:0.85rem; padding:0.4rem 0.8rem;">
+                    🃏 Quitte ou Double (x2)
+                  </button>
+                </div>
+              </div>
+
+              <!-- Bandeau d'information et symboles clés -->
+              <div class="slots-bottom-preview">
+                <div>🌟 <strong>Wild</strong> : Remplace tout + x2</div>
+                <div>⚡ <strong>Scatter</strong> : 3+ = Free Spins x3</div>
+                <div>🪐 <strong>Marsabet</strong> : x2 500</div>
+                <div>💎 <strong>Diamant</strong> : x1 000</div>
               </div>
             </div>
           </div>
 
-          <!-- Panneau de Mise -->
+          <!-- Panneau Latéral de Contrôle & Mises -->
           <div class="bet-panel">
-            <h3 class="panel-title">Mise de la partie</h3>
-            
-            <div class="bet-input-box">
-              <input type="number" id="slotsBetInput" class="bet-input" value="20" min="10" step="10">
+            <h3 class="panel-title" style="margin-bottom:0.75rem;">Configuration de Mise</h3>
+
+            <!-- Sélecteurs Lignes & Mise par ligne -->
+            <div class="slots-bet-controls">
+              <div class="control-box">
+                <label for="slotsLinesCount">Lignes Actives</label>
+                <div class="control-stepper">
+                  <button type="button" class="btn-step" id="btnStepLinesMinus">-</button>
+                  <span id="displayLinesCount">20</span>
+                  <button type="button" class="btn-step" id="btnStepLinesPlus">+</button>
+                </div>
+              </div>
+
+              <div class="control-box">
+                <label for="slotsBetPerLine">Mise / Ligne</label>
+                <div class="control-stepper">
+                  <button type="button" class="btn-step" id="btnStepBetMinus">-</button>
+                  <span id="displayBetPerLine">1</span>
+                  <button type="button" class="btn-step" id="btnStepBetPlus">+</button>
+                </div>
+              </div>
             </div>
 
+            <!-- Affichage Récapitulatif Mise Totale -->
+            <div class="total-bet-display">
+              <span style="color:var(--text-secondary);">Mise Totale du tour :</span>
+              <strong id="slotsTotalBetDisplay">20 🪙</strong>
+            </div>
+
+            <!-- Puces de mise rapide -->
             <div class="quick-bet-chips">
-              <button class="casino-chip chip-10" data-val="10">10</button>
-              <button class="casino-chip chip-25" data-val="25">25</button>
-              <button class="casino-chip chip-50" data-val="50">50</button>
-              <button class="casino-chip chip-100" data-val="100">100</button>
+              <button class="casino-chip chip-10" data-bet-per-line="1">20 🪙</button>
+              <button class="casino-chip chip-25" data-bet-per-line="2">40 🪙</button>
+              <button class="casino-chip chip-50" data-bet-per-line="5">100 🪙</button>
+              <button class="casino-chip chip-100" data-bet-per-line="10">200 🪙</button>
             </div>
 
             <div class="bet-multipliers">
+              <button class="btn-mult" data-action="min">MIN</button>
               <button class="btn-mult" data-action="half">½</button>
               <button class="btn-mult" data-action="double">2×</button>
               <button class="btn-mult" data-action="max">MAX</button>
             </div>
 
-            <button class="btn btn-gold" id="slotsSpinBtn" style="padding: 1rem; font-size: 1.15rem; margin-top: auto;">
-              🎰 TOURNER (SPIN)
-            </button>
+            <!-- Actions Principales (Spin & Autoplay) -->
+            <div class="slots-action-row">
+              <button class="btn-autoplay" id="btnSlotsAutoplay" title="Lancer des tours automatiques">
+                🔁 AUTO
+              </button>
+              <button class="btn btn-gold" id="slotsSpinBtn" style="padding:1rem; font-size:1.15rem; font-weight:800;">
+                🎰 TOURNER
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -1896,6 +1998,200 @@
           </button>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- Modale Table des Gains & Règles des 20 Lignes de la Machine à Sous -->
+  <div class="modal-overlay" id="slotsPaytableModal">
+    <div class="modal-content" style="max-width:680px; max-height:85vh; overflow-y:auto;">
+      <button class="modal-close" id="closePaytableModal">&times;</button>
+      <div style="text-align:center; margin-bottom:1.25rem;">
+        <span style="font-size:2.5rem;">🎰</span>
+        <h3 style="font-family:var(--font-display); font-size:1.4rem; color:var(--gold-light); margin:0.25rem 0;">
+          Table des Gains & Règles de la Machine à Sous
+        </h3>
+        <p style="font-size:0.85rem; color:var(--text-muted); margin:0;">
+          Grille 5×3 • 20 Paylines actives • RTP Certifié 95.2%
+        </p>
+      </div>
+
+      <!-- Règles Symboles Spéciaux -->
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem; margin-bottom:1.25rem;">
+        <div style="background:rgba(212,175,55,0.12); border:1px solid rgba(212,175,55,0.3); border-radius:var(--radius-md); padding:0.85rem;">
+          <div style="font-size:1.5rem; margin-bottom:0.25rem;">🌟 <strong>WILD COSMIQUE</strong></div>
+          <div style="font-size:0.82rem; color:var(--text-secondary); line-height:1.4;">
+            Remplace n'importe quel symbole standard pour compléter une ligne.<br>
+            <strong style="color:var(--gold-light);">Multiplicateur x2 :</strong> tout gain de ligne incluant un Wild est automatiquement doublé !<br>
+            <small style="color:var(--text-muted);">5 Wilds sur une ligne = x3 000 !</small>
+          </div>
+        </div>
+
+        <div style="background:rgba(56,189,248,0.12); border:1px solid rgba(56,189,248,0.3); border-radius:var(--radius-md); padding:0.85rem;">
+          <div style="font-size:1.5rem; margin-bottom:0.25rem;">⚡ <strong>SCATTER FREE SPINS</strong></div>
+          <div style="font-size:0.82rem; color:var(--text-secondary); line-height:1.4;">
+            Paye n'importe où sur les 5 rouleaux sans suivre les lignes.<br>
+            <strong>3 Scatters :</strong> 10 Free Spins + 3x mise totale<br>
+            <strong>4 Scatters :</strong> 15 Free Spins + 15x mise totale<br>
+            <strong>5 Scatters :</strong> 25 Free Spins + 100x mise totale<br>
+            <strong style="color:#38BDF8;">Pendant les Free Spins :</strong> tous les gains sont multipliés par x3 !
+          </div>
+        </div>
+      </div>
+
+      <!-- Grille des Symboles & Payouts -->
+      <div style="margin-bottom:1.25rem;">
+        <h4 style="color:var(--gold-primary); font-size:0.95rem; text-transform:uppercase; letter-spacing:1px; margin-bottom:0.5rem; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:0.25rem;">
+          Paiements par Symbole (Multiplicateurs de la mise par ligne)
+        </h4>
+
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:0.6rem;">
+          <!-- Mars Jackpot -->
+          <div style="background:rgba(220,38,38,0.15); border:1px solid rgba(248,113,113,0.3); border-radius:var(--radius-sm); padding:0.6rem 0.8rem; display:flex; justify-content:space-between; align-items:center;">
+            <div><span style="font-size:1.6rem;">🪐</span> <strong>Planète Marsabet</strong> <span class="vip-badge" style="font-size:0.65rem; background:#DC2626;">JACKPOT</span></div>
+            <div style="font-size:0.8rem; color:var(--gold-light); text-align:right;">
+              5: <strong>x2 500</strong> | 4: x500 | 3: x100 | 2: x10
+            </div>
+          </div>
+
+          <!-- Diamant -->
+          <div style="background:rgba(37,99,235,0.15); border:1px solid rgba(96,165,250,0.3); border-radius:var(--radius-sm); padding:0.6rem 0.8rem; display:flex; justify-content:space-between; align-items:center;">
+            <div><span style="font-size:1.6rem;">💎</span> <strong>Diamant Bleu</strong></div>
+            <div style="font-size:0.8rem; color:var(--gold-light); text-align:right;">
+              5: <strong>x1 000</strong> | 4: x250 | 3: x50
+            </div>
+          </div>
+
+          <!-- Canette -->
+          <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:var(--radius-sm); padding:0.6rem 0.8rem; display:flex; justify-content:space-between; align-items:center;">
+            <div><span style="font-size:1.5rem;">🥤</span> <strong>Canette BDE</strong></div>
+            <div style="font-size:0.8rem; color:var(--text-secondary); text-align:right;">
+              5: <strong>x500</strong> | 4: x150 | 3: x35
+            </div>
+          </div>
+
+          <!-- Chocolat -->
+          <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:var(--radius-sm); padding:0.6rem 0.8rem; display:flex; justify-content:space-between; align-items:center;">
+            <div><span style="font-size:1.5rem;">🍫</span> <strong>Chocolat BDE</strong></div>
+            <div style="font-size:0.8rem; color:var(--text-secondary); text-align:right;">
+              5: <strong>x350</strong> | 4: x100 | 3: x25
+            </div>
+          </div>
+
+          <!-- Chips -->
+          <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:var(--radius-sm); padding:0.6rem 0.8rem; display:flex; justify-content:space-between; align-items:center;">
+            <div><span style="font-size:1.5rem;">🥔</span> <strong>Chips Snack BDE</strong></div>
+            <div style="font-size:0.8rem; color:var(--text-secondary); text-align:right;">
+              5: <strong>x250</strong> | 4: x75 | 3: x20
+            </div>
+          </div>
+
+          <!-- Café -->
+          <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:var(--radius-sm); padding:0.6rem 0.8rem; display:flex; justify-content:space-between; align-items:center;">
+            <div><span style="font-size:1.5rem;">☕</span> <strong>Café Campus</strong></div>
+            <div style="font-size:0.8rem; color:var(--text-secondary); text-align:right;">
+              5: <strong>x180</strong> | 4: x50 | 3: x15
+            </div>
+          </div>
+
+          <!-- Cartes As & Roi -->
+          <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:var(--radius-sm); padding:0.6rem 0.8rem; display:flex; justify-content:space-between; align-items:center;">
+            <div><span style="font-size:1.5rem;">🂱</span> <strong>As (A)</strong> / <span style="font-size:1.5rem;">🃎</span> <strong>Roi (K)</strong></div>
+            <div style="font-size:0.8rem; color:var(--text-secondary); text-align:right;">
+              A: 5: <strong>x120</strong> | 4: x35 | 3: x10<br>
+              K: 5: <strong>x80</strong> | 4: x25 | 3: x8
+            </div>
+          </div>
+
+          <!-- Cartes Dame, Valet, 10 -->
+          <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:var(--radius-sm); padding:0.6rem 0.8rem; display:flex; justify-content:space-between; align-items:center;">
+            <div><span style="font-size:1.5rem;">🃍</span> <strong>Q</strong> / <span style="font-size:1.5rem;">🃋</span> <strong>J</strong> / 🔟 <strong>10</strong></div>
+            <div style="font-size:0.8rem; color:var(--text-secondary); text-align:right;">
+              Q: 5: <strong>x60</strong> | 4: x20 | 3: x6<br>
+              J: 5: <strong>x45</strong> | 4: x15 | 3: x5<br>
+              10: 5: <strong>x35</strong> | 4: x12 | 3: x4
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Information Quitte ou Double & Paylines -->
+      <div style="background:rgba(0,0,0,0.3); border-radius:var(--radius-md); padding:0.85rem; font-size:0.82rem; color:var(--text-secondary); line-height:1.45;">
+        <strong style="color:#FFF;">🃏 Quitte ou Double (Gamble) :</strong> Après chaque gain, vous pouvez tenter de le doubler sur un tirage Rouge/Noir (50% de probabilité). En cas de victoire, le gain est doublé et peut être encaissé à tout instant.<br>
+        <strong style="color:#FFF;">📐 20 Lignes de paiement :</strong> Les combinaisons gagnantes paient de gauche à droite sur les rouleaux adjacents en commençant par le premier rouleau à gauche.
+      </div>
+    </div>
+  </div>
+
+  <!-- Modale Quitte ou Double (Gamble / Double or Nothing) -->
+  <div class="modal-overlay" id="slotsGambleModal">
+    <div class="modal-content" style="max-width:440px; text-align:center;">
+      <button class="modal-close" id="closeGambleModal">&times;</button>
+      <div style="font-size:0.8rem; font-weight:700; color:var(--gold-primary); text-transform:uppercase; letter-spacing:1px; margin-bottom:0.25rem;">
+        🃏 JEU BONUS FACULTATIF
+      </div>
+      <h3 style="font-family:var(--font-display); font-size:1.4rem; color:#FFF; margin-bottom:0.25rem;">
+        Quitte ou Double
+      </h3>
+      <p style="font-size:0.85rem; color:var(--text-secondary); margin:0;">
+        Devine la couleur de la carte pour doubler ton gain !
+      </p>
+
+      <div style="display:flex; justify-content:space-around; align-items:center; margin:1rem 0; background:rgba(0,0,0,0.35); padding:0.75rem; border-radius:var(--radius-md); border:1px solid rgba(255,255,255,0.06);">
+        <div>
+          <div style="font-size:0.75rem; color:var(--text-muted);">Mise en jeu</div>
+          <strong id="gambleModalStake" style="color:var(--gold-light); font-size:1.15rem;">0 🪙</strong>
+        </div>
+        <div style="font-size:1.5rem; color:var(--gold-primary);">➔</div>
+        <div>
+          <div style="font-size:0.75rem; color:var(--text-muted);">Gain potentiel (x2)</div>
+          <strong id="gambleModalPotential" style="color:#22C55E; font-size:1.15rem;">0 🪙</strong>
+        </div>
+      </div>
+
+      <!-- Carte centrale à révéler -->
+      <div class="gamble-card-display" id="gambleCardDisplay">
+        <div id="gambleCardRank" style="font-size:2.8rem; line-height:1;">?</div>
+        <div id="gambleCardSuit" style="font-size:2rem; line-height:1; margin-top:4px;">🃏</div>
+      </div>
+
+      <div id="gambleFeedbackMsg" style="display:none; font-size:0.95rem; font-weight:700; margin-bottom:1rem; padding:0.5rem; border-radius:6px;"></div>
+
+      <!-- Boutons de choix Rouge / Noir -->
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem; margin-bottom:1rem;" id="gambleChoiceButtonsRow">
+        <button class="btn btn-outline" id="btnGambleChooseRed" style="border-color:#EF4444; color:#F87171; font-weight:800; font-size:1rem; padding:0.75rem;">
+          ♥️ ♦️ ROUGE
+        </button>
+        <button class="btn btn-outline" id="btnGambleChooseBlack" style="border-color:#38BDF8; color:#93C5FD; font-weight:800; font-size:1rem; padding:0.75rem;">
+          ♠️ ♣️ NOIR
+        </button>
+      </div>
+
+      <!-- Bouton Encaisser -->
+      <button class="btn btn-gold" id="btnGambleCashout" style="width:100%; padding:0.75rem; font-weight:700;">
+        💰 Encaisser et Conserver mon gain
+      </button>
+    </div>
+  </div>
+
+  <!-- Modale Célébration Déclenchement Free Spins -->
+  <div class="modal-overlay" id="slotsBonusModal">
+    <div class="modal-content" style="max-width:460px; text-align:center; border:2px solid #38BDF8; box-shadow:0 0 50px rgba(56,189,248,0.5);">
+      <button class="modal-close" id="closeBonusModal">&times;</button>
+      <div style="font-size:3.5rem; margin:0.5rem 0; animation:bounce 1s infinite alternate;">⚡</div>
+      <div style="font-size:0.85rem; font-weight:800; color:#38BDF8; letter-spacing:1px; text-transform:uppercase;">
+        TIRAGE EXCEPTIONNEL DE SCATTERS !
+      </div>
+      <h3 style="font-family:var(--font-display); font-size:1.7rem; color:var(--gold-light); margin:0.5rem 0;">
+        BONUS FREE SPINS ACTIVÉ !
+      </h3>
+      <p style="font-size:1rem; color:#FFF; line-height:1.4; margin-bottom:1rem;">
+        Tu viens de décrocher <strong id="bonusModalFsCount" style="color:#38BDF8; font-size:1.4rem;">10</strong> Tours Gratuits !<br>
+        <span style="color:var(--gold-light); font-weight:700;">Multiplicateur x3 actif</span> sur toutes les lignes gagnantes pendant le bonus !
+      </p>
+
+      <button class="btn btn-gold" id="btnStartBonusSpins" style="width:100%; padding:0.9rem; font-size:1.1rem; font-weight:800; background:linear-gradient(135deg, #0284C7 0%, #0369A1 100%); border-color:#38BDF8; color:#FFF;">
+        LANCER LES TOURS GRATUITS ⚡
+      </button>
     </div>
   </div>
 

@@ -211,10 +211,28 @@ const API = {
   },
 
   // Games endpoints
-  async spinSlots(bet) {
+  async getSlotsState() {
+    return this.request('/games/slots/state');
+  },
+
+  async spinSlots(data) {
+    const payload = typeof data === 'object' ? data : { bet: data };
     return this.request('/games/slots/spin', {
       method: 'POST',
-      body: JSON.stringify({ bet })
+      body: JSON.stringify(payload)
+    });
+  },
+
+  async gambleSlots(choice) {
+    return this.request('/games/slots/gamble', {
+      method: 'POST',
+      body: JSON.stringify({ choice })
+    });
+  },
+
+  async collectSlotsGamble() {
+    return this.request('/games/slots/collect', {
+      method: 'POST'
     });
   },
 

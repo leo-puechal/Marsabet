@@ -169,6 +169,97 @@ class CasinoAudio {
     osc.start();
     osc.stop(this.ctx.currentTime + 0.25);
   }
+
+  // Son d'arrêt mécanique individuel d'un rouleau (rouleaux 0 à 4)
+  playReelStop(reelIdx = 0) {
+    if (this.muted) return;
+    this.init();
+    if (!this.ctx) return;
+
+    const freq = 180 + reelIdx * 35; // Fréquence légèrement croissante de gauche à droite
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(80, this.ctx.currentTime + 0.08);
+
+    gain.gain.setValueAtTime(0.25, this.ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.08);
+
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start();
+    osc.stop(this.ctx.currentTime + 0.08);
+  }
+
+  // Son d'apparition d'un symbole Scatter (carillon ascendant)
+  playScatter(scatterNum = 1) {
+    if (this.muted) return;
+    this.init();
+    if (!this.ctx) return;
+
+    const freqs = [880, 1174.66, 1567.98, 2093.00, 2793.83];
+    const freq = freqs[Math.min(freqs.length - 1, Math.max(0, scatterNum - 1))];
+
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+
+    gain.gain.setValueAtTime(0.22, this.ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.35);
+
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start();
+    osc.stop(this.ctx.currentTime + 0.35);
+  }
+
+  // Son de déclenchement du bonus Free Spins (Fanfare Cosmique)
+  playBonusTrigger() {
+    if (this.muted) return;
+    this.init();
+    if (!this.ctx) return;
+
+    const notes = [440, 554.37, 659.25, 880, 1108.73, 1318.51];
+    notes.forEach((freq, idx) => {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, this.ctx.currentTime + idx * 0.12);
+
+      gain.gain.setValueAtTime(0.3, this.ctx.currentTime + idx * 0.12);
+      gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + idx * 0.12 + 0.5);
+
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(this.ctx.currentTime + idx * 0.12);
+      osc.stop(this.ctx.currentTime + idx * 0.12 + 0.5);
+    });
+  }
+
+  // Son de Big Win / Mega Win
+  playBigWin() {
+    if (this.muted) return;
+    this.init();
+    if (!this.ctx) return;
+
+    const notes = [523.25, 659.25, 783.99, 1046.50, 1318.51, 1567.98, 2093.00];
+    notes.forEach((freq, idx) => {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, this.ctx.currentTime + idx * 0.08);
+
+      gain.gain.setValueAtTime(0.25, this.ctx.currentTime + idx * 0.08);
+      gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + idx * 0.08 + 0.3);
+
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(this.ctx.currentTime + idx * 0.08);
+      osc.stop(this.ctx.currentTime + idx * 0.08 + 0.3);
+    });
+  }
 }
 
 window.sound = new CasinoAudio();
