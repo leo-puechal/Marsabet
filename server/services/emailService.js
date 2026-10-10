@@ -24,8 +24,8 @@ async function sendDeliveryNotification(delivery) {
   const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
-      user: emailUser,
-      pass: emailPass
+      user: emailUser.trim(),
+      pass: emailPass.replace(/\s+/g, '')
     }
   });
 
