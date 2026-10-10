@@ -23,6 +23,11 @@ const FortuneWheels = {
       closeBtn.addEventListener('click', () => this.closePhysicalModal());
     }
 
+    const skipBtn = document.getElementById('skipPhysicalDeliveryBtn');
+    if (skipBtn) {
+      skipBtn.addEventListener('click', () => this.closePhysicalModal());
+    }
+
     const modal = document.getElementById('physicalWinModal');
     if (modal) {
       modal.addEventListener('click', (e) => {
@@ -30,24 +35,19 @@ const FortuneWheels = {
       });
     }
 
-    // Bouton copier le code de la modale
-    const copyModalBtn = document.getElementById('copyPhysicalCodeBtn');
-    if (copyModalBtn) {
-      copyModalBtn.addEventListener('click', () => {
-        const code = document.getElementById('physicalWinModalCode')?.textContent?.trim();
-        if (code) this.copyClaimCode(code);
-      });
-    }
-
-    // Bouton voir mes récompenses depuis la modale
-    const viewRewardsBtn = document.getElementById('viewMyRewardsBtn');
-    if (viewRewardsBtn) {
-      viewRewardsBtn.addEventListener('click', () => {
+    // Bouton pour demander la livraison directe du lot physique
+    const requestDeliveryBtn = document.getElementById('requestPhysicalDeliveryBtn');
+    if (requestDeliveryBtn) {
+      requestDeliveryBtn.addEventListener('click', () => {
         this.closePhysicalModal();
-        if (window.Router) {
-          window.Router.navigate('/recompenses');
-        } else if (window.UI) {
-          window.UI.switchView('rewards');
+        if (window.openDeliveryModal && this.lastPhysicalOrder) {
+          window.openDeliveryModal({
+            source: 'wheel',
+            orderId: this.lastPhysicalOrder.id,
+            productName: this.lastPhysicalItem?.label || this.lastPhysicalItem?.name,
+            icon: this.lastPhysicalItem?.icon || '🥤',
+            quantity: 1
+          });
         }
       });
     }
@@ -445,7 +445,6 @@ const FortuneWheels = {
       const data = await window.API.spinFortuneWheel(this.currentWheel.id);
       const winningIndex = data.winningIndex;
       const wonItem = data.wonItem;
-      const claimCode = data.claimCode;
       const isPhysical = data.isPhysical;
       const userCoins = data.userCoins;
       const segments = this.currentWheel.segments || [];
@@ -514,7 +513,6 @@ const FortuneWheels = {
   onSpinCompleted(data) {
     const wonItem = data.wonItem;
     const isPhysical = data.isPhysical;
-    const claimCode = data.claimCode;
 
     // Son de victoire si le système audio est prêt
     if (window.AudioSystem) {
@@ -530,8 +528,10 @@ const FortuneWheels = {
       if (window.UI && typeof window.UI.launchConfetti === 'function') {
         window.UI.launchConfetti();
       }
-      // Modale dédiée au lot physique rare
-      this.showPhysicalWinModal(wonItem, claimCode);
+      this.lastPhysicalItem = wonItem;
+      this.lastPhysicalOrder = data.order;
+      // Modale de célébration pour le lot physique
+      this.showPhysicalWinModal(wonItem, data.order);
     } else {
       // Gain en coins
       const banner = document.getElementById('wheelArenaBanner');
@@ -556,15 +556,13 @@ const FortuneWheels = {
   // ==========================================
   // 4. MODALE GAIN PHYSIQUE RARE
   // ==========================================
-  showPhysicalWinModal(wonItem, claimCode) {
+  showPhysicalWinModal(wonItem, order) {
     const modal = document.getElementById('physicalWinModal');
     const nameEl = document.getElementById('physicalWinModalName');
     const iconEl = document.getElementById('physicalWinModalIcon');
-    const codeEl = document.getElementById('physicalWinModalCode');
 
     if (nameEl) nameEl.textContent = wonItem.label || wonItem.name;
     if (iconEl) iconEl.textContent = wonItem.icon || '🥤';
-    if (codeEl) codeEl.textContent = claimCode || 'MB-XXXX-XXXX';
 
     if (modal) modal.classList.add('active');
   },
@@ -574,17 +572,8 @@ const FortuneWheels = {
     if (modal) modal.classList.remove('active');
   },
 
-  copyClaimCode(code) {
-    if (!code) return;
-    navigator.clipboard.writeText(code).then(() => {
-      window.UI.showToast(`📋 Code ${code} copié dans le presse-papier !`, 'success');
-    }).catch(() => {
-      window.UI.showToast(`Code : ${code}`, 'info');
-    });
-  },
-
   // ==========================================
-  // 5. SECTION "MES RÉCOMPENSES" (STAND BDE)
+  // 5. SECTION "MES DEMANDES DE RÉCUPÉRATION"
   // ==========================================
   async loadMyRewards() {
     this.renderDedicatedRewardsList();
@@ -594,7 +583,7 @@ const FortuneWheels = {
   async fetchAllUserRewards() {
     try {
       const data = await window.API.getMyRewards();
-      return data.rewards || [];
+      return data.rewards || data.deliveries || [];
     } catch (err) {
       console.warn('Erreur chargement récompenses :', err);
       return [];
@@ -608,36 +597,37 @@ const FortuneWheels = {
     const rewards = await this.fetchAllUserRewards();
 
     // Compteurs
-    const pendingCount = rewards.filter(r => r.status === 'pending').length;
-    const collectedCount = rewards.filter(r => r.status === 'collected').length;
+    const pendingCount = rewards.filter(r => r.status === 'pending' || r.status === 'pending_info').length;
+    const deliveredCount = rewards.filter(r => r.status === 'delivered').length;
 
     const pEl = document.getElementById('rewardsPendingCount');
     const cEl = document.getElementById('rewardsCollectedCount');
     const tEl = document.getElementById('rewardsTotalCount');
     if (pEl) pEl.textContent = pendingCount;
-    if (cEl) cEl.textContent = collectedCount;
+    if (cEl) cEl.textContent = deliveredCount;
     if (tEl) tEl.textContent = rewards.length;
 
     // Filtrage
     const filtered = rewards.filter(r => {
-      if (this.activeFilter === 'pending') return r.status === 'pending';
-      if (this.activeFilter === 'collected') return r.status === 'collected';
+      if (this.activeFilter === 'pending') return r.status === 'pending' || r.status === 'pending_info';
+      if (this.activeFilter === 'delivered' || this.activeFilter === 'collected') return r.status === 'delivered';
       return true;
     });
 
     if (filtered.length === 0) {
       container.innerHTML = `
         <div style="grid-column:1/-1; text-align:center; padding:3rem 1rem; color:var(--text-muted); background:var(--bg-card); border-radius:var(--radius-lg); border:1px solid var(--bg-glass-border);">
-          <div style="font-size:2.5rem; margin-bottom:0.75rem;">🎁</div>
-          <h3 style="color:#FFF; font-size:1.15rem; margin-bottom:0.4rem;">Aucun lot physique dans cette catégorie</h3>
-          <p style="font-size:0.9rem; margin-bottom:1.25rem;">Tourne les <strong>Roues de la Fortune</strong> ou échange tes coins en boutique pour décrocher des boissons et snacks réels !</p>
-          <button class="btn btn-gold" onclick="window.Router.navigate('/roues')">🎡 Découvrir les Roues ▶</button>
+          <div style="font-size:2.5rem; margin-bottom:0.75rem;">📦</div>
+          <h3 style="color:#FFF; font-size:1.15rem; margin-bottom:0.4rem;">Aucune demande de livraison dans cette catégorie</h3>
+          <p style="font-size:0.9rem; margin-bottom:1.25rem;">Tourne les <strong>Roues de la Fortune</strong> ou échange tes coins en boutique pour te faire livrer des boissons et snacks dans ta salle !</p>
+          <button class="btn btn-gold" onclick="window.Router ? window.Router.navigate('/roues') : window.UI.switchView('wheels')">🎡 Découvrir les Roues ▶</button>
         </div>
       `;
       return;
     }
 
     container.innerHTML = filtered.map(r => this.buildRewardCardHtml(r)).join('');
+    this.bindCardDeliveryButtons(container);
   },
 
   async renderProfileRewardsList() {
@@ -647,29 +637,67 @@ const FortuneWheels = {
     const rewards = await this.fetchAllUserRewards();
 
     const filtered = rewards.filter(r => {
-      if (this.activeFilter === 'pending') return r.status === 'pending';
-      if (this.activeFilter === 'collected') return r.status === 'collected';
+      if (this.activeFilter === 'pending') return r.status === 'pending' || r.status === 'pending_info';
+      if (this.activeFilter === 'delivered' || this.activeFilter === 'collected') return r.status === 'delivered';
       return true;
     });
 
     if (filtered.length === 0) {
       container.innerHTML = `
         <div style="grid-column:1/-1; text-align:center; padding:2rem 1rem; color:var(--text-muted);">
-          Aucune récompense pour le moment. Fais tourner une roue de la fortune !
+          Aucune demande de livraison pour le moment. Fais tourner une roue ou visite la boutique !
         </div>
       `;
       return;
     }
 
     container.innerHTML = filtered.map(r => this.buildRewardCardHtml(r)).join('');
+    this.bindCardDeliveryButtons(container);
+  },
+
+  bindCardDeliveryButtons(container) {
+    if (!container) return;
+    container.querySelectorAll('.btn-card-complete-delivery').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const id = e.currentTarget.dataset.id;
+        const name = e.currentTarget.dataset.name;
+        const icon = e.currentTarget.dataset.icon;
+        if (window.openDeliveryModal) {
+          window.openDeliveryModal({
+            source: 'wheel',
+            orderId: id,
+            productName: name,
+            icon: icon
+          });
+        }
+      });
+    });
   },
 
   buildRewardCardHtml(reward) {
-    const isCollected = reward.status === 'collected';
+    const isDelivered = reward.status === 'delivered';
+    const isPendingInfo = reward.status === 'pending_info';
     const isWheel = reward.source === 'wheel';
     const sourceLabel = isWheel ? '🎡 Roue de la Fortune' : '🛍️ Boutique BDE';
-    const statusText = isCollected ? '✅ Retiré au stand' : '⏳ À retirer au stand BDE';
-    const statusClass = isCollected ? 'status-collected' : 'status-pending';
+
+    let statusText = '⏳ En cours de livraison';
+    let statusClass = 'status-pending';
+    if (isDelivered) {
+      statusText = '✅ Livré par le BDE';
+      statusClass = 'status-collected';
+    } else if (isPendingInfo) {
+      statusText = '⚠️ Salle à préciser';
+      statusClass = 'status-warning';
+    }
+
+    let emailBadge = '';
+    if (reward.email_status === 'sent') {
+      emailBadge = '<span style="color:#22C55E; font-size:0.75rem; font-weight:600;">✉️ BDE Notifié</span>';
+    } else if (reward.email_status === 'not_configured') {
+      emailBadge = '<span style="color:var(--text-muted); font-size:0.75rem;">📋 Enregistré</span>';
+    } else {
+      emailBadge = '<span style="color:var(--text-muted); font-size:0.75rem;">📋 En attente BDE</span>';
+    }
 
     return `
       <div class="reward-ticket-card ${statusClass}">
@@ -684,21 +712,31 @@ const FortuneWheels = {
           <span class="reward-status-pill ${statusClass}">${statusText}</span>
         </div>
 
-        <div class="reward-ticket-code-zone">
-          <div style="font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; margin-bottom:0.25rem;">
-            Code de retrait unique :
+        <div class="reward-ticket-code-zone" style="background:rgba(0,0,0,0.25); border:1px solid rgba(255,255,255,0.06); border-radius:var(--radius-sm); padding:0.6rem 0.8rem; margin:0.75rem 0;">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
+            <div>
+              <div style="font-size:0.8rem; color:var(--gold-light); font-weight:600;">
+                📍 Lieu : ${this.escapeHtml(reward.room_location || 'À préciser')}
+              </div>
+              <div style="font-size:0.75rem; color:var(--text-muted); margin-top:2px;">
+                Élève : ${this.escapeHtml(reward.first_name || '')} ${this.escapeHtml(reward.last_name || '')}
+              </div>
+            </div>
+            <div>
+              ${emailBadge}
+            </div>
           </div>
-          <div style="display:flex; align-items:center; justify-content:space-between; gap:0.5rem;">
-            <code class="reward-ticket-code">${reward.claim_code}</code>
-            <button class="btn btn-outline" onclick="FortuneWheels.copyClaimCode('${reward.claim_code}')" style="padding:4px 10px; font-size:0.75rem;" title="Copier le code">
-              📋 Copier
+
+          ${isPendingInfo ? `
+            <button class="btn btn-gold btn-card-complete-delivery" data-id="${reward.id}" data-name="${this.escapeHtml(reward.item_name)}" data-icon="${reward.icon || '🎁'}" style="width:100%; margin-top:0.6rem; padding:0.4rem; font-size:0.8rem;">
+              📦 Renseigner ma salle pour livraison
             </button>
-          </div>
+          ` : ''}
         </div>
 
         <div class="reward-ticket-footer">
-          <span>${isCollected ? 'Retiré le ' + this.formatDate(reward.collected_at) : 'Gagné le ' + this.formatDate(reward.created_at)}</span>
-          <span style="color:var(--text-muted);">Usage unique</span>
+          <span>${isDelivered ? 'Livré le ' + this.formatDate(reward.delivered_at) : 'Demandé le ' + this.formatDate(reward.created_at)}</span>
+          <span style="color:var(--text-secondary); font-size:0.78rem;">Livraison directe BDE</span>
         </div>
       </div>
     `;

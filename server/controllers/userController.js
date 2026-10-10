@@ -84,14 +84,16 @@ exports.getProfile = (req, res) => {
       GROUP BY game_type
     `).all(userId);
 
-    // Commandes et codes de retrait de la boutique BDE et roues de la fortune
+    // Demandes de livraison directe de la boutique BDE et roues de la fortune
     const orders = db.prepare(`
-      SELECT o.id, o.claim_code, o.item_name, o.coins_paid, o.status, o.collected_at, o.created_at, o.source,
+      SELECT d.id, d.last_name, d.first_name, d.room_location, d.phone,
+             d.item_name, d.variant_name, d.quantity, d.coins_paid, d.status,
+             d.email_status, d.delivered_at, d.created_at, d.source,
              i.icon, i.category
-      FROM shop_orders o
-      LEFT JOIN shop_items i ON o.item_id = i.id
-      WHERE o.user_id = ?
-      ORDER BY o.created_at DESC
+      FROM delivery_orders d
+      LEFT JOIN shop_items i ON d.item_id = i.id
+      WHERE d.user_id = ?
+      ORDER BY d.created_at DESC
     `).all(userId);
 
     return res.json({

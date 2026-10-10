@@ -154,6 +154,49 @@ function initDb() {
     db.exec("ALTER TABLE shop_orders ADD COLUMN source TEXT NOT NULL DEFAULT 'shop'");
   }
 
+  // Table des Demandes de Livraison Directe (remplace le système de code de retrait)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS delivery_orders (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      last_name TEXT NOT NULL,
+      first_name TEXT NOT NULL,
+      room_location TEXT NOT NULL,
+      phone TEXT DEFAULT NULL,
+      item_id TEXT NOT NULL,
+      item_name TEXT NOT NULL,
+      variant_name TEXT DEFAULT NULL,
+      quantity INTEGER NOT NULL DEFAULT 1,
+      coins_paid INTEGER NOT NULL DEFAULT 0,
+      source TEXT NOT NULL DEFAULT 'shop', -- 'shop' ou 'wheel'
+      status TEXT NOT NULL DEFAULT 'pending', -- 'pending_info', 'pending', 'delivered', 'cancelled'
+      email_status TEXT NOT NULL DEFAULT 'pending', -- 'sent', 'failed', 'not_configured'
+      email_error TEXT DEFAULT NULL,
+      delivered_at DATETIME DEFAULT NULL,
+      delivered_by INTEGER REFERENCES users(id),
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_delivery_user ON delivery_orders(user_id, status);
+    CREATE INDEX IF NOT EXISTS idx_delivery_status ON delivery_orders(status);
+  `);
+
+  // Migration rétrocompatible des anciennes commandes vers delivery_orders si vide
+  const deliveriesCount = db.prepare('SELECT COUNT(*) as count FROM delivery_orders').get().count;
+  if (deliveriesCount === 0) {
+    try {
+      db.exec(`
+        INSERT INTO delivery_orders (id, user_id, last_name, first_name, room_location, phone, item_id, item_name, variant_name, quantity, coins_paid, source, status, email_status, delivered_at, delivered_by, created_at)
+        SELECT id, user_id, 'Étudiant', 'Marsabet', 'Stand BDE', NULL, item_id, item_name, variant_name, 1, coins_paid, source,
+          CASE WHEN status = 'collected' THEN 'delivered' ELSE 'pending' END,
+          'not_configured', collected_at, collected_by, created_at
+        FROM shop_orders;
+      `);
+    } catch (migErr) {
+      // Ignorer si shop_orders n'a pas pu être migré
+    }
+  }
+
   // Table pour enregistrer les cooldowns et streaks de chaque roue
   db.exec(`
     CREATE TABLE IF NOT EXISTS user_wheel_cooldowns (

@@ -7,10 +7,12 @@ const authMiddleware = require('../middlewares/authMiddleware');
 // Profil
 router.get('/profile', authMiddleware, userController.getProfile);
 
-// Boutique BDE (produits physiques & commandes)
+// Boutique BDE & Livraisons directes
 router.get('/shop', shopController.getProducts);
 router.post('/shop/order', authMiddleware, shopController.orderProduct);
 router.get('/shop/my-orders', authMiddleware, shopController.getMyOrders);
+router.post('/deliveries', authMiddleware, shopController.orderProduct);
+router.get('/deliveries', authMiddleware, shopController.getMyOrders);
 
 // Codes promo
 router.post('/redeem-code', authMiddleware, userController.redeemPromoCode);

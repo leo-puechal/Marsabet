@@ -1,18 +1,6 @@
 const crypto = require('crypto');
 const db = require('../database/db');
 
-// Génère un code unique de retrait MB-XXXX-XXXX
-function generateClaimCode() {
-  const chars = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
-  let part1 = '';
-  let part2 = '';
-  for (let i = 0; i < 4; i++) {
-    part1 += chars[crypto.randomInt(0, chars.length)];
-    part2 += chars[crypto.randomInt(0, chars.length)];
-  }
-  return `MB-${part1}-${part2}`;
-}
-
 const WHEELS_CONFIG = {
   'quotidienne': {
     id: 'quotidienne',
@@ -257,7 +245,6 @@ function spinWheel(wheelId, userId) {
 
   // 4. Exécution atomique en base de données
   const nowIso = new Date().toISOString();
-  let claimCode = null;
   let orderInfo = null;
 
   const executeSpin = db.transaction(() => {
@@ -274,17 +261,14 @@ function spinWheel(wheelId, userId) {
     if (winningSegment.type === 'coins') {
       db.prepare('UPDATE users SET coins = coins + ? WHERE id = ?').run(winningSegment.coins, userId);
     } else if (winningSegment.type === 'physical') {
-      // Génération d'un code de retrait unique garanti
-      claimCode = generateClaimCode();
-      while (db.prepare('SELECT id FROM shop_orders WHERE claim_code = ?').get(claimCode)) {
-        claimCode = generateClaimCode();
-      }
-
       const orderInsert = db.prepare(`
-        INSERT INTO shop_orders (claim_code, user_id, item_id, item_name, variant_name, coins_paid, status, source)
-        VALUES (?, ?, ?, ?, ?, ?, 'pending', 'wheel')
+        INSERT INTO delivery_orders (
+          user_id, last_name, first_name, room_location, phone,
+          item_id, item_name, variant_name, quantity, coins_paid,
+          source, status, email_status
+        )
+        VALUES (?, 'À renseigner', 'Élève', 'À renseigner', NULL, ?, ?, ?, 1, ?, 'wheel', 'pending_info', 'not_configured')
       `).run(
-        claimCode,
         userId,
         winningSegment.product?.itemId || 'coca',
         winningSegment.product.name,
@@ -294,11 +278,13 @@ function spinWheel(wheelId, userId) {
 
       orderInfo = {
         id: orderInsert.lastInsertRowid,
-        claimCode,
+        deliveryId: orderInsert.lastInsertRowid,
         itemName: winningSegment.product.name,
         icon: winningSegment.product.icon,
         category: winningSegment.product.category,
-        wheelName: wheel.name
+        wheelName: wheel.name,
+        needsDeliveryInfo: true,
+        status: 'pending_info'
       };
     }
 
@@ -335,7 +321,7 @@ function spinWheel(wheelId, userId) {
         segmentIndex: winningSegmentIndex,
         segmentLabel: winningSegment.label,
         isPhysical: !!winningSegment.isPhysical,
-        claimCode,
+        deliveryId: orderInfo ? orderInfo.id : null,
         product: winningSegment.product || null
       })
     );
@@ -378,7 +364,6 @@ function spinWheel(wheelId, userId) {
       product: winningSegment.product || null
     },
     isPhysical: !!winningSegment.isPhysical,
-    claimCode,
     order: orderInfo,
     coins: txResult.newCoins,
     userCoins: txResult.newCoins,
@@ -387,10 +372,83 @@ function spinWheel(wheelId, userId) {
   };
 }
 
+/**
+ * Confirme la demande de livraison pour un lot gagné à la roue
+ */
+async function confirmWheelDelivery(orderId, userId, { lastName, firstName, roomLocation, phone }) {
+  if (!lastName || typeof lastName !== 'string' || lastName.trim().length < 2) {
+    throw new Error('Le nom est obligatoire (2 caractères minimum).');
+  }
+  if (!firstName || typeof firstName !== 'string' || firstName.trim().length < 2) {
+    throw new Error('Le prénom est obligatoire (2 caractères minimum).');
+  }
+  if (!roomLocation || typeof roomLocation !== 'string' || roomLocation.trim().length < 2) {
+    throw new Error('La salle ou le lieu où tu te trouves est obligatoire.');
+  }
+
+  const cleanLastName = lastName.trim();
+  const cleanFirstName = firstName.trim();
+  const cleanRoomLocation = roomLocation.trim();
+  const cleanPhone = (phone && typeof phone === 'string') ? phone.trim() : null;
+
+  const order = db.prepare(`
+    SELECT d.*, u.username
+    FROM delivery_orders d
+    JOIN users u ON d.user_id = u.id
+    WHERE d.id = ? AND d.user_id = ?
+  `).get(orderId, userId);
+
+  if (!order) {
+    throw new Error('Demande de lot introuvable.');
+  }
+
+  db.prepare(`
+    UPDATE delivery_orders
+    SET last_name = ?,
+        first_name = ?,
+        room_location = ?,
+        phone = ?,
+        status = 'pending'
+    WHERE id = ?
+  `).run(cleanLastName, cleanFirstName, cleanRoomLocation, cleanPhone, orderId);
+
+  const updated = db.prepare(`
+    SELECT d.*, u.username
+    FROM delivery_orders d
+    JOIN users u ON d.user_id = u.id
+    WHERE d.id = ?
+  `).get(orderId);
+
+  const emailService = require('./emailService');
+  let emailResult = { success: false, status: 'failed' };
+  try {
+    emailResult = await emailService.sendDeliveryNotification(updated);
+    db.prepare(`
+      UPDATE delivery_orders
+      SET email_status = ?, email_error = ?
+      WHERE id = ?
+    `).run(
+      emailResult.status || (emailResult.success ? 'sent' : 'failed'),
+      emailResult.error || null,
+      orderId
+    );
+  } catch (err) {
+    console.error('Erreur non bloquante envoi email roue:', err.message);
+  }
+
+  return {
+    success: true,
+    message: `Demande de livraison confirmée ! Un membre du BDE t'apportera ton lot en salle ${cleanRoomLocation}.`,
+    delivery: updated,
+    emailSent: emailResult.success
+  };
+}
+
 module.exports = {
   WHEELS_CONFIG,
   getAllWheels,
   getWheel,
   spinWheel,
-  getUserCooldown
+  getUserCooldown,
+  confirmWheelDelivery
 };

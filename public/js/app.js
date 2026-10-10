@@ -26,7 +26,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (view === 'profile') loadProfile();
         if (view === 'shop') loadShop();
         if (view === 'admin') {
-          if (window.AdminBDE) window.AdminBDE.switchTab('claims');
+          if (window.AdminBDE) window.AdminBDE.switchTab('orders');
         }
       }
     });
@@ -157,7 +157,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           if (view === 'leaderboard') loadLeaderboard();
           if (view === 'profile') loadProfile();
           if (view === 'shop') loadShop();
-          if (view === 'admin' && window.AdminBDE) window.AdminBDE.switchTab('claims');
+          if (view === 'admin' && window.AdminBDE) window.AdminBDE.switchTab('orders');
         }
 
         // Fermer le tiroir mobile après sélection
@@ -280,15 +280,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (window.AdminBDE) window.AdminBDE.init();
   if (window.Router) window.Router.init();
 
-  // Fermeture modale Ticket
-  const closeTicketBtn = document.getElementById('closeTicketModal');
-  if (closeTicketBtn) {
-    closeTicketBtn.addEventListener('click', () => {
-      const modal = document.getElementById('claimTicketModal');
-      if (modal) modal.classList.remove('active');
-    });
-  }
-
   // Devenir Admin avec code secret
   const becomeAdminBtn = document.getElementById('becomeAdminBtn');
   if (becomeAdminBtn) {
@@ -305,7 +296,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         } else {
           window.UI.switchView('admin');
         }
-        if (window.AdminBDE) window.AdminBDE.switchTab('claims');
+        if (window.AdminBDE) window.AdminBDE.switchTab('orders');
       } catch (err) {
         window.UI.showToast(err.message, 'error');
       }
@@ -536,30 +527,31 @@ async function loadProfile() {
       }
     }
 
-    // Commandes physiques et lots des roues avec codes de retrait
+    // Demandes de livraison directe et lots physiques
     if (window.FortuneWheels && typeof window.FortuneWheels.renderProfileRewardsList === 'function') {
       window.FortuneWheels.renderProfileRewardsList();
     } else {
       const ordersListEl = document.getElementById('profileOrdersList');
       if (ordersListEl) {
-        if (!data.orders || data.orders.length === 0) {
-          ordersListEl.innerHTML = '<p style="color: var(--text-muted); padding:1rem;">Aucun lot physique remporté pour l’instant.</p>';
+        const deliveries = data.deliveries || data.orders || [];
+        if (deliveries.length === 0) {
+          ordersListEl.innerHTML = '<p style="color: var(--text-muted); padding:1rem;">Aucune demande de livraison pour l’instant.</p>';
         } else {
-          ordersListEl.innerHTML = data.orders.map(o => {
-            const isCollected = o.status === 'collected';
+          ordersListEl.innerHTML = deliveries.map(o => {
+            const isDelivered = o.status === 'delivered';
             return `
-              <div class="reward-ticket-card ${isCollected ? 'status-collected' : 'status-pending'}">
+              <div class="reward-ticket-card ${isDelivered ? 'status-collected' : 'status-pending'}">
                 <div class="reward-ticket-header">
                   <div style="display:flex; align-items:center; gap:0.6rem;">
                     <span class="reward-ticket-icon">${o.icon || '🎁'}</span>
                     <div class="reward-ticket-title">${escapeHtml(o.item_name)}</div>
                   </div>
-                  <span class="reward-status-pill ${isCollected ? 'status-collected' : 'status-pending'}">
-                    ${isCollected ? '✅ Retiré' : '⏳ À retirer'}
+                  <span class="reward-status-pill ${isDelivered ? 'status-collected' : 'status-pending'}">
+                    ${isDelivered ? '✅ Livré' : '⏳ À livrer'}
                   </span>
                 </div>
-                <div class="reward-ticket-code-zone">
-                  <code class="reward-ticket-code">${o.claim_code}</code>
+                <div style="font-size:0.8rem; color:var(--gold-light); margin-top:0.4rem;">
+                  📍 Lieu : ${escapeHtml(o.room_location || 'À préciser')}
                 </div>
               </div>
             `;
@@ -802,9 +794,9 @@ function renderShopProducts() {
     });
   });
 
-  // Événements d'échange avec support des variantes et confirmation
+  // Événements d'échange avec modale de demande de livraison directe
   shopGrid.querySelectorAll('.btn-buy-shop:not(:disabled)').forEach(btn => {
-    btn.addEventListener('click', async (e) => {
+    btn.addEventListener('click', (e) => {
       if (!window.State.isAuthenticated) {
         window.UI.openAuthModal('login');
         return;
@@ -815,94 +807,284 @@ function renderShopProducts() {
       const productPrice = parseInt(e.currentTarget.dataset.price);
       const variantName = e.currentTarget.dataset.variant || null;
 
-      // Vérification côté client
+      // Vérification solde côté client
       if (window.State.user.coins < productPrice) {
         window.UI.showToast(`Solde insuffisant ! Il te manque ${(productPrice - window.State.user.coins).toLocaleString()} coins pour cet échange.`, 'error');
         return;
       }
 
-      const displayName = variantName ? `${productName} (${variantName})` : productName;
+      const card = e.currentTarget.closest('.shop-card');
+      const icon = card ? (card.querySelector('.item-icon')?.textContent || '🥤') : '🥤';
 
-      if (!confirm(`Confirmer l'échange de ${productPrice.toLocaleString()} coins contre : "${displayName}" physique au stand BDE ?`)) {
-        return;
-      }
-
-      try {
-        const res = await window.API.orderShopProduct(productId, variantName);
-        window.State.updateCoins(res.coins);
-        window.UI.showToast(res.message, 'success', 5000);
-        window.sound.playWin();
-        window.UI.triggerConfetti();
-
-        // Afficher la modale avec le Ticket de Retrait
-        showClaimTicketModal(res.order);
-
-        // Rafraîchir les stocks affichés
-        loadShop();
-      } catch (err) {
-        window.UI.showToast(err.message, 'error');
-      }
+      // Ouvre la modale de demande de livraison directe (aucun coin débité tant que ce n'est pas validé)
+      window.openDeliveryModal({
+        source: 'shop',
+        productId,
+        productName,
+        productPrice,
+        variantName,
+        icon,
+        quantity: 1
+      });
     });
   });
 }
+
+// Gestion globale de la modale de demande de livraison directe BDE
+window.openDeliveryModal = function(options) {
+  const modal = document.getElementById('deliveryRequestModal');
+  if (!modal) return;
+
+  const srcInput = document.getElementById('deliverySource');
+  const prodIdInput = document.getElementById('deliveryProductId');
+  const variantInput = document.getElementById('deliveryVariantName');
+  const orderIdInput = document.getElementById('deliveryOrderId');
+
+  const iconEl = document.getElementById('deliveryModalIcon');
+  const titleEl = document.getElementById('deliveryModalTitle');
+  const subtitleEl = document.getElementById('deliveryModalSubtitle');
+  const itemEl = document.getElementById('deliveryModalItemName');
+  const varEl = document.getElementById('deliveryModalItemVariant');
+  const qtyEl = document.getElementById('deliveryModalQuantity');
+  const costEl = document.getElementById('deliveryModalCost');
+
+  if (srcInput) srcInput.value = options.source || 'shop';
+  if (prodIdInput) prodIdInput.value = options.productId || '';
+  if (variantInput) variantInput.value = options.variantName || '';
+  if (orderIdInput) orderIdInput.value = options.orderId || '';
+
+  if (iconEl) iconEl.textContent = options.icon || (options.source === 'wheel' ? '🎡' : '🛍️');
+  if (itemEl) itemEl.textContent = options.productName || 'Produit BDE';
+  if (qtyEl) qtyEl.textContent = options.quantity || 1;
+
+  if (varEl) {
+    if (options.variantName) {
+      varEl.textContent = `Variante : ${options.variantName}`;
+      varEl.style.display = 'block';
+    } else {
+      varEl.style.display = 'none';
+    }
+  }
+
+  if (options.source === 'shop') {
+    if (titleEl) titleEl.textContent = 'Demande de Livraison Directe (Boutique)';
+    if (subtitleEl) subtitleEl.textContent = 'Renseigne ta salle pour être livré directement par le BDE !';
+    if (costEl) costEl.textContent = `${(options.productPrice || 0).toLocaleString()} 🪙`;
+  } else {
+    if (titleEl) titleEl.textContent = 'Demande de Livraison Directe (Gain Roue)';
+    if (subtitleEl) subtitleEl.textContent = 'Félicitations pour ton lot ! Indique ta salle pour que le BDE te l\'apporte.';
+    if (costEl) costEl.textContent = '🎉 Lot Gagné aux Roues !';
+  }
+
+  // Pré-remplir les champs depuis localStorage pour le confort de l'élève
+  const lastNameInput = document.getElementById('deliveryLastName');
+  const firstNameInput = document.getElementById('deliveryFirstName');
+  const phoneInput = document.getElementById('deliveryPhone');
+  const roomInput = document.getElementById('deliveryRoomLocation');
+
+  if (lastNameInput && !lastNameInput.value) {
+    lastNameInput.value = localStorage.getItem('marsabet_last_name') || '';
+  }
+  if (firstNameInput && !firstNameInput.value) {
+    firstNameInput.value = localStorage.getItem('marsabet_first_name') || '';
+  }
+  if (phoneInput && !phoneInput.value) {
+    phoneInput.value = localStorage.getItem('marsabet_phone') || '';
+  }
+  if (roomInput && !roomInput.value) {
+    roomInput.value = localStorage.getItem('marsabet_last_room') || '';
+  }
+
+  modal.classList.add('active');
+};
+
+window.closeDeliveryModal = function() {
+  const modal = document.getElementById('deliveryRequestModal');
+  if (modal) modal.classList.remove('active');
+};
+
+// Écouteurs de fermeture et soumission de la modale de livraison
+document.addEventListener('DOMContentLoaded', () => {
+  const modal = document.getElementById('deliveryRequestModal');
+  const closeBtn = document.getElementById('closeDeliveryModalBtn');
+  const cancelBtn = document.getElementById('cancelDeliveryBtn');
+  const formDelivery = document.getElementById('formDeliveryRequest');
+
+  if (closeBtn) closeBtn.addEventListener('click', () => window.closeDeliveryModal());
+  if (cancelBtn) cancelBtn.addEventListener('click', () => window.closeDeliveryModal());
+  if (modal) {
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) window.closeDeliveryModal();
+    });
+  }
+
+  if (formDelivery) {
+    formDelivery.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const submitBtn = document.getElementById('confirmDeliveryBtn');
+      const source = document.getElementById('deliverySource')?.value || 'shop';
+      const productId = document.getElementById('deliveryProductId')?.value;
+      const variantName = document.getElementById('deliveryVariantName')?.value || null;
+      const orderId = document.getElementById('deliveryOrderId')?.value;
+
+      const lastName = document.getElementById('deliveryLastName')?.value.trim();
+      const firstName = document.getElementById('deliveryFirstName')?.value.trim();
+      const roomLocation = document.getElementById('deliveryRoomLocation')?.value.trim();
+      const phone = document.getElementById('deliveryPhone')?.value.trim();
+
+      if (!lastName || !firstName || !roomLocation) {
+        window.UI.showToast('Le nom, prénom et la salle sont obligatoires.', 'error');
+        return;
+      }
+
+      // Sauvegarder dans localStorage pour le confort de l'élève
+      localStorage.setItem('marsabet_last_name', lastName);
+      localStorage.setItem('marsabet_first_name', firstName);
+      localStorage.setItem('marsabet_last_room', roomLocation);
+      if (phone) localStorage.setItem('marsabet_phone', phone);
+
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Envoi en cours... ⏳';
+      }
+
+      try {
+        if (source === 'shop') {
+          const res = await window.API.orderShopProduct({
+            productId,
+            variantName,
+            lastName,
+            firstName,
+            roomLocation,
+            phone
+          });
+
+          if (window.State && res.coins !== undefined) {
+            window.State.updateCoins(res.coins);
+          }
+
+          window.closeDeliveryModal();
+          window.UI.showToast(res.message || 'Demande de livraison envoyée au BDE !', 'success', 5000);
+          if (window.sound && typeof window.sound.playWin === 'function') window.sound.playWin();
+          if (window.UI && typeof window.UI.triggerConfetti === 'function') window.UI.triggerConfetti();
+
+          loadShop();
+          loadShopMyOrders();
+          if (window.FortuneWheels && typeof window.FortuneWheels.loadMyRewards === 'function') {
+            window.FortuneWheels.loadMyRewards();
+          }
+        } else {
+          // Source 'wheel'
+          const res = await window.API.confirmWheelDelivery({
+            orderId,
+            lastName,
+            firstName,
+            roomLocation,
+            phone
+          });
+
+          window.closeDeliveryModal();
+          window.UI.showToast(res.message || 'Demande de livraison confirmée !', 'success', 5000);
+          if (window.sound && typeof window.sound.playWin === 'function') window.sound.playWin();
+
+          loadShopMyOrders();
+          if (window.FortuneWheels && typeof window.FortuneWheels.loadMyRewards === 'function') {
+            window.FortuneWheels.loadMyRewards();
+          }
+        }
+      } catch (err) {
+        console.error('Erreur confirmation livraison:', err);
+        window.UI.showToast(err.message || 'Erreur lors de la confirmation.', 'error');
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Confirmer la demande 🚀';
+        }
+      }
+    });
+  }
+});
 
 async function loadShopMyOrders() {
   const container = document.getElementById('shopMyOrdersList');
   if (!container) return;
 
   if (!window.State.isAuthenticated) {
-    container.innerHTML = '<p style="color:var(--text-muted); padding:1rem;">Connecte-toi pour voir tes codes de retrait actifs.</p>';
+    container.innerHTML = '<p style="color:var(--text-muted); padding:1rem;">Connecte-toi pour voir tes demandes de livraison actives.</p>';
     return;
   }
 
   try {
     const data = await window.API.getMyOrders();
-    const orders = data.orders || [];
+    const orders = data.orders || data.deliveries || [];
 
     if (orders.length === 0) {
-      container.innerHTML = '<p style="color:var(--text-muted); padding:1rem;">Tu n’as aucun code de retrait pour le moment.</p>';
+      container.innerHTML = '<p style="color:var(--text-muted); padding:1rem;">Tu n’as aucune demande de livraison pour le moment.</p>';
       return;
     }
 
     container.innerHTML = orders.map(o => {
-      const isCollected = o.status === 'collected';
+      const isDelivered = o.status === 'delivered';
+      const isPendingInfo = o.status === 'pending_info';
+
+      let statusBadge = '';
+      if (isDelivered) {
+        statusBadge = '<span style="color:#22C55E; font-weight:700; font-size:0.85rem;">✅ Livré</span>';
+      } else if (isPendingInfo) {
+        statusBadge = '<span style="color:#EF4444; font-weight:700; font-size:0.85rem;">⚠️ Infos manquantes</span>';
+      } else {
+        statusBadge = '<span style="color:#F59E0B; font-weight:700; font-size:0.85rem;">⏳ En cours de livraison</span>';
+      }
+
+      let emailBadge = '';
+      if (o.email_status === 'sent') {
+        emailBadge = '<span style="color:#22C55E; font-size:0.75rem;">✉️ BDE Notifié</span>';
+      } else if (o.email_status === 'not_configured') {
+        emailBadge = '<span style="color:var(--text-muted); font-size:0.75rem;">📋 Enregistré BDE</span>';
+      } else {
+        emailBadge = '<span style="color:var(--text-muted); font-size:0.75rem;">📋 En attente BDE</span>';
+      }
+
       return `
-        <div style="background:rgba(4,12,28,0.7); border:1px solid ${isCollected ? 'rgba(16,185,129,0.3)' : 'var(--gold-primary)'}; border-radius:var(--radius-md); padding:1rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+        <div style="background:rgba(4,12,28,0.7); border:1px solid ${isDelivered ? 'rgba(16,185,129,0.3)' : 'var(--gold-primary)'}; border-radius:var(--radius-md); padding:1rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
           <div style="display:flex; align-items:center; gap:0.75rem;">
             <span style="font-size:2rem;">${o.icon || '🎁'}</span>
             <div>
-              <div style="font-weight:700; color:#FFF;">${escapeHtml(o.item_name)}</div>
-              <div style="font-size:0.75rem; color:var(--text-muted);">Commandé le ${formatDate(o.created_at)}</div>
+              <div style="font-weight:700; color:#FFF;">${escapeHtml(o.item_name)} ${o.variant_name ? `<small style="color:var(--text-muted);">(${escapeHtml(o.variant_name)})</small>` : ''}</div>
+              <div style="font-size:0.8rem; color:var(--gold-light); margin-top:2px;">📍 Salle : <strong>${escapeHtml(o.room_location || 'À préciser')}</strong></div>
+              <div style="font-size:0.75rem; color:var(--text-muted); margin-top:2px;">Demandé le ${formatDate(o.created_at)}</div>
             </div>
           </div>
           <div style="text-align:right;">
-            <code style="font-family:var(--font-mono); font-size:1.15rem; font-weight:800; color:var(--gold-light); letter-spacing:1px; background:rgba(0,0,0,0.5); padding:4px 8px; border-radius:4px; border:1px solid rgba(212,175,55,0.4);">
-              ${o.claim_code}
-            </code>
-            <div style="margin-top:0.35rem;">
-              <span class="order-status ${isCollected ? 'collected' : 'pending'}">
-                ${isCollected ? '✅ Retiré au stand' : '⏳ En attente de retrait'}
-              </span>
-            </div>
+            <div>${statusBadge}</div>
+            <div style="margin-top:0.25rem;">${emailBadge}</div>
+            ${isPendingInfo ? `
+              <button class="btn btn-gold btn-complete-delivery" data-id="${o.id}" data-name="${escapeHtml(o.item_name)}" data-icon="${o.icon || '🎁'}" style="margin-top:0.4rem; padding:0.3rem 0.6rem; font-size:0.75rem;">
+                📦 Renseigner ma salle
+              </button>
+            ` : ''}
           </div>
         </div>
       `;
     }).join('');
-  } catch (e) {}
-}
 
-function showClaimTicketModal(order) {
-  const modal = document.getElementById('claimTicketModal');
-  const codeEl = document.getElementById('ticketModalCode');
-  const prodEl = document.getElementById('ticketModalProduct');
-  const coinsEl = document.getElementById('ticketModalCoins');
-
-  if (!modal) return;
-  if (codeEl) codeEl.textContent = order.claimCode;
-  if (prodEl) prodEl.textContent = `${order.icon || '🎁'} ${order.itemName}`;
-  if (coinsEl) coinsEl.textContent = `${order.coinsPaid.toLocaleString()} 🪙`;
-
-  modal.classList.add('active');
+    container.querySelectorAll('.btn-complete-delivery').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const id = e.currentTarget.dataset.id;
+        const name = e.currentTarget.dataset.name;
+        const icon = e.currentTarget.dataset.icon;
+        window.openDeliveryModal({
+          source: 'wheel',
+          orderId: id,
+          productName: name,
+          icon: icon
+        });
+      });
+    });
+  } catch (e) {
+    console.warn('Erreur chargement commandes:', e);
+  }
 }
 
 function gameLabel(type) {

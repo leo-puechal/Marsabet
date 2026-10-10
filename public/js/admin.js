@@ -1,7 +1,7 @@
 // Admin BDE Module for Marsabet
 
 const AdminBDE = {
-  activeTab: 'claims', // 'claims', 'products', 'orders'
+  activeTab: 'orders', // 'orders', 'products', 'promos'
 
   init() {
     this.bindEvents();
@@ -16,29 +16,7 @@ const AdminBDE = {
       });
     });
 
-    // Scanner / Validation de code
-    const claimInput = document.getElementById('adminClaimInput');
-    const validateBtn = document.getElementById('adminValidateClaimBtn');
-    const checkBtn = document.getElementById('adminCheckClaimBtn');
-
-    if (checkBtn) {
-      checkBtn.addEventListener('click', () => this.checkCode());
-    }
-
-    if (validateBtn) {
-      validateBtn.addEventListener('click', () => this.validateCode());
-    }
-
-    if (claimInput) {
-      claimInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          this.validateCode();
-        }
-      });
-    }
-
-    // Filtres des commandes
+    // Filtres des demandes de livraison
     const statusFilter = document.getElementById('adminOrdersStatusFilter');
     const searchFilter = document.getElementById('adminOrdersSearchInput');
 
@@ -117,109 +95,31 @@ const AdminBDE = {
       b.classList.toggle('active', b.dataset.tab === tab);
     });
 
-    const areaClaims = document.getElementById('adminTabClaims');
     const areaProducts = document.getElementById('adminTabProducts');
     const areaOrders = document.getElementById('adminTabOrders');
     const areaPromos = document.getElementById('adminTabPromos');
 
-    if (areaClaims) areaClaims.style.display = (tab === 'claims') ? 'block' : 'none';
-    if (areaProducts) areaProducts.style.display = (tab === 'products') ? 'block' : 'none';
     if (areaOrders) areaOrders.style.display = (tab === 'orders') ? 'block' : 'none';
+    if (areaProducts) areaProducts.style.display = (tab === 'products') ? 'block' : 'none';
     if (areaPromos) areaPromos.style.display = (tab === 'promos') ? 'block' : 'none';
 
-    if (tab === 'products') this.loadProducts();
     if (tab === 'orders') this.loadOrders();
+    if (tab === 'products') this.loadProducts();
     if (tab === 'promos') this.loadPromoCodes();
   },
 
-  async checkCode() {
-    const input = document.getElementById('adminClaimInput');
-    const code = input ? input.value.trim() : '';
-    if (!code) {
-      window.UI.showToast('Veuillez entrer un code de retrait.', 'error');
-      return;
-    }
-
-    const resultBox = document.getElementById('claimValidationResult');
+  async markDelivered(deliveryId) {
+    if (!deliveryId) return;
     try {
-      const data = await window.API.adminCheckCode(code);
-      const o = data.order;
-      if (resultBox) {
-        if (o.status === 'collected') {
-          resultBox.className = 'claim-validation-result warning';
-          resultBox.innerHTML = `
-            <div style="font-size:1.1rem; font-weight:bold; color:var(--lose-red); margin-bottom:0.5rem;">
-              ⚠️ ATTENTION : CE CODE A DÉJÀ ÉTÉ RETIRÉ !
-            </div>
-            <div><strong>Élève :</strong> ${escapeHtml(o.username)}</div>
-            <div><strong>Produit :</strong> ${o.icon || '🎁'} ${escapeHtml(o.item_name)}</div>
-            <div><strong>Date de retrait :</strong> ${new Date(o.collected_at).toLocaleString('fr-FR')}</div>
-            <div style="color:var(--lose-red); font-weight:bold; margin-top:0.5rem;">⛔ NE PAS DONNER LE PRODUIT (doublon).</div>
-          `;
-        } else {
-          resultBox.className = 'claim-validation-result success';
-          resultBox.innerHTML = `
-            <div style="font-size:1.1rem; font-weight:bold; color:var(--win-green); margin-bottom:0.5rem;">
-              ✅ CODE VALIDE — EN ATTENTE DE RETRAIT
-            </div>
-            <div><strong>Élève :</strong> ${escapeHtml(o.username)}</div>
-            <div><strong>Produit à donner :</strong> <span style="font-size:1.2rem;">${o.icon || '🎁'}</span> <strong>${escapeHtml(o.item_name)}</strong></div>
-            <div><strong>Coins payés :</strong> ${o.coins_paid.toLocaleString()} 🪙</div>
-            <div><strong>Commandé le :</strong> ${new Date(o.created_at).toLocaleString('fr-FR')}</div>
-          `;
-        }
+      const data = await window.API.adminMarkDelivered(deliveryId);
+      window.UI.showToast(data.message || 'Demande marquée comme livrée !', 'success', 4000);
+      if (window.sound && typeof window.sound.playWin === 'function') {
+        window.sound.playWin();
       }
+      this.loadOrders();
     } catch (err) {
-      if (resultBox) {
-        resultBox.className = 'claim-validation-result warning';
-        resultBox.innerHTML = `<div style="color:var(--lose-red); font-weight:bold;">❌ ${escapeHtml(err.message)}</div>`;
-      }
-    }
-  },
-
-  async validateCode() {
-    const input = document.getElementById('adminClaimInput');
-    const code = input ? input.value.trim() : '';
-    if (!code) {
-      window.UI.showToast('Entre un code de retrait à valider.', 'error');
-      return;
-    }
-
-    const resultBox = document.getElementById('claimValidationResult');
-
-    try {
-      const data = await window.API.adminValidateCode(code);
-      window.UI.showToast(data.message, 'success', 5000);
-      window.sound.playWin();
-      window.UI.triggerConfetti();
-
-      if (resultBox) {
-        resultBox.className = 'claim-validation-result success';
-        resultBox.innerHTML = `
-          <div style="font-size:1.2rem; font-weight:800; color:var(--win-green); margin-bottom:0.5rem;">
-            🎉 RETRAIT VALIDÉ AVEC SUCCÈS !
-          </div>
-          <div style="font-size:1rem; margin-bottom:0.25rem;">
-            Remets le produit physique à l'élève : <strong>${data.order.icon || '🎁'} ${escapeHtml(data.order.item_name)}</strong>
-          </div>
-          <div><strong>Élève :</strong> ${escapeHtml(data.order.username)}</div>
-          <div><strong>Code marqué retiré :</strong> <code>${data.order.claim_code}</code></div>
-        `;
-      }
-
-      if (input) input.value = '';
-    } catch (err) {
-      window.sound.playLose();
-      window.UI.showToast(err.message, 'error', 5000);
-      if (resultBox) {
-        resultBox.className = 'claim-validation-result warning';
-        resultBox.innerHTML = `
-          <div style="font-size:1.1rem; font-weight:bold; color:var(--lose-red); margin-bottom:0.5rem;">
-            ⛔ ERREUR VALIDATION RETRAIT
-          </div>
-          <p>${escapeHtml(err.message)}</p>
-        `;
-      }
+      console.error('Erreur marquer livré:', err);
+      window.UI.showToast(err.message || 'Erreur lors de la validation de la livraison.', 'error');
     }
   },
 
@@ -230,38 +130,93 @@ const AdminBDE = {
     const status = document.getElementById('adminOrdersStatusFilter')?.value || 'all';
     const search = document.getElementById('adminOrdersSearchInput')?.value || '';
 
-    listEl.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:1.5rem;">Chargement des commandes...</td></tr>';
+    listEl.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:1.5rem; color:var(--text-muted);">Chargement des livraisons...</td></tr>';
 
     try {
-      const data = await window.API.adminGetAllOrders(status, search);
-      const orders = data.orders || [];
+      const data = await window.API.adminGetDeliveries(status, search);
+      const deliveries = data.deliveries || data.orders || [];
 
-      if (orders.length === 0) {
-        listEl.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:1.5rem; color:var(--text-muted);">Aucune commande trouvée.</td></tr>';
+      if (deliveries.length === 0) {
+        listEl.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:1.5rem; color:var(--text-muted);">Aucune demande de livraison trouvée.</td></tr>';
         return;
       }
 
-      listEl.innerHTML = orders.map(o => {
-        const isCollected = o.status === 'collected';
+      listEl.innerHTML = deliveries.map(d => {
+        const isDelivered = d.status === 'delivered';
+        const isShop = d.source === 'shop';
+
+        // Badge Email BDE
+        let emailBadge = '';
+        if (d.email_status === 'sent') {
+          emailBadge = '<span style="color:#22C55E; font-size:0.8rem; font-weight:600; display:inline-flex; align-items:center; gap:3px;">✉️ Envoyé</span>';
+        } else if (d.email_status === 'not_configured') {
+          emailBadge = '<span style="color:var(--text-muted); font-size:0.8rem;" title="EMAIL_PASS non configuré dans .env">⚠️ Non config.</span>';
+        } else {
+          emailBadge = `<span style="color:#EF4444; font-size:0.8rem; font-weight:600;" title="${escapeHtml(d.email_error || 'Erreur d\'envoi')}">❌ Échec</span>`;
+        }
+
+        // Badge Statut
+        const statusBadge = isDelivered
+          ? '<span style="display:inline-block; padding:0.2rem 0.6rem; border-radius:999px; background:rgba(34,197,94,0.15); border:1px solid #22C55E; color:#22C55E; font-size:0.8rem; font-weight:600;">✅ Livré</span>'
+          : '<span style="display:inline-block; padding:0.2rem 0.6rem; border-radius:999px; background:rgba(245,158,11,0.15); border:1px solid #F59E0B; color:#F59E0B; font-size:0.8rem; font-weight:600;">⏳ À livrer</span>';
+
+        // Origine
+        const originBadge = isShop
+          ? '<span class="vip-badge" style="background:rgba(59,130,246,0.15); border:1px solid #3b82f6; color:#93c5fd; font-size:0.75rem;">🛍️ Boutique</span>'
+          : '<span class="vip-badge" style="background:rgba(212,175,55,0.15); border:1px solid var(--gold-primary); color:var(--gold-light); font-size:0.75rem;">🎡 Roue</span>';
+
+        // Action
+        let actionCell = '';
+        if (isDelivered) {
+          actionCell = `<span style="font-size:0.75rem; color:var(--text-muted);">Livré par ${escapeHtml(d.delivered_by_admin || 'Admin')}<br>${new Date(d.delivered_at).toLocaleDateString('fr-FR')}</span>`;
+        } else {
+          actionCell = `<button class="btn btn-gold btn-mark-delivered" data-id="${d.id}" style="padding:0.35rem 0.75rem; font-size:0.8rem; white-space:nowrap;">✔ Marquer Livré</button>`;
+        }
+
+        const dateStr = new Date(d.created_at).toLocaleString('fr-FR', {
+          day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'
+        });
+
         return `
           <tr>
-            <td><code style="font-family:var(--font-mono); font-weight:bold; color:var(--gold-light);">${o.claim_code}</code></td>
-            <td><strong>${escapeHtml(o.username)}</strong></td>
-            <td>${o.icon || '🎁'} ${escapeHtml(o.item_name)}</td>
-            <td>${o.coins_paid.toLocaleString()} 🪙</td>
+            <td style="font-size:0.82rem; color:var(--text-secondary); white-space:nowrap;">${dateStr}</td>
             <td>
-              <span class="order-status ${isCollected ? 'collected' : 'pending'}">
-                ${isCollected ? '✅ Retiré' : '⏳ En attente'}
+              <strong style="color:#FFF;">${escapeHtml(d.last_name)} ${escapeHtml(d.first_name)}</strong>
+              <br><small style="color:var(--text-muted); font-size:0.78rem;">@${escapeHtml(d.username)}</small>
+            </td>
+            <td>
+              <span style="color:var(--gold-light); font-weight:600; display:inline-flex; align-items:center; gap:4px;">
+                📍 ${escapeHtml(d.room_location)}
               </span>
             </td>
-            <td style="font-size:0.8rem; color:var(--text-muted);">
-              ${isCollected ? 'Retiré le ' + new Date(o.collected_at).toLocaleDateString('fr-FR') : 'Commandé le ' + new Date(o.created_at).toLocaleDateString('fr-FR')}
+            <td style="font-size:0.85rem;">
+              ${d.phone ? `<a href="tel:${escapeHtml(d.phone)}" style="color:var(--text-secondary); text-decoration:none;">📞 ${escapeHtml(d.phone)}</a>` : '<span style="color:var(--text-muted); font-size:0.8rem;">—</span>'}
             </td>
+            <td>
+              <strong>${d.icon || '🎁'} ${escapeHtml(d.item_name)}</strong>
+              ${d.variant_name ? `<br><small style="color:var(--text-muted); font-size:0.78rem;">${escapeHtml(d.variant_name)}</small>` : ''}
+              <span style="font-size:0.8rem; color:var(--text-secondary);"> (x${d.quantity || 1})</span>
+            </td>
+            <td>${originBadge}</td>
+            <td>${emailBadge}</td>
+            <td>${statusBadge}</td>
+            <td>${actionCell}</td>
           </tr>
         `;
       }).join('');
+
+      // Attacher les écouteurs pour "Marquer Livré"
+      listEl.querySelectorAll('.btn-mark-delivered').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const id = e.currentTarget.dataset.id;
+          if (confirm('Confirmer que cette commande a bien été livrée à l\'élève ?')) {
+            this.markDelivered(id);
+          }
+        });
+      });
     } catch (err) {
-      listEl.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--lose-red);">Erreur lors du chargement.</td></tr>';
+      console.error('Erreur chargement livraisons admin:', err);
+      listEl.innerHTML = '<tr><td colspan="9" style="text-align:center; color:var(--lose-red); padding:1.5rem;">Erreur lors du chargement des livraisons.</td></tr>';
     }
   },
 

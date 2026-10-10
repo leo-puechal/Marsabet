@@ -170,7 +170,7 @@ const Router = {
     } else if (viewName === 'free-wheel' && window.FreeWheelGame) {
       window.FreeWheelGame.fetchStatus();
     } else if (viewName === 'admin' && window.AdminBDE) {
-      window.AdminBDE.switchTab('claims');
+      window.AdminBDE.switchTab('orders');
     }
 
     // Mettre à jour l'état actif dans la barre de navigation

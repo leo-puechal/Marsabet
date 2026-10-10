@@ -1321,19 +1321,19 @@
           </div>
         </div>
 
-        <!-- Commandes et Retraits au Stand BDE -->
+        <!-- Commandes et Livraisons BDE -->
         <div class="history-card" id="profileRewardsContainer">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:0.75rem;">
             <div>
-              <h3 class="panel-title" style="margin-bottom:0.25rem; border:none; padding:0;">🎒 Mes Récompenses Stand BDE & Lots Gagnés</h3>
+              <h3 class="panel-title" style="margin-bottom:0.25rem; border:none; padding:0;">📦 Mes Demandes de Récupération (Livraisons BDE)</h3>
               <p style="color:var(--text-secondary); font-size:0.85rem; margin:0;">
-                Lots physiques remportés sur les <strong>Roues de la Fortune</strong> (gratuites & en coins) et commandes boutique avec codes de retrait.
+                Lots physiques remportés sur les <strong>Roues de la Fortune</strong> et commandes boutique livrés directement dans ta salle par le BDE.
               </p>
             </div>
             <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
               <button class="shop-filter-btn active" id="profileRewardFilterAll" data-reward-filter="all">Tous</button>
-              <button class="shop-filter-btn" id="profileRewardFilterPending" data-reward-filter="pending">⏳ À retirer au stand</button>
-              <button class="shop-filter-btn" id="profileRewardFilterCollected" data-reward-filter="collected">✅ Retirés</button>
+              <button class="shop-filter-btn" id="profileRewardFilterPending" data-reward-filter="pending">⏳ À livrer</button>
+              <button class="shop-filter-btn" id="profileRewardFilterDelivered" data-reward-filter="delivered">✅ Livrés</button>
             </div>
           </div>
           <div class="rewards-grid" id="profileOrdersList"></div>
@@ -1343,7 +1343,7 @@
         <div style="background:rgba(88,28,135,0.2); border:1px solid rgba(168,85,247,0.3); border-radius:var(--radius-md); padding:1.25rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
           <div>
             <div style="font-weight:700; color:#C084FC; font-size:1rem;">🛡️ Espace Membre du Bureau BDE</div>
-            <div style="font-size:0.85rem; color:var(--text-secondary);">Accède aux outils de validation de codes de retrait et gestion des stocks.</div>
+            <div style="font-size:0.85rem; color:var(--text-secondary);">Gère les demandes de livraison en salle et le stock des produits réels.</div>
           </div>
           <button class="btn btn-outline" id="becomeAdminBtn" style="border-color:#A855F7; color:#E9D5FF;">
             🔑 Activer Accès Admin BDE
@@ -1357,7 +1357,7 @@
       <div class="rewards-container">
         <div class="section-header" style="margin-bottom:1.5rem;">
           <div>
-            <h2 class="section-title">🎒 Mes Récompenses Stand BDE</h2>
+            <h2 class="section-title">📦 Mes Demandes de Récupération (Livraisons BDE)</h2>
             <p class="section-subtitle">
               Retrouve tous tes lots physiques remportés aux <strong>Roues de la Fortune</strong> (gratuites et en coins) ainsi que tes commandes de la boutique.
             </p>
@@ -1371,32 +1371,32 @@
         <div class="rewards-summary-bar">
           <div class="summary-metric">
             <span class="metric-val" id="rewardsPendingCount">0</span>
-            <span class="metric-lbl">Lots à retirer au stand</span>
+            <span class="metric-lbl">À livrer dans ta salle</span>
           </div>
           <div class="summary-metric">
             <span class="metric-val" id="rewardsCollectedCount">0</span>
-            <span class="metric-lbl">Lots déjà retirés</span>
+            <span class="metric-lbl">Déjà livrés par le BDE</span>
           </div>
           <div class="summary-metric">
             <span class="metric-val" id="rewardsTotalCount">0</span>
-            <span class="metric-lbl">Total des récompenses</span>
+            <span class="metric-lbl">Total des demandes</span>
           </div>
         </div>
 
         <!-- Filtres -->
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem; flex-wrap:wrap; gap:0.75rem;">
           <div class="shop-categories-nav" id="dedicatedRewardFilters" style="margin:0;">
-            <button class="shop-filter-btn active" data-reward-filter="all">Tous les Lots</button>
-            <button class="shop-filter-btn" data-reward-filter="pending">⏳ À retirer au stand</button>
-            <button class="shop-filter-btn" data-reward-filter="collected">✅ Déjà retirés</button>
+            <button class="shop-filter-btn active" data-reward-filter="all">Toutes les Demandes</button>
+            <button class="shop-filter-btn" data-reward-filter="pending">⏳ À livrer</button>
+            <button class="shop-filter-btn" data-reward-filter="delivered">✅ Livrés</button>
           </div>
           <div style="font-size:0.85rem; color:var(--text-muted);">
-            📍 Permanence BDE : Hall principal Epitech Marseille
+            📍 Service Livraison : Campus Epitech Marseille
           </div>
         </div>
 
         <div class="rewards-grid" id="dedicatedRewardsList">
-          <div style="text-align:center; padding:2rem; color:var(--text-muted); grid-column:1/-1;">Chargement de tes récompenses...</div>
+          <div style="text-align:center; padding:2rem; color:var(--text-muted); grid-column:1/-1;">Chargement de tes demandes de livraison...</div>
         </div>
       </div>
     </section>
@@ -1408,7 +1408,7 @@
           <div>
             <h2 class="section-title">🛍️ Boutique Officielle BDE Epitech Marseille</h2>
             <p class="section-subtitle">
-              Échange tes coins gagnés au casino contre de <strong>vrais produits physiques</strong> à retirer au stand du BDE !
+              Échange tes coins gagnés au casino contre de <strong>vrais produits physiques</strong> livrés directement dans ta salle !
             </p>
           </div>
         </div>
@@ -1417,11 +1417,11 @@
         <div class="shop-notice-banner">
           <div class="notice-badge-icon">🥤</div>
           <div class="notice-text">
-            <h3>Distribution Physique au Stand BDE</h3>
+            <h3>Livraison Directe en Salle par le BDE</h3>
             <p>
               ⚠️ <strong>Stock limité, disponible tant que les réserves du BDE le permettent.</strong><br>
               Les jetons sont <strong>100% gratuits</strong> et gagnés uniquement en jouant aux jeux virtuels du casino.
-              Chaque échange déduit le montant en coins et génère un <strong>code de retrait unique</strong> à présenter aux permanences du BDE pour récupérer ton produit en main propre.
+              Chaque échange déduit le montant en coins et déclenche une <strong>demande de livraison directe</strong> avec notification automatique envoyée au BDE.
             </p>
           </div>
         </div>
@@ -1439,11 +1439,13 @@
         <!-- Grille des Produits Physiques -->
         <div class="shop-grid" id="shopItemsGrid"></div>
 
-        <!-- Section "Mes Retraits Actifs" pour l'élève -->
+        <!-- Section "Mes Livraisons" pour l'élève -->
         <div class="history-card" style="margin-top:2rem;">
-          <h3 class="panel-title" style="margin-bottom:1rem;">🎟️ Mes Codes de Retrait au Stand BDE</h3>
+          <h3 class="panel-title" style="margin-bottom:1rem;">📦 Mes Demandes de Récupération Récentes</h3>
           <div class="shop-grid" id="shopMyOrdersList"></div>
         </div>
+      </div>
+    </section>
       </div>
     </section>
 
@@ -1470,35 +1472,46 @@
 
         <!-- Navigation par Onglets Admin -->
         <div class="admin-tabs-nav">
-          <button class="admin-tab-btn active" data-tab="claims">🔍 Scanner / Valider un Code</button>
-          <button class="admin-tab-btn" data-tab="products">📦 Gestion des Stocks & Produits</button>
-          <button class="admin-tab-btn" data-tab="orders">📜 Historique de Tous les Échanges</button>
+          <button class="admin-tab-btn active" data-tab="orders">📦 Demandes de Livraison Directe</button>
+          <button class="admin-tab-btn" data-tab="products">🏷️ Gestion des Stocks & Produits</button>
           <button class="admin-tab-btn" data-tab="promos">🎟️ Codes Promo BDE</button>
         </div>
 
-        <!-- Onglet 1 : Validation de Code de Retrait -->
-        <div id="adminTabClaims">
-          <div class="scanner-box">
-            <h3 style="font-family:var(--font-display); font-size:1.4rem; color:var(--gold-light); margin-bottom:0.5rem;">
-              Validation de Retrait au Stand
-            </h3>
-            <p style="color:var(--text-secondary); font-size:0.9rem; margin-bottom:1.25rem;">
-              Entre ou scanne le code unique présenté par l'élève (ex: <code>MB-A7X9-2K4P</code>) :
-            </p>
-
-            <input type="text" id="adminClaimInput" class="scanner-input" placeholder="MB-XXXX-XXXX" maxlength="14" autocomplete="off" autofocus>
-
-            <div style="display:flex; gap:1rem; justify-content:center; margin-top:0.5rem;">
-              <button class="btn btn-outline" id="adminCheckClaimBtn" style="padding:0.8rem 1.5rem;">
-                🔎 Vérifier sans valider
-              </button>
-              <button class="btn btn-gold" id="adminValidateClaimBtn" style="padding:0.8rem 1.75rem; font-size:1.05rem;">
-                ✅ Valider le Retrait & Donner le Produit
-              </button>
+        <!-- Onglet 1 : Suivi et Gestion des Livraisons Directes -->
+        <div id="adminTabOrders">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:1rem;">
+            <div>
+              <h3 style="font-family:var(--font-display); font-size:1.3rem; color:#FFF;">📦 Demandes de Livraison Directe sur le Campus</h3>
+              <p style="font-size:0.85rem; color:var(--text-muted);">Suis les demandes reçues par email et marque les produits comme livrés aux élèves.</p>
             </div>
 
-            <!-- Résultat de vérification / validation dynamique -->
-            <div id="claimValidationResult" class="claim-validation-result"></div>
+            <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+              <select id="adminOrdersStatusFilter" style="background:#0a1f44; color:#FFF; border:1px solid var(--gold-primary); border-radius:6px; padding:0.4rem 0.8rem; font-size:0.85rem;">
+                <option value="all">Toutes les demandes</option>
+                <option value="pending">⏳ À livrer (En attente)</option>
+                <option value="delivered">✅ Déjà livrées</option>
+              </select>
+              <input type="text" id="adminOrdersSearchInput" class="form-input" placeholder="Rechercher élève, salle, produit..." style="width:240px; padding:0.4rem 0.8rem; font-size:0.85rem;">
+            </div>
+          </div>
+
+          <div class="admin-table-container">
+            <table class="leader-table">
+              <thead>
+                <tr>
+                  <th>Date & Heure</th>
+                  <th>Élève (Nom & Prénom)</th>
+                  <th>Salle / Lieu</th>
+                  <th>Téléphone</th>
+                  <th>Produit & Quantité</th>
+                  <th>Origine</th>
+                  <th>Email BDE</th>
+                  <th>Statut</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="adminOrdersList"></tbody>
+            </table>
           </div>
         </div>
 
@@ -1525,41 +1538,6 @@
                 </tr>
               </thead>
               <tbody id="adminProductsList"></tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- Onglet 3 : Historique Global des Commandes -->
-        <div id="adminTabOrders" style="display:none;">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:1rem;">
-            <div>
-              <h3 style="font-family:var(--font-display); font-size:1.3rem; color:#FFF;">Suivi Anti-Fraude & Historique des Élèves</h3>
-              <p style="font-size:0.85rem; color:var(--text-muted);">Consulte l'historique complet pour vérifier les retraits et éviter les abus.</p>
-            </div>
-
-            <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
-              <select id="adminOrdersStatusFilter" style="background:#0a1f44; color:#FFF; border:1px solid var(--gold-primary); border-radius:6px; padding:0.4rem 0.8rem; font-size:0.85rem;">
-                <option value="all">Tous les statuts</option>
-                <option value="pending">⏳ En attente de retrait</option>
-                <option value="collected">✅ Déjà retirés</option>
-              </select>
-              <input type="text" id="adminOrdersSearchInput" class="form-input" placeholder="Rechercher élève ou code..." style="width:220px; padding:0.4rem 0.8rem; font-size:0.85rem;">
-            </div>
-          </div>
-
-          <div class="admin-table-container">
-            <table class="leader-table">
-              <thead>
-                <tr>
-                  <th>Code Unique</th>
-                  <th>Élève</th>
-                  <th>Produit</th>
-                  <th>Coins Déduits</th>
-                  <th>Statut</th>
-                  <th>Horodatage</th>
-                </tr>
-              </thead>
-              <tbody id="adminOrdersList"></tbody>
             </table>
           </div>
         </div>
@@ -1650,7 +1628,7 @@
         <div style="display:flex; gap:1.5rem;">
           <span>Serveur Node.js / Express</span>
           <span>Base de données SQLite Persistante</span>
-          <span>Codes de Retrait BDE Sécurisés</span>
+          <span>Livraison Directe BDE en Salle</span>
         </div>
       </div>
     </div>
@@ -1658,32 +1636,77 @@
   </div><!-- .main-content-wrapper -->
 </div><!-- .app-layout -->
 
-  <!-- Modale Ticket de Retrait (Code Unique Élève) -->
-  <div class="modal-overlay" id="claimTicketModal">
-    <div class="modal-content" style="max-width:480px;">
-      <button class="modal-close" id="closeTicketModal">&times;</button>
-      <div class="claim-ticket">
-        <div class="claim-ticket-header">🎟️ TICKET DE RETRAIT OFFICIEL BDE</div>
-        <div style="font-size:3rem; margin:0.5rem 0;">🎉</div>
-        <div class="claim-ticket-product" id="ticketModalProduct">Canette Coca-Cola</div>
-        <div style="font-size:0.85rem; color:var(--text-muted); margin-bottom:0.5rem;">
-          Payé : <strong id="ticketModalCoins" style="color:var(--gold-light);">6 000 🪙</strong>
-        </div>
-
-        <div style="font-size:0.8rem; color:var(--gold-light); text-transform:uppercase; letter-spacing:1px; margin-top:0.5rem;">
-          Ton Code Unique à présenter au Stand BDE :
-        </div>
-        <div class="claim-ticket-code" id="ticketModalCode">MB-XXXX-XXXX</div>
-
-        <div class="claim-ticket-instructions">
-          📍 Présente ce code sur ton smartphone lors des permanences au local BDE.<br>
-          ⚠️ Ce code est à usage unique et sera marqué "Retiré" dès validation par un membre du BDE.
-        </div>
-
-        <button class="btn btn-gold" style="margin-top:1.25rem; width:100%;" onclick="document.getElementById('claimTicketModal').classList.remove('active'); window.UI.switchView('shop');">
-          Compris, voir mes commandes ▶
-        </button>
+  <!-- Modale Demande de Livraison Directe BDE -->
+  <div class="modal-overlay" id="deliveryRequestModal">
+    <div class="modal-content" style="max-width:500px;">
+      <button class="modal-close" id="closeDeliveryModalBtn">&times;</button>
+      <div style="text-align:center; margin-bottom:1.25rem;">
+        <div style="font-size:2.8rem; margin-bottom:0.25rem;" id="deliveryModalIcon">📦</div>
+        <h3 id="deliveryModalTitle" style="font-family:var(--font-display); font-size:1.35rem; color:var(--gold-light); margin-bottom:0.25rem;">
+          Demande de Livraison Directe BDE
+        </h3>
+        <p style="font-size:0.85rem; color:var(--text-secondary); margin:0;" id="deliveryModalSubtitle">
+          Renseigne tes coordonnées pour que le BDE te livre directement dans ta salle !
+        </p>
       </div>
+
+      <!-- Récapitulatif Produit & Quantité -->
+      <div style="background:rgba(212,175,55,0.08); border:1px solid rgba(212,175,55,0.25); border-radius:var(--radius-md); padding:0.85rem 1rem; margin-bottom:1.25rem;">
+        <div style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.8px; color:var(--gold-primary); font-weight:700; margin-bottom:0.4rem;">
+          📋 Récapitulatif de la Récompense
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <div id="deliveryModalItemName" style="font-weight:700; font-size:1.05rem; color:#FFF;">Canette Coca-Cola</div>
+            <div id="deliveryModalItemVariant" style="font-size:0.82rem; color:var(--text-muted); display:none;">Saveur : Standard</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:0.85rem; color:var(--text-secondary);">Quantité : <strong id="deliveryModalQuantity" style="color:#FFF;">1</strong></div>
+            <div id="deliveryModalCost" style="font-size:0.85rem; color:var(--gold-light); font-weight:600;">6 000 🪙</div>
+          </div>
+        </div>
+      </div>
+
+      <form id="formDeliveryRequest">
+        <input type="hidden" id="deliverySource" value="shop">
+        <input type="hidden" id="deliveryProductId" value="">
+        <input type="hidden" id="deliveryVariantName" value="">
+        <input type="hidden" id="deliveryOrderId" value="">
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem; margin-bottom:0.75rem;">
+          <div class="form-group" style="margin:0;">
+            <label class="form-label" for="deliveryLastName">Nom <span style="color:#EF4444;">*</span></label>
+            <input type="text" id="deliveryLastName" class="form-input" placeholder="ex: Dupont" required>
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label class="form-label" for="deliveryFirstName">Prénom <span style="color:#EF4444;">*</span></label>
+            <input type="text" id="deliveryFirstName" class="form-input" placeholder="ex: Thomas" required>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom:0.75rem;">
+          <label class="form-label" for="deliveryRoomLocation">
+            Salle / Lieu où tu te trouves <span style="color:#EF4444;">*</span>
+          </label>
+          <input type="text" id="deliveryRoomLocation" class="form-input" placeholder="ex: Salle 204, Amphi A, Espace Détente..." required>
+        </div>
+
+        <div class="form-group" style="margin-bottom:1.25rem;">
+          <label class="form-label" for="deliveryPhone">
+            Numéro de téléphone <span style="color:var(--text-muted); font-weight:normal; font-size:0.8rem;">(optionnel)</span>
+          </label>
+          <input type="tel" id="deliveryPhone" class="form-input" placeholder="ex: 06 12 34 56 78">
+        </div>
+
+        <div style="display:flex; gap:0.75rem;">
+          <button type="button" class="btn btn-outline" id="cancelDeliveryBtn" style="flex:1;">
+            Annuler
+          </button>
+          <button type="submit" class="btn btn-gold" id="confirmDeliveryBtn" style="flex:1.5;">
+            Confirmer la demande 🚀
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 
@@ -1855,22 +1878,21 @@
         </p>
         <div class="physical-win-product" id="physicalWinModalName">Coca-Cola Frais (33cl)</div>
 
-        <div class="claim-code-box">
-          <div style="font-size:0.8rem; color:var(--gold-primary); text-transform:uppercase; letter-spacing:1px; margin-bottom:0.35rem;">
-            🎟️ Ton Code de Retrait Unique
+        <div style="background:rgba(212,175,55,0.1); border:1px solid rgba(212,175,55,0.3); border-radius:var(--radius-md); padding:1rem; margin:1rem 0;">
+          <div style="font-size:0.85rem; color:var(--gold-light); font-weight:700; text-transform:uppercase; letter-spacing:1px; margin-bottom:0.35rem;">
+            🚀 Livraison Directe en Salle par le BDE
           </div>
-          <div class="claim-code-text" id="physicalWinModalCode">MB-XXXX-XXXX</div>
-          <div style="font-size:0.78rem; color:var(--text-muted); margin-top:0.4rem;">
-            Usage unique • Présente ce code aux permanences du BDE
+          <div style="font-size:0.85rem; color:var(--text-secondary); line-height:1.4;">
+            Indique ta salle actuelle pour qu'un membre du BDE vienne te livrer ton lot directement en main propre !
           </div>
         </div>
 
-        <div style="display:flex; gap:0.75rem; justify-content:center; flex-wrap:wrap; margin-top:1rem;">
-          <button class="btn btn-outline" id="copyPhysicalCodeBtn" style="flex:1; min-width:140px; padding:0.75rem;">
-            📋 Copier le Code
+        <div style="display:flex; gap:0.75rem; justify-content:center; flex-wrap:wrap; margin-top:1.25rem;">
+          <button class="btn btn-outline" id="skipPhysicalDeliveryBtn" style="flex:1; min-width:140px; padding:0.75rem;">
+            Fermer
           </button>
-          <button class="btn btn-gold" id="viewMyRewardsBtn" style="flex:1; min-width:140px; padding:0.75rem;">
-            🎒 Mes Récompenses
+          <button class="btn btn-gold" id="requestPhysicalDeliveryBtn" style="flex:1.5; min-width:160px; padding:0.75rem;">
+            📦 Demander la Livraison
           </button>
         </div>
       </div>

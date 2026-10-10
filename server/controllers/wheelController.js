@@ -42,24 +42,49 @@ exports.spin = (req, res) => {
   }
 };
 
-// Récupère toutes les récompenses physiques gagnées (roues + boutique) par l'élève
+// Confirmation des informations de livraison directe pour un lot gagné à la roue
+exports.confirmDelivery = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { orderId, lastName, firstName, roomLocation, phone } = req.body;
+
+    if (!orderId) {
+      return res.status(400).json({ error: 'Identifiant du lot manquant.' });
+    }
+
+    const result = await fortuneWheelService.confirmWheelDelivery(orderId, userId, {
+      lastName,
+      firstName,
+      roomLocation,
+      phone
+    });
+
+    return res.json(result);
+  } catch (err) {
+    console.error('Erreur confirmation livraison roue:', err);
+    return res.status(400).json({ error: err.message || 'Erreur lors de la confirmation de livraison.' });
+  }
+};
+
+// Récupère toutes les demandes de livraison (roues + boutique) par l'élève
 exports.getMyRewards = (req, res) => {
   try {
     const userId = req.user.id;
 
     const rewards = db.prepare(`
-      SELECT o.id, o.claim_code, o.item_name, o.variant_name, o.coins_paid, o.status,
-             o.source, o.collected_at, o.created_at,
+      SELECT d.id, d.last_name, d.first_name, d.room_location, d.phone,
+             d.item_name, d.variant_name, d.coins_paid, d.quantity, d.status,
+             d.source, d.email_status, d.delivered_at, d.created_at,
              i.icon, i.category
-      FROM shop_orders o
-      LEFT JOIN shop_items i ON o.item_id = i.id
-      WHERE o.user_id = ?
-      ORDER BY o.created_at DESC
+      FROM delivery_orders d
+      LEFT JOIN shop_items i ON d.item_id = i.id
+      WHERE d.user_id = ?
+      ORDER BY d.created_at DESC
     `).all(userId);
 
-    return res.json({ rewards });
+    return res.json({ rewards, deliveries: rewards });
   } catch (err) {
     console.error('Erreur récupération récompenses:', err);
-    return res.status(500).json({ error: 'Impossible de charger tes récompenses.' });
+    return res.status(500).json({ error: 'Impossible de charger tes demandes de livraison.' });
   }
 };

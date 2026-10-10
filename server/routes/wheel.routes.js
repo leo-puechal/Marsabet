@@ -25,6 +25,7 @@ function optionalAuth(req, res, next) {
 
 router.get('/', optionalAuth, wheelController.listWheels);
 router.get('/my-rewards', authMiddleware, wheelController.getMyRewards);
+router.post('/confirm-delivery', authMiddleware, wheelController.confirmDelivery);
 router.get('/:id', optionalAuth, wheelController.getWheelDetails);
 router.post('/:id/spin', authMiddleware, wheelController.spin);
 

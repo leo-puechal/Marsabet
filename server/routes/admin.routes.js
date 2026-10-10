@@ -8,12 +8,10 @@ const adminMiddleware = require('../middlewares/adminMiddleware');
 router.use(authMiddleware);
 router.use(adminMiddleware);
 
-// Validation des retraits au stand
-router.get('/claims/check', adminController.checkClaimCode);
-router.post('/claims/validate', adminController.validateClaimCode);
-
-// Historique de tous les échanges
-router.get('/orders', adminController.getAllOrders);
+// Demandes de livraison directe au BDE
+router.get('/deliveries', adminController.getAllDeliveries);
+router.patch('/deliveries/:id/deliver', adminController.markDelivered);
+router.get('/orders', adminController.getAllDeliveries);
 
 // Gestion du catalogue et stocks
 router.get('/products', adminController.getProductsAdmin);

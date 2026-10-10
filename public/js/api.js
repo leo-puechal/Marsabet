@@ -86,10 +86,17 @@ const API = {
     return this.request('/user/shop');
   },
 
-  async orderShopProduct(productId, variantName = null) {
+  async orderShopProduct(data) {
     return this.request('/user/shop/order', {
       method: 'POST',
-      body: JSON.stringify({ productId, variantName })
+      body: JSON.stringify(data)
+    });
+  },
+
+  async confirmWheelDelivery(data) {
+    return this.request('/wheels/confirm-delivery', {
+      method: 'POST',
+      body: JSON.stringify(data)
     });
   },
 
@@ -123,22 +130,21 @@ const API = {
     });
   },
 
-  // Admin BDE Endpoints
-  async adminCheckCode(code) {
-    return this.request(`/admin/claims/check?code=${encodeURIComponent(code)}`);
+  // Admin BDE Endpoints pour le suivi des livraisons
+  async adminGetDeliveries(status = 'all', search = '') {
+    let url = `/admin/deliveries?status=${encodeURIComponent(status)}`;
+    if (search) url += `&search=${encodeURIComponent(search)}`;
+    return this.request(url);
   },
 
-  async adminValidateCode(code) {
-    return this.request('/admin/claims/validate', {
-      method: 'POST',
-      body: JSON.stringify({ code })
+  async adminMarkDelivered(deliveryId) {
+    return this.request(`/admin/deliveries/${encodeURIComponent(deliveryId)}/deliver`, {
+      method: 'PATCH'
     });
   },
 
   async adminGetAllOrders(status = 'all', search = '') {
-    let url = `/admin/orders?status=${encodeURIComponent(status)}`;
-    if (search) url += `&search=${encodeURIComponent(search)}`;
-    return this.request(url);
+    return this.adminGetDeliveries(status, search);
   },
 
   async adminGetProducts() {

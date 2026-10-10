@@ -1,133 +1,99 @@
 const db = require('../database/db');
 
-// Pré-visualisation ou scan d'un code de retrait
-exports.checkClaimCode = (req, res) => {
-  try {
-    let { code } = req.query;
-    if (!code) {
-      return res.status(400).json({ error: 'Code de retrait requis.' });
-    }
-
-    const cleanCode = code.trim().toUpperCase();
-    const order = db.prepare(`
-      SELECT o.id, o.claim_code, o.item_name, o.coins_paid, o.status, o.created_at, o.collected_at,
-             u.username, u.id as user_id, i.icon, i.category
-      FROM shop_orders o
-      JOIN users u ON o.user_id = u.id
-      LEFT JOIN shop_items i ON o.item_id = i.id
-      WHERE o.claim_code = ?
-    `).get(cleanCode);
-
-    if (!order) {
-      return res.status(404).json({ error: 'Code de retrait introuvable ou inexistant.' });
-    }
-
-    return res.json({ order });
-  } catch (err) {
-    console.error('Erreur vérification code:', err);
-    return res.status(500).json({ error: 'Erreur lors de la vérification du code.' });
-  }
-};
-
-// Validation définitive d'un retrait (marquer "retiré" en 1 clic)
-exports.validateClaimCode = (req, res) => {
-  try {
-    const adminId = req.user.id;
-    let { code } = req.body;
-
-    if (!code) {
-      return res.status(400).json({ error: 'Code de retrait manquant.' });
-    }
-
-    const cleanCode = code.trim().toUpperCase();
-
-    const order = db.prepare(`
-      SELECT o.id, o.claim_code, o.item_name, o.coins_paid, o.status, o.created_at, o.collected_at,
-             u.username, i.icon
-      FROM shop_orders o
-      JOIN users u ON o.user_id = u.id
-      LEFT JOIN shop_items i ON o.item_id = i.id
-      WHERE o.claim_code = ?
-    `).get(cleanCode);
-
-    if (!order) {
-      return res.status(404).json({ error: 'Code de retrait inconnu. Vérifie la saisie.' });
-    }
-
-    if (order.status === 'collected') {
-      const dateFormatted = new Date(order.collected_at).toLocaleString('fr-FR');
-      return res.status(409).json({
-        error: `ATTENTION : Ce code a DÉJÀ ÉTÉ RETIRÉ le ${dateFormatted} pour l'élève ${order.username} ! Ne pas donner le produit une seconde fois.`,
-        alreadyCollected: true,
-        order
-      });
-    }
-
-    if (order.status !== 'pending') {
-      return res.status(400).json({ error: `Cette commande ne peut pas être retirée (statut actuel : ${order.status}).` });
-    }
-
-    // Valider le retrait
-    db.prepare(`
-      UPDATE shop_orders
-      SET status = 'collected',
-          collected_at = CURRENT_TIMESTAMP,
-          collected_by = ?
-      WHERE claim_code = ? AND status = 'pending'
-    `).run(adminId, cleanCode);
-
-    const updatedOrder = db.prepare(`
-      SELECT o.*, u.username, i.icon
-      FROM shop_orders o
-      JOIN users u ON o.user_id = u.id
-      LEFT JOIN shop_items i ON o.item_id = i.id
-      WHERE o.claim_code = ?
-    `).get(cleanCode);
-
-    return res.json({
-      message: `Retrait VALIDÉ avec succès pour ${order.username} ! Tu peux lui remettre son produit : ${order.item_name}.`,
-      order: updatedOrder
-    });
-  } catch (err) {
-    console.error('Erreur validation retrait:', err);
-    return res.status(500).json({ error: 'Erreur interne lors de la validation.' });
-  }
-};
-
-// Récupérer la liste complète des commandes de tous les élèves
-exports.getAllOrders = (req, res) => {
+// Récupérer toutes les demandes de livraison directe pour le suivi BDE
+exports.getAllDeliveries = (req, res) => {
   try {
     const { status, search } = req.query;
 
     let query = `
-      SELECT o.id, o.claim_code, o.item_name, o.coins_paid, o.status, o.created_at, o.collected_at,
-             u.username, u.id as user_id, i.icon, admin.username as collected_by_admin
-      FROM shop_orders o
-      JOIN users u ON o.user_id = u.id
-      LEFT JOIN shop_items i ON o.item_id = i.id
-      LEFT JOIN users admin ON o.collected_by = admin.id
+      SELECT d.id, d.last_name, d.first_name, d.room_location, d.phone,
+             d.item_id, d.item_name, d.variant_name, d.quantity, d.coins_paid,
+             d.source, d.status, d.email_status, d.email_error, d.delivered_at, d.created_at,
+             u.username, u.id as user_id, i.icon, admin.username as delivered_by_admin
+      FROM delivery_orders d
+      JOIN users u ON d.user_id = u.id
+      LEFT JOIN shop_items i ON d.item_id = i.id
+      LEFT JOIN users admin ON d.delivered_by = admin.id
       WHERE 1=1
     `;
     const params = [];
 
     if (status && status !== 'all') {
-      query += ' AND o.status = ?';
+      query += ' AND d.status = ?';
       params.push(status);
     }
 
     if (search && search.trim()) {
-      query += ' AND (u.username LIKE ? OR o.claim_code LIKE ? OR o.item_name LIKE ?)';
+      query += ' AND (u.username LIKE ? OR d.last_name LIKE ? OR d.first_name LIKE ? OR d.room_location LIKE ? OR d.item_name LIKE ?)';
       const term = `%${search.trim()}%`;
-      params.push(term, term, term);
+      params.push(term, term, term, term, term);
     }
 
-    query += ' ORDER BY o.created_at DESC LIMIT 100';
+    query += ' ORDER BY d.created_at DESC LIMIT 150';
 
-    const orders = db.prepare(query).all(...params);
-    return res.json({ orders });
+    const deliveries = db.prepare(query).all(...params);
+    return res.json({ deliveries, orders: deliveries });
   } catch (err) {
-    console.error('Erreur récupération commandes admin:', err);
-    return res.status(500).json({ error: 'Impossible de récupérer la liste des commandes.' });
+    console.error('Erreur récupération livraisons admin:', err);
+    return res.status(500).json({ error: 'Impossible de récupérer la liste des livraisons.' });
+  }
+};
+
+// Alias de rétrocompatibilité pour les requêtes existantes
+exports.getAllOrders = exports.getAllDeliveries;
+
+// Marquer une livraison comme effectuée ("Livré")
+exports.markDelivered = (req, res) => {
+  try {
+    const adminId = req.user.id;
+    const deliveryId = req.params.id || req.body.id;
+
+    if (!deliveryId) {
+      return res.status(400).json({ error: 'Identifiant de livraison manquant.' });
+    }
+
+    const delivery = db.prepare(`
+      SELECT d.*, u.username
+      FROM delivery_orders d
+      JOIN users u ON d.user_id = u.id
+      WHERE d.id = ?
+    `).get(deliveryId);
+
+    if (!delivery) {
+      return res.status(404).json({ error: 'Demande de livraison introuvable.' });
+    }
+
+    if (delivery.status === 'delivered') {
+      return res.status(409).json({
+        error: `Cette commande a déjà été marquée comme livrée le ${new Date(delivery.delivered_at).toLocaleString('fr-FR')}.`,
+        delivery
+      });
+    }
+
+    db.prepare(`
+      UPDATE delivery_orders
+      SET status = 'delivered',
+          delivered_at = CURRENT_TIMESTAMP,
+          delivered_by = ?
+      WHERE id = ?
+    `).run(adminId, deliveryId);
+
+    const updated = db.prepare(`
+      SELECT d.*, u.username, admin.username as delivered_by_admin
+      FROM delivery_orders d
+      JOIN users u ON d.user_id = u.id
+      LEFT JOIN users admin ON d.delivered_by = admin.id
+      WHERE d.id = ?
+    `).get(deliveryId);
+
+    return res.json({
+      success: true,
+      message: `Commande #${deliveryId} marquée comme livrée à ${delivery.first_name} ${delivery.last_name} (${delivery.room_location}) !`,
+      delivery: updated
+    });
+  } catch (err) {
+    console.error('Erreur validation livraison admin:', err);
+    return res.status(500).json({ error: 'Erreur lors de la validation de la livraison.' });
   }
 };
 

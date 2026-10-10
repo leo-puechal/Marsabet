@@ -1,17 +1,5 @@
-const crypto = require('crypto');
 const db = require('../database/db');
-
-// Génère un code unique de retrait lisible du type MB-7X9P-4K2Z
-function generateClaimCode() {
-  const chars = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ'; // Exclut 0, 1, O, I pour éviter toute confusion visuelle
-  let part1 = '';
-  let part2 = '';
-  for (let i = 0; i < 4; i++) {
-    part1 += chars[crypto.randomInt(0, chars.length)];
-    part2 += chars[crypto.randomInt(0, chars.length)];
-  }
-  return `MB-${part1}-${part2}`;
-}
+const emailService = require('../services/emailService');
 
 exports.getProducts = (req, res) => {
   try {
@@ -37,14 +25,39 @@ exports.getProducts = (req, res) => {
   }
 };
 
-exports.orderProduct = (req, res) => {
+// Demande d'échange avec livraison directe
+exports.orderProduct = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { productId, variantId, variantName } = req.body;
+    const {
+      productId,
+      variantId,
+      variantName,
+      lastName,
+      firstName,
+      roomLocation,
+      phone
+    } = req.body;
 
     if (!productId) {
       return res.status(400).json({ error: 'Identifiant du produit manquant.' });
     }
+
+    // Validation stricte des informations de livraison
+    if (!lastName || typeof lastName !== 'string' || lastName.trim().length < 2) {
+      return res.status(400).json({ error: 'Le nom de famille est obligatoire pour la livraison (2 caractères minimum).' });
+    }
+    if (!firstName || typeof firstName !== 'string' || firstName.trim().length < 2) {
+      return res.status(400).json({ error: 'Le prénom est obligatoire pour la livraison (2 caractères minimum).' });
+    }
+    if (!roomLocation || typeof roomLocation !== 'string' || roomLocation.trim().length < 2) {
+      return res.status(400).json({ error: 'La salle ou le lieu où tu te trouves est obligatoire pour la livraison directe.' });
+    }
+
+    const cleanLastName = lastName.trim();
+    const cleanFirstName = firstName.trim();
+    const cleanRoomLocation = roomLocation.trim();
+    const cleanPhone = (phone && typeof phone === 'string') ? phone.trim() : null;
 
     const item = db.prepare('SELECT * FROM shop_items WHERE id = ? AND is_active = 1').get(productId);
     if (!item) {
@@ -81,17 +94,11 @@ exports.orderProduct = (req, res) => {
     const user = db.prepare('SELECT coins, username FROM users WHERE id = ?').get(userId);
     if (!user || user.coins < finalPrice) {
       return res.status(400).json({
-        error: `Solde insuffisant ! Il te manque ${(finalPrice - (user ? user.coins : 0)).toLocaleString()} jetons pour récupérer ce produit.`
+        error: `Solde insuffisant ! Il te manque ${(finalPrice - (user ? user.coins : 0)).toLocaleString()} jetons pour cet échange.`
       });
     }
 
-    // Générer un code de retrait unique garanti
-    let claimCode = generateClaimCode();
-    while (db.prepare('SELECT id FROM shop_orders WHERE claim_code = ?').get(claimCode)) {
-      claimCode = generateClaimCode();
-    }
-
-    // Exécution transactionnelle sécurisée
+    // Exécution transactionnelle sécurisée : déduction coins, décrémentation stock, insertion livraison
     const executeOrder = db.transaction(() => {
       // 1. Décrémenter le stock avec vérification atomique
       const updateStock = db.prepare('UPDATE shop_items SET stock = stock - 1 WHERE id = ? AND stock > 0').run(item.id);
@@ -105,19 +112,33 @@ exports.orderProduct = (req, res) => {
         throw new Error('Solde insuffisant.');
       }
 
-      // 3. Créer la commande avec le code de retrait et la variante
-      const orderInsert = db.prepare(`
-        INSERT INTO shop_orders (claim_code, user_id, item_id, item_name, variant_name, coins_paid, status)
-        VALUES (?, ?, ?, ?, ?, ?, 'pending')
-      `).run(claimCode, userId, item.id, orderItemName, selectedVariantName, finalPrice);
+      // 3. Enregistrer la demande de livraison directe
+      const deliveryInsert = db.prepare(`
+        INSERT INTO delivery_orders (
+          user_id, last_name, first_name, room_location, phone,
+          item_id, item_name, variant_name, quantity, coins_paid,
+          source, status, email_status
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, 'shop', 'pending', 'pending')
+      `).run(
+        userId,
+        cleanLastName,
+        cleanFirstName,
+        cleanRoomLocation,
+        cleanPhone,
+        item.id,
+        item.name,
+        selectedVariantName,
+        finalPrice
+      );
 
-      // 4. Enregistrer dans l'historique
+      // 4. Enregistrer dans l'historique de jeu / transaction
       db.prepare(`
         INSERT INTO game_history (user_id, game_type, bet, payout, profit, details)
         VALUES (?, 'bde_reward', ?, 0, ?, ?)
       `).run(userId, finalPrice, -finalPrice, JSON.stringify({
-        claimCode,
+        deliveryId: deliveryInsert.lastInsertRowid,
         itemName: orderItemName,
+        roomLocation: cleanRoomLocation,
         icon: item.icon
       }));
 
@@ -125,7 +146,7 @@ exports.orderProduct = (req, res) => {
       const updatedUser = db.prepare('SELECT coins FROM users WHERE id = ?').get(userId);
 
       return {
-        orderId: orderInsert.lastInsertRowid,
+        deliveryId: deliveryInsert.lastInsertRowid,
         newCoins: updatedUser.coins,
         remainingStock
       };
@@ -133,43 +154,95 @@ exports.orderProduct = (req, res) => {
 
     const result = executeOrder();
 
+    // Objet récapitulatif pour email et réponse
+    const deliveryPayload = {
+      id: result.deliveryId,
+      user_id: userId,
+      username: user.username,
+      first_name: cleanFirstName,
+      last_name: cleanLastName,
+      room_location: cleanRoomLocation,
+      phone: cleanPhone,
+      item_name: item.name,
+      variant_name: selectedVariantName,
+      quantity: 1,
+      coins_paid: finalPrice,
+      source: 'shop',
+      created_at: new Date().toISOString()
+    };
+
+    // Envoi asynchrone de l'email au BDE (ne bloque pas si échec ou si identifiants absents)
+    let emailResult = { success: false, status: 'failed' };
+    try {
+      emailResult = await emailService.sendDeliveryNotification(deliveryPayload);
+      db.prepare(`
+        UPDATE delivery_orders
+        SET email_status = ?, email_error = ?
+        WHERE id = ?
+      `).run(
+        emailResult.status || (emailResult.success ? 'sent' : 'failed'),
+        emailResult.error || null,
+        result.deliveryId
+      );
+    } catch (mailErr) {
+      console.error('Erreur non bloquante emailService:', mailErr);
+      db.prepare(`
+        UPDATE delivery_orders
+        SET email_status = 'failed', email_error = ?
+        WHERE id = ?
+      `).run(mailErr.message, result.deliveryId);
+    }
+
     return res.status(201).json({
-      message: `Commande validée ! Présente ton code au stand BDE pour récupérer : ${orderItemName}.`,
-      claimCode,
+      success: true,
+      message: `Demande de livraison confirmée ! Un membre du BDE t'apportera ton produit (${orderItemName}) directement en salle ${cleanRoomLocation}.`,
       coins: result.newCoins,
-      order: {
-        id: result.orderId,
-        claimCode,
+      delivery: {
+        id: result.deliveryId,
         itemName: orderItemName,
+        variantName: selectedVariantName,
         icon: item.icon,
+        quantity: 1,
         coinsPaid: finalPrice,
+        roomLocation: cleanRoomLocation,
+        lastName: cleanLastName,
+        firstName: cleanFirstName,
+        phone: cleanPhone,
         status: 'pending',
-        created_at: new Date().toISOString()
+        emailStatus: emailResult.status || 'pending',
+        createdAt: new Date().toISOString()
       },
+      emailSent: emailResult.success,
       remainingStock: result.remainingStock
     });
   } catch (err) {
     console.error('Erreur commande boutique:', err);
-    return res.status(400).json({ error: err.message || 'Échec de la commande.' });
+    return res.status(400).json({ error: err.message || 'Échec de la commande de livraison.' });
   }
 };
 
+// Récupère l'historique des demandes de livraison de l'élève
 exports.getMyOrders = (req, res) => {
   try {
     const userId = req.user.id;
 
-    const orders = db.prepare(`
-      SELECT o.id, o.claim_code, o.item_id, o.item_name, o.coins_paid, o.status, o.collected_at, o.created_at,
+    const deliveries = db.prepare(`
+      SELECT d.id, d.last_name, d.first_name, d.room_location, d.phone,
+             d.item_id, d.item_name, d.variant_name, d.quantity, d.coins_paid,
+             d.source, d.status, d.email_status, d.delivered_at, d.created_at,
              i.icon, i.category
-      FROM shop_orders o
-      LEFT JOIN shop_items i ON o.item_id = i.id
-      WHERE o.user_id = ?
-      ORDER BY o.created_at DESC
+      FROM delivery_orders d
+      LEFT JOIN shop_items i ON d.item_id = i.id
+      WHERE d.user_id = ?
+      ORDER BY d.created_at DESC
     `).all(userId);
 
-    return res.json({ orders });
+    return res.json({
+      orders: deliveries,
+      deliveries
+    });
   } catch (err) {
-    console.error('Erreur mes commandes:', err);
-    return res.status(500).json({ error: 'Impossible de récupérer tes commandes.' });
+    console.error('Erreur mes livraisons:', err);
+    return res.status(500).json({ error: 'Impossible de récupérer tes demandes de livraison.' });
   }
 };
