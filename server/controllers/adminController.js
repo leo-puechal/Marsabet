@@ -216,3 +216,64 @@ exports.deleteProduct = (req, res) => {
     return res.status(500).json({ error: 'Erreur lors de la suppression.' });
   }
 };
+
+// ======================== CODES PROMO ADMIN ========================
+const promoCodeService = require('../services/promoCodeService');
+
+exports.getPromoCodes = (req, res) => {
+  try {
+    const codes = promoCodeService.listPromoCodes();
+    return res.json({ codes });
+  } catch (err) {
+    console.error('Erreur getPromoCodes:', err);
+    return res.status(500).json({ error: 'Erreur lors de la récupération des codes promo.' });
+  }
+};
+
+exports.createPromoCode = (req, res) => {
+  try {
+    const { code, coinsAmount, maxUses, expiresAt } = req.body;
+    const createdBy = req.user.id;
+
+    const newCode = promoCodeService.createPromoCode({
+      code,
+      coinsAmount,
+      maxUses,
+      expiresAt,
+      createdBy
+    });
+
+    return res.status(201).json({
+      message: `Code promo "${newCode.code}" créé avec succès !`,
+      code: newCode
+    });
+  } catch (err) {
+    return res.status(400).json({ error: err.message || 'Erreur lors de la création du code promo.' });
+  }
+};
+
+exports.togglePromoCode = (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = promoCodeService.togglePromoCode(id);
+    return res.json({
+      message: `Code promo "${result.code}" ${result.isActive ? 'activé' : 'désactivé'}.`,
+      result
+    });
+  } catch (err) {
+    return res.status(400).json({ error: err.message || 'Erreur lors de la mise à jour du code promo.' });
+  }
+};
+
+exports.deletePromoCode = (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = promoCodeService.deletePromoCode(id);
+    return res.json({
+      message: `Code promo "${result.code}" supprimé définitivement.`,
+      result
+    });
+  } catch (err) {
+    return res.status(400).json({ error: err.message || 'Erreur lors de la suppression du code promo.' });
+  }
+};

@@ -210,7 +210,7 @@
                   <div style="font-family:var(--font-display); font-size:2.2rem; font-weight:800; color:var(--gold-light); margin:0.25rem 0;">
                     <span id="landingCoinsDisplay">1 000</span> <span style="font-size:1.4rem;">🪙</span>
                   </div>
-                  <div style="font-size:0.82rem; color:var(--gold-primary);" id="landingEquivalentDisplay">Taux BDE : 1 000 coins = 1,00 €</div>
+                  <div style="font-size:0.82rem; color:var(--gold-primary);" id="landingEquivalentDisplay">🪙 Monnaie virtuelle 100% gratuite</div>
                 </div>
                 <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.85rem; color:var(--text-secondary); margin-bottom:0.5rem;">
                   <span>Statut VIP actuel :</span>
@@ -304,7 +304,7 @@
                   Échange tes jetons contre des boissons fraîches, confiseries, paquets de chips et hot-dogs à retirer au stand BDE avec ton code unique.
                 </p>
                 <div style="background:rgba(56,189,248,0.1); border:1px solid rgba(56,189,248,0.3); border-radius:var(--radius-sm); padding:0.75rem; text-align:center; margin-bottom:1rem; font-size:0.85rem; color:#BAE6FD;">
-                  Taux de conversion : 1 coin = 0,1 ct (1 000 coins = 1,00 €)
+                  Récompenses réelles offertes par le BDE
                 </div>
               </div>
               <button class="btn btn-outline" onclick="window.Router ? window.Router.navigate('/boutique') : window.UI.switchView('shop')" style="border-color:#38BDF8; color:#38BDF8; width:100%;">
@@ -1040,11 +1040,21 @@
                 <button class="risk-btn" data-risk="high">Risque Élevé</button>
               </div>
             </div>
+
+            <!-- Détail par bille après le lâcher -->
+            <div id="plinkoBreakdownBox" class="plinko-breakdown-box" style="display: none;">
+              <div class="breakdown-header">
+                <span class="breakdown-title">📊 Résultat détaillé par bille :</span>
+                <span id="plinkoSummaryBadge" class="breakdown-badge"></span>
+              </div>
+              <div id="plinkoBallList" class="plinko-ball-list"></div>
+            </div>
           </div>
 
           <div class="bet-panel">
             <h3 class="panel-title">Mise Plinko</h3>
 
+            <label class="panel-sublabel" style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.25rem;">Mise par bille :</label>
             <div class="bet-input-box">
               <input type="number" id="plinkoBetInput" class="bet-input" value="25" min="10" step="5">
             </div>
@@ -1062,8 +1072,37 @@
               <button class="btn-mult" data-action="max">MAX</button>
             </div>
 
-            <button class="btn btn-gold" id="plinkoDropBtn" style="padding: 1rem; font-size: 1.15rem; margin-top: auto;">
-              💧 LÂCHER LA BILLE
+            <!-- Choix du nombre de billes (1 à 10) -->
+            <label class="panel-sublabel" style="font-size: 0.85rem; color: var(--gold-primary); font-weight: 600; margin-top: 1rem; margin-bottom: 0.4rem; display: block;">
+              Nombre de billes à lâcher :
+            </label>
+            <div class="plinko-ball-selector" id="plinkoBallSelector">
+              <button class="ball-count-btn active" data-count="1">1</button>
+              <button class="ball-count-btn" data-count="2">2</button>
+              <button class="ball-count-btn" data-count="3">3</button>
+              <button class="ball-count-btn" data-count="5">5</button>
+              <button class="ball-count-btn" data-count="8">8</button>
+              <button class="ball-count-btn" data-count="10">10</button>
+            </div>
+
+            <!-- Récapitulatif du coût total -->
+            <div class="plinko-cost-summary" id="plinkoCostSummary">
+              <div class="cost-line">
+                <span>Coût unitaire :</span>
+                <span id="plinkoUnitCostLabel">25 coins</span>
+              </div>
+              <div class="cost-line">
+                <span>Billes :</span>
+                <span id="plinkoCountLabel">1 bille</span>
+              </div>
+              <div class="cost-line total">
+                <span>Coût total :</span>
+                <span id="plinkoTotalCostLabel" class="cost-total-value">25 coins</span>
+              </div>
+            </div>
+
+            <button class="btn btn-gold" id="plinkoDropBtn" style="padding: 1rem; font-size: 1.1rem; margin-top: auto; font-weight: 800;">
+              💧 LÂCHER 1 BILLE (25 coins)
             </button>
           </div>
         </div>
@@ -1253,6 +1292,35 @@
           </table>
         </div>
 
+        <!-- Section Codes Promo BDE -->
+        <div class="history-card" id="profilePromoCard" style="border: 1.5px solid rgba(212,175,55,0.35);">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:0.5rem;">
+            <div>
+              <h3 class="panel-title" style="margin-bottom:0.25rem; border:none; padding:0;">🎟️ Activer un Code Promo BDE</h3>
+              <p style="color:var(--text-secondary); font-size:0.85rem; margin:0;">
+                Tu as reçu un code événementiel du BDE (ex: RENTREE2026) ? Entre-le pour recevoir tes coins immédiatement !
+              </p>
+            </div>
+            <span style="font-size:0.75rem; background:rgba(212,175,55,0.15); color:var(--gold-light); border:1px solid var(--gold-primary); padding:3px 8px; border-radius:4px; font-weight:700;">
+              🎁 COINS GRATUITS
+            </span>
+          </div>
+
+          <form id="formRedeemPromo" style="display:flex; gap:0.75rem; flex-wrap:wrap; align-items:center;">
+            <input type="text" id="inputPromoCode" class="form-input" placeholder="ENTRE TON CODE ICI..." style="flex:1; min-width:200px; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; font-family:var(--font-mono); padding:0.75rem 1rem;" required maxlength="24">
+            <button type="submit" class="btn btn-gold" id="btnRedeemPromo" style="padding:0.75rem 1.75rem; white-space:nowrap;">
+              ✨ Activer le Code ▶
+            </button>
+          </form>
+
+          <div id="promoRedeemMessage" style="display:none; margin-top:0.75rem; padding:0.75rem; border-radius:var(--radius-sm); font-size:0.9rem;"></div>
+
+          <div id="myRedeemedCodesBox" style="margin-top:1.25rem; border-top:1px solid rgba(255,255,255,0.06); padding-top:0.75rem;">
+            <div style="font-size:0.8rem; color:var(--text-muted); text-transform:uppercase; margin-bottom:0.5rem;">Mes codes déjà activés :</div>
+            <div id="myRedeemedCodesList" style="display:flex; flex-wrap:wrap; gap:0.5rem;"></div>
+          </div>
+        </div>
+
         <!-- Commandes et Retraits au Stand BDE -->
         <div class="history-card" id="profileRewardsContainer">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:0.75rem;">
@@ -1349,11 +1417,11 @@
         <div class="shop-notice-banner">
           <div class="notice-badge-icon">🥤</div>
           <div class="notice-text">
-            <h3>Distribution Physique au Stand BDE • Taux de conversion : 1 000 coins = 1,00 €</h3>
+            <h3>Distribution Physique au Stand BDE</h3>
             <p>
               ⚠️ <strong>Stock limité, disponible tant que les réserves du BDE le permettent.</strong><br>
-              Les jetons sont <strong>100% gratuits</strong> et gagnés uniquement en jouant aux jeux virtuels du casino. Taux de conversion fixe : <strong>1 coin = 0,1 centime</strong> (1 000 coins = 1,00 €).
-              Chaque échange déduit le montant et génère un <strong>code de retrait unique</strong> à présenter aux permanences du BDE pour récupérer ton produit en main propre.
+              Les jetons sont <strong>100% gratuits</strong> et gagnés uniquement en jouant aux jeux virtuels du casino.
+              Chaque échange déduit le montant en coins et génère un <strong>code de retrait unique</strong> à présenter aux permanences du BDE pour récupérer ton produit en main propre.
             </p>
           </div>
         </div>
@@ -1405,6 +1473,7 @@
           <button class="admin-tab-btn active" data-tab="claims">🔍 Scanner / Valider un Code</button>
           <button class="admin-tab-btn" data-tab="products">📦 Gestion des Stocks & Produits</button>
           <button class="admin-tab-btn" data-tab="orders">📜 Historique de Tous les Échanges</button>
+          <button class="admin-tab-btn" data-tab="promos">🎟️ Codes Promo BDE</button>
         </div>
 
         <!-- Onglet 1 : Validation de Code de Retrait -->
@@ -1491,6 +1560,59 @@
                 </tr>
               </thead>
               <tbody id="adminOrdersList"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Onglet 4 : Gestion des Codes Promo BDE -->
+        <div id="adminTabPromos" style="display:none;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem; flex-wrap:wrap; gap:1rem;">
+            <div>
+              <h3 style="font-family:var(--font-display); font-size:1.3rem; color:var(--gold-light); margin-bottom:0.25rem;">
+                🎟️ Codes Promo & Rédemption de Coins
+              </h3>
+              <p style="color:var(--text-secondary); font-size:0.85rem; margin:0;">
+                Crée des codes cadeaux (ex: <code>RENTREE2026</code>) avec montant fixe de coins et limite globale d'utilisations.
+              </p>
+            </div>
+            <button class="btn btn-gold" id="adminOpenCreatePromoBtn" style="padding:0.6rem 1.25rem;">
+              ➕ Nouveau Code Promo
+            </button>
+          </div>
+
+          <!-- Métriques rapides des codes promo -->
+          <div class="rewards-summary-bar" style="margin-bottom:1.5rem;">
+            <div class="summary-metric">
+              <span class="metric-val" id="adminPromoCount">0</span>
+              <span class="metric-lbl">Codes créés</span>
+            </div>
+            <div class="summary-metric">
+              <span class="metric-val" id="adminPromoActiveCount">0</span>
+              <span class="metric-lbl">Codes actifs</span>
+            </div>
+            <div class="summary-metric">
+              <span class="metric-val" id="adminPromoUsesCount">0</span>
+              <span class="metric-lbl">Utilisations totales</span>
+            </div>
+            <div class="summary-metric">
+              <span class="metric-val" id="adminPromoCoinsCount">0 🪙</span>
+              <span class="metric-lbl">Coins distribués</span>
+            </div>
+          </div>
+
+          <div class="admin-table-container">
+            <table class="leader-table">
+              <thead>
+                <tr>
+                  <th>Code Promo</th>
+                  <th>Montant Coins</th>
+                  <th>Utilisations / Limite</th>
+                  <th>Date d'expiration</th>
+                  <th>Statut</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="adminPromosList"></tbody>
             </table>
           </div>
         </div>
@@ -1614,6 +1736,43 @@
 
         <button type="submit" class="btn btn-gold" style="width:100%; padding:0.8rem; margin-top:0.5rem;">
           💾 Enregistrer le Produit
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modale Admin : Création Code Promo BDE -->
+  <div class="modal-overlay" id="adminPromoModal">
+    <div class="modal-content" style="max-width:480px;">
+      <button class="modal-close" id="closeAdminPromoModal">&times;</button>
+      <h3 style="font-family:var(--font-display); font-size:1.3rem; color:var(--gold-light); margin-bottom:1.25rem;">
+        🎟️ Créer un Code Promo BDE
+      </h3>
+      <form id="formAdminPromo">
+        <div class="form-group">
+          <label class="form-label" for="promoInputCode">Code Alphanumérique</label>
+          <div style="display:flex; gap:0.5rem;">
+            <input type="text" id="promoInputCode" class="form-input" placeholder="ex: RENTREE2026" maxlength="24" required style="text-transform:uppercase; font-weight:700; font-family:var(--font-mono);">
+            <button type="button" class="btn btn-outline" id="btnGeneratePromoCode" style="padding:0.4rem 0.8rem; font-size:0.8rem; white-space:nowrap;">
+              🎲 Générer
+            </button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="promoInputCoins">Montant de Coins attribué</label>
+          <input type="number" id="promoInputCoins" class="form-input" min="10" step="10" value="1000" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="promoInputMaxUses">Limite globale d'utilisations (élèves max)</label>
+          <input type="number" id="promoInputMaxUses" class="form-input" min="1" value="50" required>
+          <small style="color:var(--text-muted); font-size:0.75rem;">Chaque élève ne peut l'activer qu'une seule fois.</small>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="promoInputExpiresAt">Date d'expiration (optionnelle)</label>
+          <input type="datetime-local" id="promoInputExpiresAt" class="form-input">
+        </div>
+        <button type="submit" class="btn btn-gold" style="width:100%; padding:0.8rem; margin-top:0.75rem;">
+          ✨ Créer et Activer le Code Promo
         </button>
       </form>
     </div>

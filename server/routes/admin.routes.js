@@ -21,4 +21,10 @@ router.post('/products', adminController.createProduct);
 router.put('/products/:id', adminController.updateProduct);
 router.delete('/products/:id', adminController.deleteProduct);
 
+// Codes promo BDE
+router.get('/promo-codes', adminController.getPromoCodes);
+router.post('/promo-codes', adminController.createPromoCode);
+router.patch('/promo-codes/:id/toggle', adminController.togglePromoCode);
+router.delete('/promo-codes/:id', adminController.deletePromoCode);
+
 module.exports = router;

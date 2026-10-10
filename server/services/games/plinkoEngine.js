@@ -40,8 +40,66 @@ function dropPlinko(bet, risk = 'medium') {
   };
 }
 
+function dropPlinkoMulti(unitBet, ballCount = 1, risk = 'medium') {
+  const selectedRisk = MULTIPLIERS[risk] ? risk : 'medium';
+  const rowMultipliers = MULTIPLIERS[selectedRisk];
+  const count = Math.max(1, Math.min(10, parseInt(ballCount) || 1));
+  const betPerBall = Math.max(1, parseInt(unitBet) || 10);
+  const totalBet = betPerBall * count;
+
+  const balls = [];
+  let totalPayout = 0;
+
+  for (let i = 0; i < count; i++) {
+    const path = [];
+    let rightSteps = 0;
+
+    for (let r = 0; r < PLINKO_ROWS; r++) {
+      const dir = crypto.randomInt(0, 2);
+      path.push(dir);
+      if (dir === 1) rightSteps++;
+    }
+
+    const bucketIndex = rightSteps;
+    const multiplier = rowMultipliers[bucketIndex];
+    const payout = Math.floor(betPerBall * multiplier);
+    const profit = payout - betPerBall;
+    totalPayout += payout;
+
+    balls.push({
+      ballIndex: i + 1,
+      path,
+      bucketIndex,
+      multiplier,
+      payout,
+      profit
+    });
+  }
+
+  const totalProfit = totalPayout - totalBet;
+
+  return {
+    risk: selectedRisk,
+    rows: PLINKO_ROWS,
+    ballCount: count,
+    unitBet: betPerBall,
+    totalBet,
+    totalPayout,
+    totalProfit,
+    multipliers: rowMultipliers,
+    balls,
+    // Compatibilité mono-bille
+    path: balls[0].path,
+    bucketIndex: balls[0].bucketIndex,
+    multiplier: balls[0].multiplier,
+    payout: totalPayout,
+    profit: totalProfit
+  };
+}
+
 module.exports = {
   dropPlinko,
+  dropPlinkoMulti,
   MULTIPLIERS,
   PLINKO_ROWS
 };

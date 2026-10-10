@@ -24,6 +24,7 @@ app.use(express.static(path.join(__dirname, '../public')));
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
+app.use('/api/users', userRoutes);
 app.use('/api/leaderboard', leaderboardRoutes);
 app.use('/api/games', gamesRoutes);
 app.use('/api/wheels', wheelRoutes);

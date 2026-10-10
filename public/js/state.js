@@ -31,10 +31,6 @@ const State = {
       if (landingEl) landingEl.textContent = formatted;
       if (sidebarEl) sidebarEl.textContent = formatted;
       if (mobileEl) mobileEl.textContent = formatted;
-      if (equivEl) {
-        const euros = (val / 1000).toFixed(2).replace('.', ',');
-        equivEl.textContent = `Taux BDE : ${formatted} coins = ${euros} €`;
-      }
     };
 
     const diff = to - from;
@@ -83,13 +79,12 @@ const State = {
 
     if (this.isAuthenticated && this.user) {
       const formattedCoins = this.user.coins.toLocaleString();
-      const euroVal = (this.user.coins / 1000).toFixed(2).replace('.', ',');
 
       if (coinsDisplay) coinsDisplay.textContent = formattedCoins;
       if (landingCoins) landingCoins.textContent = formattedCoins;
       if (sidebarCoins) sidebarCoins.textContent = formattedCoins;
       if (mobileCoins) mobileCoins.textContent = formattedCoins;
-      if (landingEquiv) landingEquiv.textContent = `Taux BDE : ${formattedCoins} coins = ${euroVal} €`;
+      if (landingEquiv) landingEquiv.textContent = '🪙 Monnaie virtuelle 100% gratuite';
 
       if (authBtn) authBtn.style.display = 'none';
       if (userMenu) userMenu.style.display = 'flex';
@@ -148,7 +143,7 @@ const State = {
       if (landingCoins) landingCoins.textContent = '0';
       if (sidebarCoins) sidebarCoins.textContent = '0';
       if (mobileCoins) mobileCoins.textContent = '0';
-      if (landingEquiv) landingEquiv.textContent = 'Taux BDE : 1 000 coins = 1,00 €';
+      if (landingEquiv) landingEquiv.textContent = '🪙 Monnaie virtuelle 100% gratuite';
       if (landingVip) landingVip.textContent = '🥉 Bronze';
 
       if (authBtn) authBtn.style.display = 'inline-flex';

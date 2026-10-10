@@ -74,6 +74,41 @@ const AdminBDE = {
         if (m) m.classList.remove('active');
       });
     }
+
+    // Modal Création Code Promo
+    const openPromoBtn = document.getElementById('adminOpenCreatePromoBtn');
+    if (openPromoBtn) {
+      openPromoBtn.addEventListener('click', () => this.openPromoModal());
+    }
+
+    const closePromoModal = document.getElementById('closeAdminPromoModal');
+    if (closePromoModal) {
+      closePromoModal.addEventListener('click', () => {
+        const m = document.getElementById('adminPromoModal');
+        if (m) m.classList.remove('active');
+      });
+    }
+
+    const genPromoBtn = document.getElementById('btnGeneratePromoCode');
+    if (genPromoBtn) {
+      genPromoBtn.addEventListener('click', () => {
+        const input = document.getElementById('promoInputCode');
+        if (input) {
+          const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+          let r = 'MARSA-';
+          for (let i = 0; i < 6; i++) r += chars.charAt(Math.floor(Math.random() * chars.length));
+          input.value = r;
+        }
+      });
+    }
+
+    const formPromo = document.getElementById('formAdminPromo');
+    if (formPromo) {
+      formPromo.addEventListener('submit', (e) => {
+        e.preventDefault();
+        this.savePromoCode();
+      });
+    }
   },
 
   switchTab(tab) {
@@ -85,13 +120,16 @@ const AdminBDE = {
     const areaClaims = document.getElementById('adminTabClaims');
     const areaProducts = document.getElementById('adminTabProducts');
     const areaOrders = document.getElementById('adminTabOrders');
+    const areaPromos = document.getElementById('adminTabPromos');
 
     if (areaClaims) areaClaims.style.display = (tab === 'claims') ? 'block' : 'none';
     if (areaProducts) areaProducts.style.display = (tab === 'products') ? 'block' : 'none';
     if (areaOrders) areaOrders.style.display = (tab === 'orders') ? 'block' : 'none';
+    if (areaPromos) areaPromos.style.display = (tab === 'promos') ? 'block' : 'none';
 
     if (tab === 'products') this.loadProducts();
     if (tab === 'orders') this.loadOrders();
+    if (tab === 'promos') this.loadPromoCodes();
   },
 
   async checkCode() {
@@ -349,6 +387,149 @@ const AdminBDE = {
       const modal = document.getElementById('adminProductModal');
       if (modal) modal.classList.remove('active');
       this.loadProducts();
+    } catch (err) {
+      window.UI.showToast(err.message, 'error');
+    }
+  },
+
+  // ======================== GESTION CODES PROMO ========================
+  openPromoModal() {
+    const modal = document.getElementById('adminPromoModal');
+    if (!modal) return;
+    const form = document.getElementById('formAdminPromo');
+    if (form) form.reset();
+    const codeInput = document.getElementById('promoInputCode');
+    if (codeInput) {
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+      let r = 'MARSA-';
+      for (let i = 0; i < 6; i++) r += chars.charAt(Math.floor(Math.random() * chars.length));
+      codeInput.value = r;
+    }
+    const usesInput = document.getElementById('promoInputMaxUses');
+    if (usesInput) usesInput.value = '50';
+    const coinsInput = document.getElementById('promoInputCoins');
+    if (coinsInput) coinsInput.value = '1000';
+    modal.classList.add('active');
+  },
+
+  async savePromoCode() {
+    const code = document.getElementById('promoInputCode')?.value.trim();
+    const coinsAmount = parseInt(document.getElementById('promoInputCoins')?.value);
+    const maxUses = parseInt(document.getElementById('promoInputMaxUses')?.value);
+    const expiresAt = document.getElementById('promoInputExpiresAt')?.value || null;
+
+    if (!code) {
+      window.UI.showToast('Veuillez entrer un code.', 'error');
+      return;
+    }
+
+    try {
+      const res = await window.API.adminCreatePromoCode({ code, coinsAmount, maxUses, expiresAt });
+      window.UI.showToast(res.message || 'Code promo créé avec succès !', 'success');
+      const modal = document.getElementById('adminPromoModal');
+      if (modal) modal.classList.remove('active');
+      this.loadPromoCodes();
+    } catch (err) {
+      window.UI.showToast(err.message, 'error');
+    }
+  },
+
+  async loadPromoCodes() {
+    const listEl = document.getElementById('adminPromosList');
+    if (!listEl) return;
+    listEl.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:1.5rem; color:var(--text-muted);">Chargement des codes promo...</td></tr>';
+
+    try {
+      const data = await window.API.adminGetPromoCodes();
+      const codes = data.codes || [];
+
+      // Mettre à jour les métriques
+      const countEl = document.getElementById('adminPromoCount');
+      const activeEl = document.getElementById('adminPromoActiveCount');
+      const usesEl = document.getElementById('adminPromoUsesCount');
+      const coinsEl = document.getElementById('adminPromoCoinsCount');
+
+      if (countEl) countEl.textContent = codes.length;
+      if (activeEl) activeEl.textContent = codes.filter(c => c.is_active && !c.is_expired && !c.is_limit_reached).length;
+      const totalUses = codes.reduce((acc, c) => acc + (c.current_uses || 0), 0);
+      const totalCoins = codes.reduce((acc, c) => acc + ((c.current_uses || 0) * c.coins_amount), 0);
+      if (usesEl) usesEl.textContent = totalUses;
+      if (coinsEl) coinsEl.textContent = totalCoins.toLocaleString() + ' 🪙';
+
+      if (codes.length === 0) {
+        listEl.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:2rem; color:var(--text-muted);">Aucun code promo créé. Clique sur "Nouveau Code Promo" pour en créer un !</td></tr>';
+        return;
+      }
+
+      listEl.innerHTML = codes.map(c => {
+        const percent = Math.min(100, Math.round((c.current_uses / c.max_uses) * 100));
+        let statusBadge = '<span class="order-status pending" style="background:rgba(16,185,129,0.2); color:#34D399; border:1px solid #10B981;">Actif</span>';
+        if (!c.is_active) {
+          statusBadge = '<span class="order-status" style="background:rgba(148,163,184,0.2); color:#94A3B8; border:1px solid #64748B;">Désactivé</span>';
+        } else if (c.is_expired) {
+          statusBadge = '<span class="order-status" style="background:rgba(239,68,68,0.2); color:#FCA5A5; border:1px solid #EF4444;">Expiré</span>';
+        } else if (c.is_limit_reached) {
+          statusBadge = '<span class="order-status" style="background:rgba(245,158,11,0.2); color:#FCD34D; border:1px solid #F59E0B;">Limite atteinte</span>';
+        }
+
+        const expText = c.expires_at ? new Date(c.expires_at).toLocaleString('fr-FR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '<span style="color:var(--text-muted);">Illimitée</span>';
+
+        return `
+          <tr>
+            <td>
+              <div style="display:flex; align-items:center; gap:0.5rem;">
+                <code style="font-family:var(--font-mono); font-weight:800; font-size:1.05rem; color:var(--gold-light); background:rgba(0,0,0,0.4); padding:3px 8px; border-radius:4px; border:1px solid rgba(212,175,55,0.4); letter-spacing:1px;">${c.code}</code>
+                <button class="btn btn-outline" onclick="navigator.clipboard.writeText('${c.code}'); window.UI.showToast('Code ${c.code} copié !', 'info');" style="padding:2px 6px; font-size:0.75rem;" title="Copier le code">📋</button>
+              </div>
+            </td>
+            <td><strong style="color:var(--gold-light);">${c.coins_amount.toLocaleString()} 🪙</strong></td>
+            <td>
+              <div style="min-width:120px;">
+                <div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-bottom:3px;">
+                  <span>${c.current_uses} / ${c.max_uses}</span>
+                  <span style="color:var(--text-muted);">${percent}%</span>
+                </div>
+                <div style="background:rgba(255,255,255,0.1); height:6px; border-radius:3px; overflow:hidden;">
+                  <div style="background:var(--gold-primary); height:100%; width:${percent}%;"></div>
+                </div>
+              </div>
+            </td>
+            <td style="font-size:0.85rem;">${expText}</td>
+            <td>${statusBadge}</td>
+            <td>
+              <div style="display:flex; gap:0.4rem;">
+                <button class="btn btn-outline" onclick="AdminBDE.togglePromoCode(${c.id})" style="padding:4px 8px; font-size:0.75rem;" title="Activer / Désactiver">
+                  ${c.is_active ? '⏸️ Désactiver' : '▶️ Activer'}
+                </button>
+                <button class="btn btn-outline" onclick="AdminBDE.deletePromoCode(${c.id}, '${c.code}')" style="padding:4px 8px; font-size:0.75rem; border-color:#EF4444; color:#FCA5A5;" title="Supprimer">
+                  🗑️
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    } catch (err) {
+      listEl.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:1.5rem; color:#EF4444;">Erreur : ${err.message}</td></tr>`;
+    }
+  },
+
+  async togglePromoCode(id) {
+    try {
+      const res = await window.API.adminTogglePromoCode(id);
+      window.UI.showToast(res.message, 'success');
+      this.loadPromoCodes();
+    } catch (err) {
+      window.UI.showToast(err.message, 'error');
+    }
+  },
+
+  async deletePromoCode(id, code) {
+    if (!confirm(`Supprimer définitivement le code promo "${code}" ?`)) return;
+    try {
+      const res = await window.API.adminDeletePromoCode(id);
+      window.UI.showToast(res.message, 'info');
+      this.loadPromoCodes();
     } catch (err) {
       window.UI.showToast(err.message, 'error');
     }

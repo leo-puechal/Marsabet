@@ -127,7 +127,7 @@ const RouletteGame = {
     if (display) display.textContent = total.toLocaleString();
   },
 
-  drawWheel() {
+  drawWheel(ballDistanceOverride = null) {
     const canvas = document.getElementById('rouletteCanvas');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
@@ -189,12 +189,12 @@ const RouletteGame = {
     // Dessiner la bille
     ctx.save();
     ctx.translate(center, center);
-    const ballDistance = radius - 22;
+    const ballDistance = ballDistanceOverride !== null ? ballDistanceOverride : (radius - 20);
     const bx = Math.cos(this.ballAngle) * ballDistance;
     const by = Math.sin(this.ballAngle) * ballDistance;
 
     ctx.beginPath();
-    ctx.arc(bx, by, 6, 0, Math.PI * 2);
+    ctx.arc(bx, by, 5.5, 0, Math.PI * 2);
     ctx.fillStyle = '#FFFFFF';
     ctx.shadowColor = '#FFFFFF';
     ctx.shadowBlur = 8;
@@ -217,41 +217,76 @@ const RouletteGame = {
     if (banner) banner.style.display = 'none';
 
     try {
+      // Le résultat final est tiré côté serveur AVANT le lancement de l'animation
       const data = await window.API.spinRoulette(this.currentBets);
 
-      // Calcul de l'animation de la roue et de la bille
-      const sliceAngle = (Math.PI * 2) / this.wheelNumbers.length;
-      // Index du numéro gagnant sur la roue
-      const targetIndex = data.wheelIndex;
-      // Position cible
-      const targetAngle = -(targetIndex * sliceAngle) - (sliceAngle / 2) + (Math.PI * 1.5);
+      const totalSlices = this.wheelNumbers.length;
+      const sliceAngle = (Math.PI * 2) / totalSlices;
+      const twoPi = Math.PI * 2;
+
+      // Index exact du numéro gagnant sur le cylindre
+      const targetIndex = this.wheelNumbers.indexOf(data.winningNumber);
 
       const startWheel = this.wheelAngle;
       const startBall = this.ballAngle;
-      const totalRotations = 6;
-      const finalWheel = targetAngle + (Math.PI * 2 * totalRotations);
-      const finalBall = finalWheel + (Math.PI * 2 * 3);
 
-      const duration = 4000;
+      // 1. La roue tourne dans le sens des aiguilles d'une montre (rotation positive)
+      const wheelRotations = 1.35;
+      const deltaWheel = wheelRotations * twoPi;
+      const finalWheel = startWheel + deltaWheel;
+
+      // 2. Position angulaire mondiale du centre de la case cible à la fin de la rotation
+      const finalPocketAngle = finalWheel + (targetIndex * sliceAngle) + (sliceAngle / 2);
+
+      // 3. La bille tourne DANS LE SENS INVERSE (sens trigonométrique inverse / horaire inversé)
+      // On cherche finalBall tel que finalBall % 2π === finalPocketAngle % 2π et finalBall < startBall
+      let diff = (finalPocketAngle - startBall) % twoPi;
+      if (diff < 0) diff += twoPi;
+
+      // 6 tours complets en sens inverse pour une course spectaculaire et réaliste
+      const extraRevolutions = 6;
+      const finalBall = startBall + diff - ((extraRevolutions + 1) * twoPi);
+
+      // Durée totale de l'animation : 4.8 secondes
+      const duration = 4800;
       const start = performance.now();
+      const outerRadius = 140 - 8 - 7;  // Sur la piste extérieure
+      const innerRadius = 140 - 8 - 20; // Dans la case finale
 
-      const soundTickInterval = setInterval(() => {
-        window.sound.playSpinTick();
-      }, 90);
+      let lastTickAngle = startBall;
 
       const animate = (now) => {
         const elapsed = now - start;
         const progress = Math.min(elapsed / duration, 1);
-        const ease = 1 - Math.pow(1 - progress, 3); // cubic ease out
+
+        // Décélération progressive cubique réaliste (ralentissement net dans les 2 dernières secondes)
+        const ease = 1 - Math.pow(1 - progress, 3.2);
 
         this.wheelAngle = startWheel + (finalWheel - startWheel) * ease;
         this.ballAngle = startBall + (finalBall - startBall) * ease;
-        this.drawWheel();
+
+        // Effet de descente de la piste vers le réceptacle dans les 2 dernières secondes
+        let currentDist = outerRadius;
+        if (progress > 0.58) {
+          const dropT = Math.min(1, (progress - 0.58) / 0.38);
+          const dropEase = 1 - Math.pow(1 - dropT, 2);
+          currentDist = outerRadius - (outerRadius - innerRadius) * dropEase;
+        }
+
+        // Ticks sonores synchronisés avec le passage de la bille sur les cloisons
+        const angleTraveledSinceLastTick = Math.abs(this.ballAngle - lastTickAngle);
+        if (angleTraveledSinceLastTick >= (sliceAngle * 0.95)) {
+          window.sound.playSpinTick();
+          lastTickAngle = this.ballAngle;
+        }
+
+        this.drawWheel(currentDist);
 
         if (progress < 1) {
           requestAnimationFrame(animate);
         } else {
-          clearInterval(soundTickInterval);
+          // Bille arrêtée exactement sur la case gagnante sans correction
+          this.drawWheel(innerRadius);
           this.isSpinning = false;
           if (spinBtn) spinBtn.disabled = false;
 
@@ -260,7 +295,7 @@ const RouletteGame = {
           if (banner) {
             const colText = data.color === 'red' ? 'Rouge' : (data.color === 'black' ? 'Noir' : 'Vert');
             if (data.isWin) {
-              banner.textContent = `🎯 Numéro ${data.winningNumber} (${colText}) ! Gain : +${data.totalPayout} JETONS !`;
+              banner.textContent = `🎯 Numéro ${data.winningNumber} (${colText}) ! Gain : +${data.totalPayout.toLocaleString()} JETONS !`;
               banner.className = 'result-banner win';
               banner.style.display = 'block';
               window.sound.playWin();
@@ -279,7 +314,7 @@ const RouletteGame = {
     } catch (err) {
       this.isSpinning = false;
       if (spinBtn) spinBtn.disabled = false;
-      window.UI.showToast(err.message, 'error');
+      window.UI.showToast(err.message || 'Erreur lors du lancer de roulette', 'error');
     }
   }
 };

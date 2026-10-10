@@ -567,10 +567,106 @@ async function loadProfile() {
         }
       }
     }
+
+    // Charger les codes promo déjà activés par l'élève
+    loadMyPromoCodes();
   } catch (err) {
     window.UI.showToast(err.message, 'error');
   }
 }
+
+async function loadMyPromoCodes() {
+  const box = document.getElementById('myRedeemedCodesBox');
+  const listEl = document.getElementById('myRedeemedCodesList');
+  if (!listEl) return;
+
+  try {
+    const data = await window.API.getMyPromoCodes();
+    const codes = data.redemptions || [];
+    if (codes.length === 0) {
+      if (box) box.style.display = 'none';
+      listEl.innerHTML = '';
+      return;
+    }
+
+    if (box) box.style.display = 'block';
+    listEl.innerHTML = codes.map(c => `
+      <div style="background:rgba(212,175,55,0.12); border:1px solid rgba(212,175,55,0.3); border-radius:var(--radius-sm); padding:4px 10px; font-size:0.8rem; display:flex; align-items:center; gap:0.4rem;">
+        <span style="font-family:var(--font-mono); font-weight:700; color:var(--gold-light);">${escapeHtml(c.code)}</span>
+        <span style="color:#34D399; font-weight:700;">+${c.coins_awarded.toLocaleString()} 🪙</span>
+        <span style="color:var(--text-muted); font-size:0.75rem;">(${formatDate(c.used_at)})</span>
+      </div>
+    `).join('');
+  } catch (err) {
+    console.warn('Erreur chargement codes activés:', err);
+  }
+}
+
+// Initialiser l'écouteur du formulaire de rédemption de code promo
+document.addEventListener('DOMContentLoaded', () => {
+  const formPromo = document.getElementById('formRedeemPromo');
+  const inputPromo = document.getElementById('inputPromoCode');
+  const msgEl = document.getElementById('promoRedeemMessage');
+  const btnPromo = document.getElementById('btnRedeemPromo');
+
+  if (formPromo) {
+    formPromo.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const code = inputPromo ? inputPromo.value.trim() : '';
+      if (!code) return;
+
+      if (!window.State.isAuthenticated) {
+        window.UI.showToast('Connecte-toi pour activer un code promo.', 'error');
+        window.UI.openAuthModal('login');
+        return;
+      }
+
+      if (btnPromo) btnPromo.disabled = true;
+      if (msgEl) {
+        msgEl.style.display = 'block';
+        msgEl.style.background = 'rgba(59,130,246,0.15)';
+        msgEl.style.border = '1px solid rgba(59,130,246,0.3)';
+        msgEl.style.color = '#93C5FD';
+        msgEl.textContent = 'Vérification du code en cours...';
+      }
+
+      try {
+        const res = await window.API.redeemPromoCode(code);
+
+        // Succès
+        if (msgEl) {
+          msgEl.style.background = 'rgba(16,185,129,0.15)';
+          msgEl.style.border = '1px solid #10B981';
+          msgEl.style.color = '#34D399';
+          msgEl.innerHTML = `🎉 <strong>FÉLICITATIONS !</strong> Code <code>${escapeHtml(res.code)}</code> validé avec succès ! Tu as reçu <strong>+${res.coinsAdded.toLocaleString()} 🪙</strong> !`;
+        }
+
+        // Effets sonores et visuels
+        if (window.sound && typeof window.sound.playWin === 'function') window.sound.playWin();
+        if (window.UI && typeof window.UI.launchConfetti === 'function') window.UI.launchConfetti();
+
+        // Mettre à jour le solde utilisateur
+        if (window.State) {
+          window.State.updateUser({ coins: res.newCoins });
+        }
+
+        window.UI.showToast(`+${res.coinsAdded.toLocaleString()} 🪙 crédités sur ton solde !`, 'success');
+        if (inputPromo) inputPromo.value = '';
+        loadMyPromoCodes();
+      } catch (err) {
+        if (msgEl) {
+          msgEl.style.background = 'rgba(239,68,68,0.15)';
+          msgEl.style.border = '1px solid #EF4444';
+          msgEl.style.color = '#FCA5A5';
+          msgEl.innerHTML = `❌ <strong>Erreur :</strong> ${escapeHtml(err.message || 'Code promo invalide.')}`;
+        }
+        window.UI.showToast(err.message, 'error');
+      } finally {
+        if (btnPromo) btnPromo.disabled = false;
+      }
+    });
+  }
+});
 
 let currentShopCategory = 'all';
 let allShopProducts = [];
@@ -633,7 +729,6 @@ function renderShopProducts() {
 
     const hasVariants = Array.isArray(item.variants) && item.variants.length > 0;
     const initialPrice = hasVariants ? item.variants[0].price : item.price;
-    const initialEuros = (initialPrice / 1000).toFixed(2).replace('.', ',');
 
     let variantsHtml = '';
     if (hasVariants) {
@@ -644,9 +739,8 @@ function renderShopProducts() {
           </label>
           <select class="form-input shop-variant-select" data-item-id="${item.id}" id="variant-select-${item.id}">
             ${item.variants.map(v => {
-              const vEuros = (v.price / 1000).toFixed(2).replace('.', ',');
               return `<option value="${escapeHtml(v.name)}" data-price="${v.price}">
-                ${escapeHtml(v.name)} — ${v.price.toLocaleString()} 🪙 (${vEuros} €)
+                ${escapeHtml(v.name)} — ${v.price.toLocaleString()} 🪙
               </option>`;
             }).join('')}
           </select>
@@ -670,7 +764,7 @@ function renderShopProducts() {
         </div>
 
         <div class="shop-item-price" id="price-display-${item.id}">
-          ${initialPrice.toLocaleString()} 🪙 <span style="font-size:0.8rem; color:var(--text-muted); font-weight:normal;">(${initialEuros} €)</span>
+          ${initialPrice.toLocaleString()} 🪙
         </div>
 
         <button class="btn btn-gold btn-buy-shop" 
@@ -694,11 +788,10 @@ function renderShopProducts() {
       const selectedOption = e.target.selectedOptions[0];
       const newPrice = parseInt(selectedOption.dataset.price);
       const newVariant = e.target.value;
-      const newEuros = (newPrice / 1000).toFixed(2).replace('.', ',');
 
       const priceDisplay = document.getElementById(`price-display-${itemId}`);
       if (priceDisplay) {
-        priceDisplay.innerHTML = `${newPrice.toLocaleString()} 🪙 <span style="font-size:0.8rem; color:var(--text-muted); font-weight:normal;">(${newEuros} €)</span>`;
+        priceDisplay.innerHTML = `${newPrice.toLocaleString()} 🪙`;
       }
 
       const buyBtn = document.getElementById(`btn-buy-${itemId}`);
@@ -729,9 +822,8 @@ function renderShopProducts() {
       }
 
       const displayName = variantName ? `${productName} (${variantName})` : productName;
-      const eurosDisplay = (productPrice / 1000).toFixed(2).replace('.', ',');
 
-      if (!confirm(`Confirmer l'échange de ${productPrice.toLocaleString()} coins (${eurosDisplay} €) contre : "${displayName}" physique au stand BDE ?`)) {
+      if (!confirm(`Confirmer l'échange de ${productPrice.toLocaleString()} coins contre : "${displayName}" physique au stand BDE ?`)) {
         return;
       }
 

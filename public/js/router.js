@@ -9,6 +9,7 @@ const Router = {
     '/classement': 'leaderboard',
     '/boutique': 'shop',
     '/profil': 'profile',
+    '/codes': 'profile',
     '/recompenses': 'rewards',
     '/jeux/machine-a-sous': 'slots',
     '/jeux/blackjack': 'blackjack',
@@ -150,6 +151,14 @@ const Router = {
       window.loadLeaderboard();
     } else if (viewName === 'profile' && typeof window.loadProfile === 'function') {
       window.loadProfile();
+      if (window.location.pathname === '/codes') {
+        setTimeout(() => {
+          const promoCard = document.getElementById('profilePromoCard');
+          const promoInput = document.getElementById('inputPromoCode');
+          if (promoCard) promoCard.scrollIntoView({ behavior: 'smooth' });
+          if (promoInput) promoInput.focus();
+        }, 200);
+      }
     } else if (viewName === 'rewards' && window.FortuneWheels) {
       window.FortuneWheels.loadMyRewards();
     } else if (viewName === 'shop' && typeof window.loadShop === 'function') {

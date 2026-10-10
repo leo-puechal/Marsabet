@@ -12,4 +12,8 @@ router.get('/shop', shopController.getProducts);
 router.post('/shop/order', authMiddleware, shopController.orderProduct);
 router.get('/shop/my-orders', authMiddleware, shopController.getMyOrders);
 
+// Codes promo
+router.post('/redeem-code', authMiddleware, userController.redeemPromoCode);
+router.get('/my-codes', authMiddleware, userController.getMyPromoCodes);
+
 module.exports = router;

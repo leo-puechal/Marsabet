@@ -165,6 +165,41 @@ const API = {
     });
   },
 
+  // Promo Codes Admin & User Endpoints
+  async redeemPromoCode(code) {
+    return this.request('/users/redeem-code', {
+      method: 'POST',
+      body: JSON.stringify({ code })
+    });
+  },
+
+  async getMyPromoCodes() {
+    return this.request('/users/my-codes');
+  },
+
+  async adminGetPromoCodes() {
+    return this.request('/admin/promo-codes');
+  },
+
+  async adminCreatePromoCode(data) {
+    return this.request('/admin/promo-codes', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  },
+
+  async adminTogglePromoCode(id) {
+    return this.request(`/admin/promo-codes/${id}/toggle`, {
+      method: 'PATCH'
+    });
+  },
+
+  async adminDeletePromoCode(id) {
+    return this.request(`/admin/promo-codes/${id}`, {
+      method: 'DELETE'
+    });
+  },
+
   async getGlobalStats() {
     return this.request('/stats');
   },
@@ -227,10 +262,10 @@ const API = {
     });
   },
 
-  async dropPlinko(bet, risk) {
+  async dropPlinko(bet, risk, ballCount = 1) {
     return this.request('/games/plinko/drop', {
       method: 'POST',
-      body: JSON.stringify({ bet, risk })
+      body: JSON.stringify({ bet, risk, ballCount })
     });
   },
 

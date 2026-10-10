@@ -24,7 +24,6 @@ exports.getProducts = (req, res) => {
 
     return res.json({
       notice: 'Stock limité, disponible tant que les réserves du BDE le permettent. Jetons 100% gratuits gagnés aux jeux.',
-      conversionRate: '1 coin = 0,1 centime (1000 coins = 1,00 €)',
       products: products.map(p => ({
         ...p,
         variants: p.variants ? JSON.parse(p.variants) : null,

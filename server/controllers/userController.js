@@ -159,3 +159,35 @@ exports.buyShopItem = (req, res) => {
     return res.status(500).json({ error: 'Échec de la transaction.' });
   }
 };
+
+// ======================== RÉDEMPTION DE CODES PROMO ========================
+const promoCodeService = require('../services/promoCodeService');
+
+exports.redeemPromoCode = (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { code } = req.body;
+
+    if (!code || typeof code !== 'string') {
+      return res.status(400).json({ error: 'Veuillez saisir un code promo.' });
+    }
+
+    const result = promoCodeService.redeemCode(code, userId);
+    return res.json({
+      ...result,
+      coins: result.newCoins
+    });
+  } catch (err) {
+    return res.status(400).json({ error: err.message || 'Erreur lors de l\'activation du code promo.' });
+  }
+};
+
+exports.getMyPromoCodes = (req, res) => {
+  try {
+    const userId = req.user.id;
+    const redemptions = promoCodeService.getUserRedemptions(userId);
+    return res.json({ redemptions });
+  } catch (err) {
+    return res.status(500).json({ error: 'Erreur lors de la récupération des codes.' });
+  }
+};

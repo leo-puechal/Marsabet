@@ -552,23 +552,32 @@ exports.playWheel = (req, res) => {
 exports.playPlinko = (req, res) => {
   try {
     const userId = req.user.id;
-    const bet = Number(req.body.bet);
+    const unitBet = Number(req.body.bet);
     const risk = req.body.risk || 'medium';
+    const ballCount = Math.max(1, Math.min(10, parseInt(req.body.ballCount, 10) || 1));
 
-    if (!Number.isInteger(bet) || bet <= 0) {
-      return res.status(400).json({ error: 'Mise invalide (minimum 1 jeton).' });
+    if (!Number.isInteger(unitBet) || unitBet <= 0) {
+      return res.status(400).json({ error: 'Mise invalide (minimum 1 jeton par bille).' });
     }
 
+    const totalBet = unitBet * ballCount;
     const user = db.prepare('SELECT coins FROM users WHERE id = ?').get(userId);
-    if (!user || user.coins < bet) {
-      return res.status(400).json({ error: 'Solde insuffisant.' });
+    if (!user || user.coins < totalBet) {
+      return res.status(400).json({ error: `Solde insuffisant pour ${ballCount} bille(s). Mise totale requise : ${totalBet} coins.` });
     }
 
-    const result = plinkoEngine.dropPlinko(bet, risk);
-    const { newCoins } = recordGameResult(userId, 'plinko', bet, result.payout, {
+    const result = plinkoEngine.dropPlinkoMulti(unitBet, ballCount, risk);
+    const { newCoins } = recordGameResult(userId, 'plinko', totalBet, result.totalPayout, {
       risk: result.risk,
-      multiplier: result.multiplier,
-      bucketIndex: result.bucketIndex
+      ballCount: result.ballCount,
+      unitBet: result.unitBet,
+      totalBet: result.totalBet,
+      totalPayout: result.totalPayout,
+      balls: result.balls.map(b => ({
+        index: b.ballIndex,
+        multiplier: b.multiplier,
+        payout: b.payout
+      }))
     });
 
     return res.json({
