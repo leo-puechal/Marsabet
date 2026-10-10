@@ -97,6 +97,25 @@ const API = {
     return this.request('/user/shop/my-orders');
   },
 
+  // Fortune Wheels Endpoints
+  async getWheels() {
+    return this.request('/wheels');
+  },
+
+  async getWheelDetails(wheelId) {
+    return this.request(`/wheels/${encodeURIComponent(wheelId)}`);
+  },
+
+  async spinFortuneWheel(wheelId) {
+    return this.request(`/wheels/${encodeURIComponent(wheelId)}/spin`, {
+      method: 'POST'
+    });
+  },
+
+  async getMyRewards() {
+    return this.request('/wheels/my-rewards');
+  },
+
   async becomeAdmin(secretKey) {
     return this.request('/auth/become-admin', {
       method: 'POST',

@@ -143,12 +143,28 @@ function initDb() {
     db.exec("ALTER TABLE shop_items ADD COLUMN unit TEXT NOT NULL DEFAULT 'Pièce'");
   }
 
-  // Migration de shop_orders pour ajouter variant_name si absent
+  // Migration de shop_orders pour ajouter variant_name et source si absents
   const orderColumns = db.prepare("PRAGMA table_info(shop_orders)").all();
   const hasVariantName = orderColumns.some(c => c.name === 'variant_name');
   if (!hasVariantName) {
     db.exec("ALTER TABLE shop_orders ADD COLUMN variant_name TEXT DEFAULT NULL");
   }
+  const hasSource = orderColumns.some(c => c.name === 'source');
+  if (!hasSource) {
+    db.exec("ALTER TABLE shop_orders ADD COLUMN source TEXT NOT NULL DEFAULT 'shop'");
+  }
+
+  // Table pour enregistrer les cooldowns et streaks de chaque roue
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS user_wheel_cooldowns (
+      user_id INTEGER NOT NULL,
+      wheel_id TEXT NOT NULL,
+      last_spin_at TEXT NOT NULL,
+      streak INTEGER NOT NULL DEFAULT 1,
+      PRIMARY KEY (user_id, wheel_id),
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+  `);
 
   // Initialisation du catalogue officiel BDE (50 produits, 1 coin = 0.1 ct -> 1000 coins = 1.00 €)
   const officialCatalog = [

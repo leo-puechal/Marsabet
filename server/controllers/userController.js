@@ -84,9 +84,9 @@ exports.getProfile = (req, res) => {
       GROUP BY game_type
     `).all(userId);
 
-    // Commandes et codes de retrait de la boutique BDE
+    // Commandes et codes de retrait de la boutique BDE et roues de la fortune
     const orders = db.prepare(`
-      SELECT o.id, o.claim_code, o.item_name, o.coins_paid, o.status, o.collected_at, o.created_at,
+      SELECT o.id, o.claim_code, o.item_name, o.coins_paid, o.status, o.collected_at, o.created_at, o.source,
              i.icon, i.category
       FROM shop_orders o
       LEFT JOIN shop_items i ON o.item_id = i.id

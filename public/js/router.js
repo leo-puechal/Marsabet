@@ -5,9 +5,11 @@ const Router = {
     '/': 'lobby',
     '/lobby': 'lobby',
     '/jeux': 'games',
+    '/roues': 'wheels',
     '/classement': 'leaderboard',
     '/boutique': 'shop',
     '/profil': 'profile',
+    '/recompenses': 'rewards',
     '/jeux/machine-a-sous': 'slots',
     '/jeux/blackjack': 'blackjack',
     '/jeux/roulette': 'roulette',
@@ -21,6 +23,9 @@ const Router = {
   viewToPath: {
     'lobby': '/lobby',
     'games': '/jeux',
+    'wheels': '/roues',
+    'wheel-arena': '/roues',
+    'rewards': '/recompenses',
     'leaderboard': '/classement',
     'shop': '/boutique',
     'profile': '/profil',
@@ -86,31 +91,45 @@ const Router = {
     this.handleRoute(window.location.pathname, true);
   },
 
-  navigate(path, replace = false) {
+  resolveRoute(path) {
     const cleanPath = this.normalizePath(path);
-    const view = this.routes[cleanPath] || 'lobby';
+    if (this.routes[cleanPath]) {
+      return { path: cleanPath, view: this.routes[cleanPath], param: null };
+    }
+    // Matcher dynamique pour /roues/:id
+    if (cleanPath.startsWith('/roues/')) {
+      const wheelId = cleanPath.replace('/roues/', '').trim();
+      if (wheelId) {
+        return { path: cleanPath, view: 'wheel-arena', param: wheelId };
+      }
+    }
+    return { path: '/lobby', view: 'lobby', param: null };
+  },
 
-    if (window.location.pathname !== cleanPath) {
+  navigate(path, replace = false) {
+    const routeInfo = this.resolveRoute(path);
+
+    if (window.location.pathname !== routeInfo.path) {
       if (replace) {
-        window.history.replaceState({ path: cleanPath, view }, '', cleanPath);
+        window.history.replaceState({ path: routeInfo.path, view: routeInfo.view, param: routeInfo.param }, '', routeInfo.path);
       } else {
-        window.history.pushState({ path: cleanPath, view }, '', cleanPath);
+        window.history.pushState({ path: routeInfo.path, view: routeInfo.view, param: routeInfo.param }, '', routeInfo.path);
       }
     }
 
-    this.renderView(view);
+    this.renderView(routeInfo.view, false, routeInfo.param);
   },
 
   handleRoute(path, isInitial = false) {
     const cleanPath = this.normalizePath(path);
-    const view = this.routes[cleanPath] || 'lobby';
+    const routeInfo = this.resolveRoute(cleanPath);
 
     // Normaliser l'URL si inconnue
-    if (!this.routes[cleanPath] && cleanPath !== '/') {
+    if (routeInfo.path === '/lobby' && cleanPath !== '/' && cleanPath !== '/lobby') {
       window.history.replaceState({ path: '/lobby', view: 'lobby' }, '', '/lobby');
     }
 
-    this.renderView(view, isInitial);
+    this.renderView(routeInfo.view, isInitial, routeInfo.param);
   },
 
   normalizePath(path) {
@@ -122,7 +141,7 @@ const Router = {
     return p || '/';
   },
 
-  renderView(viewName, isInitial = false) {
+  renderView(viewName, isInitial = false, param = null) {
     if (!window.UI) return;
     window.UI.switchView(viewName);
 
@@ -131,8 +150,14 @@ const Router = {
       window.loadLeaderboard();
     } else if (viewName === 'profile' && typeof window.loadProfile === 'function') {
       window.loadProfile();
+    } else if (viewName === 'rewards' && window.FortuneWheels) {
+      window.FortuneWheels.loadMyRewards();
     } else if (viewName === 'shop' && typeof window.loadShop === 'function') {
       window.loadShop();
+    } else if (viewName === 'wheels' && window.FortuneWheels) {
+      window.FortuneWheels.loadWheelsList();
+    } else if (viewName === 'wheel-arena' && window.FortuneWheels) {
+      window.FortuneWheels.loadWheelArena(param || 'quotidienne');
     } else if (viewName === 'free-wheel' && window.FreeWheelGame) {
       window.FreeWheelGame.fetchStatus();
     } else if (viewName === 'admin' && window.AdminBDE) {
@@ -140,8 +165,8 @@ const Router = {
     }
 
     // Mettre à jour l'état actif dans la barre de navigation
-    document.querySelectorAll('.nav-link').forEach(link => {
-      if (link.dataset.view === viewName) {
+    document.querySelectorAll('.sidebar-link, .sidebar-sublink, .nav-link').forEach(link => {
+      if (link.dataset.view === viewName || (viewName === 'wheel-arena' && link.dataset.view === 'wheels')) {
         link.classList.add('active');
       } else {
         link.classList.remove('active');
@@ -149,13 +174,16 @@ const Router = {
     });
 
     // Mettre à jour le titre du document
-    this.updateDocumentTitle(viewName);
+    this.updateDocumentTitle(viewName, param);
   },
 
-  updateDocumentTitle(viewName) {
+  updateDocumentTitle(viewName, param = null) {
     const titles = {
       'lobby': 'Marsabet — Casino Virtuel BDE Epitech',
       'games': 'Salle des Jeux — Marsabet Casino',
+      'wheels': 'Roues de la Fortune — Marsabet',
+      'wheel-arena': param ? `Roue ${param.toUpperCase()} — Marsabet` : 'Roue de la Fortune — Marsabet',
+      'rewards': 'Mes Récompenses BDE — Marsabet',
       'leaderboard': 'Classement des Joueurs — Marsabet',
       'shop': 'Boutique Produits BDE — Marsabet',
       'profile': 'Mon Profil & Statut VIP — Marsabet',

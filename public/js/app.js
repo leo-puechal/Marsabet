@@ -536,35 +536,35 @@ async function loadProfile() {
       }
     }
 
-    // Commandes physiques et codes de retrait
-    const ordersListEl = document.getElementById('profileOrdersList');
-    if (ordersListEl) {
-      if (!data.orders || data.orders.length === 0) {
-        ordersListEl.innerHTML = '<p style="color: var(--text-muted); padding:1rem;">Aucun produit BDE échangé pour l’instant. Visite la boutique !</p>';
-      } else {
-        ordersListEl.innerHTML = data.orders.map(o => {
-          const isCollected = o.status === 'collected';
-          return `
-            <div class="shop-item-card" style="text-align:left; align-items:flex-start;">
-              <div style="display:flex; justify-content:space-between; width:100%; align-items:center;">
-                <span style="font-size:1.8rem;">${o.icon || '🎁'}</span>
-                <span class="order-status ${isCollected ? 'collected' : 'pending'}">
-                  ${isCollected ? '✅ Retiré au stand' : '⏳ En attente de retrait'}
-                </span>
+    // Commandes physiques et lots des roues avec codes de retrait
+    if (window.FortuneWheels && typeof window.FortuneWheels.renderProfileRewardsList === 'function') {
+      window.FortuneWheels.renderProfileRewardsList();
+    } else {
+      const ordersListEl = document.getElementById('profileOrdersList');
+      if (ordersListEl) {
+        if (!data.orders || data.orders.length === 0) {
+          ordersListEl.innerHTML = '<p style="color: var(--text-muted); padding:1rem;">Aucun lot physique remporté pour l’instant.</p>';
+        } else {
+          ordersListEl.innerHTML = data.orders.map(o => {
+            const isCollected = o.status === 'collected';
+            return `
+              <div class="reward-ticket-card ${isCollected ? 'status-collected' : 'status-pending'}">
+                <div class="reward-ticket-header">
+                  <div style="display:flex; align-items:center; gap:0.6rem;">
+                    <span class="reward-ticket-icon">${o.icon || '🎁'}</span>
+                    <div class="reward-ticket-title">${escapeHtml(o.item_name)}</div>
+                  </div>
+                  <span class="reward-status-pill ${isCollected ? 'status-collected' : 'status-pending'}">
+                    ${isCollected ? '✅ Retiré' : '⏳ À retirer'}
+                  </span>
+                </div>
+                <div class="reward-ticket-code-zone">
+                  <code class="reward-ticket-code">${o.claim_code}</code>
+                </div>
               </div>
-              <div class="shop-item-title" style="margin-top:0.4rem;">${escapeHtml(o.item_name)}</div>
-              <div style="width:100%; margin:0.5rem 0;">
-                <div style="font-size:0.75rem; color:var(--text-muted); text-transform:uppercase;">Code à présenter au stand BDE :</div>
-                <code style="font-family:var(--font-mono); font-size:1.2rem; font-weight:800; color:var(--gold-light); letter-spacing:1.5px; background:rgba(0,0,0,0.4); padding:4px 8px; border-radius:4px; display:inline-block; border:1px solid var(--gold-primary);">
-                  ${o.claim_code}
-                </code>
-              </div>
-              <div style="font-size:0.75rem; color:var(--text-muted);">
-                ${isCollected ? 'Retiré le ' + formatDate(o.collected_at) : 'Commandé le ' + formatDate(o.created_at)}
-              </div>
-            </div>
-          `;
-        }).join('');
+            `;
+          }).join('');
+        }
       }
     }
   } catch (err) {

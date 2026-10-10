@@ -27,6 +27,7 @@
   <link rel="stylesheet" href="/css/admin.css">
   <link rel="stylesheet" href="/css/vip.css">
   <link rel="stylesheet" href="/css/free-wheel.css">
+  <link rel="stylesheet" href="/css/wheels.css">
   <link rel="stylesheet" href="/css/sidebar.css">
 </head>
 <body>
@@ -90,12 +91,15 @@
               <li><a class="sidebar-sublink" data-view="games"><span>📋</span> Tous les Jeux</a></li>
               <li><a class="sidebar-sublink" data-view="slots"><span>🎰</span> Machine à sous</a></li>
               <li><a class="sidebar-sublink" data-view="blackjack"><span>🃏</span> Blackjack</a></li>
-              <li><a class="sidebar-sublink" data-view="roulette"><span>🎡</span> Roulette</a></li>
+              <li><a class="sidebar-sublink" data-view="roulette"><span>🔴</span> Roulette Européenne</a></li>
               <li><a class="sidebar-sublink" data-view="dice"><span>🎲</span> Jeu de Dés</a></li>
-              <li><a class="sidebar-sublink" data-view="wheel"><span>🎪</span> Roue de la fortune</a></li>
-              <li><a class="sidebar-sublink" data-view="free-wheel"><span>🎁</span> Roue Quotidienne</a></li>
               <li><a class="sidebar-sublink" data-view="plinko"><span>💧</span> Plinko Cosmique</a></li>
             </ul>
+          </li>
+          <li>
+            <a class="sidebar-link" data-view="wheels">
+              <span class="icon">🎡</span> Roues
+            </a>
           </li>
           <li>
             <a class="sidebar-link" data-view="leaderboard">
@@ -281,7 +285,7 @@
                   <span id="lobbyFreeWheelCountdown" style="color:#34D399; font-weight:700; font-size:0.95rem;">🎁 Prêt à tourner !</span>
                 </div>
               </div>
-              <button class="btn btn-gold" onclick="window.Router ? window.Router.navigate('/jeux/roue-quotidienne') : window.UI.switchView('free-wheel')" style="background:linear-gradient(135deg, #10B981 0%, #059669 100%); border-color:#34D399; color:#FFF; width:100%;">
+              <button class="btn btn-gold" onclick="window.Router ? window.Router.navigate('/roues/quotidienne') : window.UI.switchView('wheel-arena')" style="background:linear-gradient(135deg, #10B981 0%, #059669 100%); border-color:#34D399; color:#FFF; width:100%;">
                 ✨ Tourner la Roue Gratuite ▶
               </button>
             </div>
@@ -335,27 +339,6 @@
           </div>
 
           <div class="games-grid" id="casinoGamesGrid">
-            <!-- Roue Quotidienne Gratuite -->
-            <div class="game-card free-wheel-card" data-game="free-wheel">
-              <div>
-                <div class="game-card-top">
-                  <div class="game-icon-box" style="background: rgba(16, 185, 129, 0.2); border-color: #10B981;">🎁</div>
-                  <div class="game-badges">
-                    <span class="game-badge free" id="lobbyFreeWheelBadge">✨ GRATUIT</span>
-                    <span class="game-badge hot">24H RECHARGE</span>
-                  </div>
-                </div>
-                <div class="game-card-body">
-                  <h3 style="color: #34D399;">Roue Quotidienne Gratuite</h3>
-                  <p>Tourne chaque jour sans miser le moindre jeton pour remporter jusqu'à 1 000 coins gratuits et accumuler des bonus de série consécutive !</p>
-                </div>
-              </div>
-              <div class="game-card-footer">
-                <span class="game-min-bet" id="gamesFreeWheelCountdown" style="color: #34D399; font-weight:700;">🎁 Prêt à tourner !</span>
-                <button class="btn btn-gold btn-play" style="background: linear-gradient(135deg, #10B981 0%, #059669 100%); border-color: #34D399; color: #FFF;">Tourner ▶</button>
-              </div>
-            </div>
-
             <!-- Jeu 1 : Slots -->
             <div class="game-card" data-game="slots">
               <div>
@@ -401,7 +384,7 @@
             <div class="game-card" data-game="roulette">
               <div>
                 <div class="game-card-top">
-                  <div class="game-icon-box">🎡</div>
+                  <div class="game-icon-box">🔴</div>
                   <div class="game-badges">
                     <span class="game-badge rtp">RTP 97.3%</span>
                   </div>
@@ -437,28 +420,7 @@
               </div>
             </div>
 
-            <!-- Jeu 5 : Roue de la fortune -->
-            <div class="game-card" data-game="wheel">
-              <div>
-                <div class="game-card-top">
-                  <div class="game-icon-box">🎪</div>
-                  <div class="game-badges">
-                    <span class="game-badge hot">Jackpot 25x</span>
-                    <span class="game-badge rtp">RTP 96.0%</span>
-                  </div>
-                </div>
-                <div class="game-card-body">
-                  <h3>Roue de la Fortune</h3>
-                  <p>Fais tourner la grande roue segmentée avec inertie physique réaliste et vise le segment Couronne Royale d'Or.</p>
-                </div>
-              </div>
-              <div class="game-card-footer">
-                <span class="game-min-bet">Mise min : <strong>25 🪙</strong></span>
-                <button class="btn btn-gold btn-play">Jouer ▶</button>
-              </div>
-            </div>
-
-            <!-- Jeu 6 : Plinko -->
+            <!-- Jeu 5 : Plinko -->
             <div class="game-card" data-game="plinko">
               <div>
                 <div class="game-card-top">
@@ -476,6 +438,121 @@
               <div class="game-card-footer">
                 <span class="game-min-bet">Mise min : <strong>10 🪙</strong></span>
                 <button class="btn btn-gold btn-play">Jouer ▶</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== VUE ROUES DE LA FORTUNE (/roues) ==================== -->
+        <section id="view-wheels" class="section-view">
+          <div class="wheels-hero">
+            <div style="position:relative; z-index:2;">
+              <span class="badge-free" style="margin-bottom:0.75rem; display:inline-block;">🎡 NOUVEAU STAND BDE</span>
+              <h2 style="font-family:var(--font-display); font-size:2.2rem; color:var(--gold-light); margin:0.25rem 0 0.5rem;">
+                Roues de la Fortune Marsabet
+              </h2>
+              <p style="color:var(--text-secondary); max-width:720px; font-size:1rem; margin:0 0 1.25rem; line-height:1.6;">
+                Tente ta chance gratuitement avec tes tours quotidiens ou utilise tes <strong>coins fictifs</strong> pour tenter de décrocher des <strong>lots physiques réels du BDE</strong> (boissons fraîches, chocolats, snacks) ou d'énormes gains de coins !
+              </p>
+              <div style="display:flex; gap:1rem; flex-wrap:wrap; align-items:center;">
+                <div style="display:flex; align-items:center; gap:0.5rem; background:rgba(0,0,0,0.35); padding:0.4rem 0.9rem; border-radius:var(--radius-sm); border:1px solid rgba(212,175,55,0.3); font-size:0.85rem;">
+                  <span>🪙 Solde disponible :</span>
+                  <strong id="wheelsHeroCoins" style="color:var(--gold-light); font-size:1.05rem;">1 000 🪙</strong>
+                </div>
+                <button class="btn btn-outline" onclick="window.Router ? window.Router.navigate('/recompenses') : window.UI.switchView('rewards')" style="font-size:0.85rem; padding:0.45rem 1rem;">
+                  🎒 Mes Récompenses Stand BDE
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="section-header" style="margin-bottom:1.5rem;">
+            <div>
+              <h3 class="section-title" style="font-size:1.5rem;">Toutes les Roues Disponibles</h3>
+              <p class="section-subtitle">Roues 100% gratuites à cooldown automatique ou roues spéciales en coins fictifs (aucun argent réel).</p>
+            </div>
+          </div>
+
+          <div class="wheels-grid" id="wheelsGridContainer">
+            <!-- Rendu automatique par fortuneWheels.js -->
+            <div style="text-align:center; padding:2rem; color:var(--text-muted); grid-column:1/-1;">Chargement des roues...</div>
+          </div>
+        </section>
+
+        <!-- ==================== VUE ROUE ARENA DÉDIÉE (/roues/:id) ==================== -->
+        <section id="view-wheel-arena" class="section-view">
+          <div class="arena-header">
+            <button class="btn btn-outline" id="btnBackToWheels" onclick="window.Router ? window.Router.navigate('/roues') : window.UI.switchView('wheels')">
+              ◀ Retour aux Roues
+            </button>
+            <div class="arena-title-group">
+              <span class="arena-title-icon" id="wheelArenaIcon">🎡</span>
+              <div>
+                <h2 class="arena-title-name" id="wheelArenaName">Roue de la Fortune</h2>
+                <div style="font-size:0.85rem; color:var(--text-muted);" id="wheelArenaSubtitle">Tirage certifié côté serveur</div>
+              </div>
+            </div>
+            <div id="wheelArenaCostBadge">
+              <span class="badge-free">GRATUIT</span>
+            </div>
+          </div>
+
+          <div class="wheel-arena-container">
+            <!-- Stage central de la roue -->
+            <div class="wheel-stage-card">
+              <div id="wheelArenaBanner" class="result-banner" style="display:none;"></div>
+
+              <div class="wheel-canvas-wrapper">
+                <div class="wheel-canvas-pointer" id="wheelArenaPointer"></div>
+                <canvas id="wheelArenaCanvas" width="460" height="460" class="wheel-canvas"></canvas>
+                <div class="wheel-center-hub" id="wheelArenaCenterHub">
+                  <span id="wheelCenterIcon">🪐</span>
+                </div>
+              </div>
+
+              <!-- Contrôles et boutons de spin -->
+              <div class="arena-controls">
+                <div id="wheelArenaCooldownBox" class="arena-cooldown-box" style="display:none;">
+                  <span class="cooldown-icon">⏱️</span>
+                  <div>
+                    <div style="font-size:0.75rem; color:var(--text-muted); text-transform:uppercase;">Prochain tour gratuit dans</div>
+                    <div class="cooldown-text" id="wheelArenaCooldownTime">00:00:00</div>
+                  </div>
+                </div>
+
+                <button class="btn-spin-wheel" id="wheelArenaSpinBtn">
+                  <span>🎡</span> TOURNER LA ROUE !
+                </button>
+
+                <div id="wheelArenaStatusText" style="font-size:0.88rem; color:var(--text-secondary); text-align:center;">
+                  Clique pour lancer la roue
+                </div>
+              </div>
+            </div>
+
+            <!-- Sidebar d'information des lots & probabilités -->
+            <div class="arena-sidebar">
+              <div class="arena-panel">
+                <div class="arena-panel-title">
+                  <span>🎁</span> Lots & Probabilités Côté Serveur
+                </div>
+                <div style="font-size:0.82rem; color:var(--text-secondary); margin-bottom:0.75rem; line-height:1.5;">
+                  Tirage certifié côté serveur : <strong style="color:var(--gold-light);">Coins fréquents</strong> pour booster ton solde et <strong style="color:#FCA5A5;">Produits physiques BDE rares</strong> avec code de retrait unique.
+                </div>
+                <div class="segment-odds-list" id="wheelArenaOddsList">
+                  <!-- Rendu dynamique -->
+                </div>
+              </div>
+
+              <div class="arena-panel" id="wheelArenaRulePanel">
+                <div class="arena-panel-title">
+                  <span>ℹ️</span> Comment récupérer un lot physique ?
+                </div>
+                <ul style="list-style:none; padding:0; margin:0; font-size:0.83rem; color:var(--text-secondary); line-height:1.6;">
+                  <li style="margin-bottom:0.5rem;">🎟️ Un <strong>code de retrait unique (MB-XXXX)</strong> est automatiquement généré en cas de gain physique.</li>
+                  <li style="margin-bottom:0.5rem;">🎒 Retrouve tous tes codes dans la section <strong>Mes Récompenses</strong> de ton profil.</li>
+                  <li>🥤 Présente ton code au stand du BDE Marseille pour retirer immédiatement ta boisson ou ton chocolat !</li>
+                </ul>
               </div>
             </div>
           </div>
@@ -1177,12 +1254,21 @@
         </div>
 
         <!-- Commandes et Retraits au Stand BDE -->
-        <div class="history-card">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:0.5rem;">
-            <h3 class="panel-title" style="margin-bottom:0; border:none; padding:0;">🎒 Mes Produits BDE & Codes de Retrait</h3>
-            <button class="btn btn-outline" onclick="window.UI.switchView('shop')">Aller à la Boutique ▶</button>
+        <div class="history-card" id="profileRewardsContainer">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:0.75rem;">
+            <div>
+              <h3 class="panel-title" style="margin-bottom:0.25rem; border:none; padding:0;">🎒 Mes Récompenses Stand BDE & Lots Gagnés</h3>
+              <p style="color:var(--text-secondary); font-size:0.85rem; margin:0;">
+                Lots physiques remportés sur les <strong>Roues de la Fortune</strong> (gratuites & en coins) et commandes boutique avec codes de retrait.
+              </p>
+            </div>
+            <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+              <button class="shop-filter-btn active" id="profileRewardFilterAll" data-reward-filter="all">Tous</button>
+              <button class="shop-filter-btn" id="profileRewardFilterPending" data-reward-filter="pending">⏳ À retirer au stand</button>
+              <button class="shop-filter-btn" id="profileRewardFilterCollected" data-reward-filter="collected">✅ Retirés</button>
+            </div>
           </div>
-          <div class="shop-grid" id="profileOrdersList"></div>
+          <div class="rewards-grid" id="profileOrdersList"></div>
         </div>
 
         <!-- Zone d'accès rapide Admin pour les membres du bureau -->
@@ -1194,6 +1280,55 @@
           <button class="btn btn-outline" id="becomeAdminBtn" style="border-color:#A855F7; color:#E9D5FF;">
             🔑 Activer Accès Admin BDE
           </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== VUE MES RÉCOMPENSES DÉDIÉE (/recompenses) ==================== -->
+    <section id="view-rewards" class="section-view">
+      <div class="rewards-container">
+        <div class="section-header" style="margin-bottom:1.5rem;">
+          <div>
+            <h2 class="section-title">🎒 Mes Récompenses Stand BDE</h2>
+            <p class="section-subtitle">
+              Retrouve tous tes lots physiques remportés aux <strong>Roues de la Fortune</strong> (gratuites et en coins) ainsi que tes commandes de la boutique.
+            </p>
+          </div>
+          <button class="btn btn-gold" onclick="window.Router ? window.Router.navigate('/roues') : window.UI.switchView('wheels')">
+            🎡 Tourner une Roue ▶
+          </button>
+        </div>
+
+        <!-- Métriques rapides -->
+        <div class="rewards-summary-bar">
+          <div class="summary-metric">
+            <span class="metric-val" id="rewardsPendingCount">0</span>
+            <span class="metric-lbl">Lots à retirer au stand</span>
+          </div>
+          <div class="summary-metric">
+            <span class="metric-val" id="rewardsCollectedCount">0</span>
+            <span class="metric-lbl">Lots déjà retirés</span>
+          </div>
+          <div class="summary-metric">
+            <span class="metric-val" id="rewardsTotalCount">0</span>
+            <span class="metric-lbl">Total des récompenses</span>
+          </div>
+        </div>
+
+        <!-- Filtres -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem; flex-wrap:wrap; gap:0.75rem;">
+          <div class="shop-categories-nav" id="dedicatedRewardFilters" style="margin:0;">
+            <button class="shop-filter-btn active" data-reward-filter="all">Tous les Lots</button>
+            <button class="shop-filter-btn" data-reward-filter="pending">⏳ À retirer au stand</button>
+            <button class="shop-filter-btn" data-reward-filter="collected">✅ Déjà retirés</button>
+          </div>
+          <div style="font-size:0.85rem; color:var(--text-muted);">
+            📍 Permanence BDE : Hall principal Epitech Marseille
+          </div>
+        </div>
+
+        <div class="rewards-grid" id="dedicatedRewardsList">
+          <div style="text-align:center; padding:2rem; color:var(--text-muted); grid-column:1/-1;">Chargement de tes récompenses...</div>
         </div>
       </div>
     </section>
@@ -1548,6 +1683,41 @@
     </div>
   </div>
 
+  <!-- Modale Célébration Gain Physique Rare des Roues -->
+  <div class="modal-overlay" id="physicalWinModal">
+    <div class="modal-content" style="max-width:480px; text-align:center; border:2px solid var(--gold-primary); box-shadow:0 0 40px rgba(212,175,55,0.4);">
+      <button class="modal-close" id="closePhysicalWinModalBtn">&times;</button>
+      <div class="modal-physical-win">
+        <div class="physical-win-icon" id="physicalWinModalIcon">🥤</div>
+        <div class="physical-win-badge">✨ LOT PHYSIQUE RARE STAND BDE !</div>
+        <h3 class="physical-win-title">FÉLICITATIONS !</h3>
+        <p style="color:var(--text-secondary); font-size:0.95rem; margin-bottom:0.75rem; line-height:1.5;">
+          Incroyable tirage ! Tu viens de remporter un véritable produit du stand BDE :
+        </p>
+        <div class="physical-win-product" id="physicalWinModalName">Coca-Cola Frais (33cl)</div>
+
+        <div class="claim-code-box">
+          <div style="font-size:0.8rem; color:var(--gold-primary); text-transform:uppercase; letter-spacing:1px; margin-bottom:0.35rem;">
+            🎟️ Ton Code de Retrait Unique
+          </div>
+          <div class="claim-code-text" id="physicalWinModalCode">MB-XXXX-XXXX</div>
+          <div style="font-size:0.78rem; color:var(--text-muted); margin-top:0.4rem;">
+            Usage unique • Présente ce code aux permanences du BDE
+          </div>
+        </div>
+
+        <div style="display:flex; gap:0.75rem; justify-content:center; flex-wrap:wrap; margin-top:1rem;">
+          <button class="btn btn-outline" id="copyPhysicalCodeBtn" style="flex:1; min-width:140px; padding:0.75rem;">
+            📋 Copier le Code
+          </button>
+          <button class="btn btn-gold" id="viewMyRewardsBtn" style="flex:1; min-width:140px; padding:0.75rem;">
+            🎒 Mes Récompenses
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Conteneur Toasts -->
   <div class="toast-container" id="toastContainer"></div>
 
@@ -1563,6 +1733,7 @@
   <script src="/js/games/wheel.js"></script>
   <script src="/js/games/freeWheel.js"></script>
   <script src="/js/games/plinko.js"></script>
+  <script src="/js/games/fortuneWheels.js"></script>
   <script src="/js/admin.js"></script>
   <script src="/js/router.js"></script>
   <script src="/js/app.js"></script>
