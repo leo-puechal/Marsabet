@@ -1,0 +1,154 @@
+/* European Roulette */
+.roulette-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  width: 100%;
+}
+
+.roulette-wheel-container {
+  position: relative;
+  width: 280px;
+  height: 280px;
+}
+
+#rouletteCanvas {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), 0 0 25px rgba(212, 175, 55, 0.4);
+}
+
+.roulette-center-hub {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 60px;
+  height: 60px;
+  background: radial-gradient(circle, #FFE27A 0%, #D4AF37 60%, #583F02 100%);
+  border-radius: 50%;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  border: 2px solid #FFF;
+}
+
+/* Betting Table Grid */
+.roulette-board {
+  background: #064E3B; /* Vert feutre traditionnel */
+  border: 4px solid var(--gold-primary);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.6);
+  width: 100%;
+  max-width: 680px;
+  user-select: none;
+}
+
+.board-top-row {
+  display: flex;
+  margin-bottom: 4px;
+}
+
+.board-cell-zero {
+  flex: 1;
+  background: #047857;
+  color: #FFF;
+  font-family: var(--font-display);
+  font-weight: 800;
+  padding: 0.6rem;
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.board-cell-zero:hover { background: #059669; }
+
+.board-grid-numbers {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  grid-template-rows: repeat(3, 40px);
+  gap: 3px;
+  margin-bottom: 4px;
+}
+
+.num-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: #FFF;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 3px;
+  cursor: pointer;
+  position: relative;
+  transition: transform 0.1s ease;
+}
+
+.num-cell:hover {
+  transform: scale(1.08);
+  z-index: 2;
+  border-color: var(--gold-light);
+}
+
+.num-cell.red { background: #DC2626; }
+.num-cell.black { background: #111827; }
+
+/* Dozens & Columns & Outside bets */
+.board-outside-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
+.board-even-row {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 4px;
+}
+
+.outside-btn {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #FFF;
+  padding: 0.5rem 0.2rem;
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-align: center;
+  border-radius: 3px;
+  cursor: pointer;
+  position: relative;
+  transition: var(--transition-smooth);
+}
+
+.outside-btn:hover {
+  background: rgba(212, 175, 55, 0.25);
+  border-color: var(--gold-primary);
+}
+
+.outside-btn.red-opt { background: rgba(220, 38, 38, 0.6); }
+.outside-btn.black-opt { background: rgba(17, 24, 39, 0.8); }
+
+.chip-placed-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: var(--gold-gradient);
+  color: #000;
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 2px 5px;
+  border-radius: var(--radius-full);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+  border: 1px solid #FFF;
+}

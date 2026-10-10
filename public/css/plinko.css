@@ -1,0 +1,206 @@
+/* Plinko Board */
+.plinko-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+#plinkoCanvas {
+  max-width: 480px;
+  width: 100%;
+  height: 480px;
+  border-radius: var(--radius-lg);
+  background: radial-gradient(circle at 50% 20%, #0d285a 0%, #040e21 100%);
+  border: 2px solid var(--gold-primary);
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.7);
+}
+
+.plinko-controls-bar {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.risk-btn {
+  padding: 0.4rem 1rem;
+  border-radius: var(--radius-full);
+  font-size: 0.8rem;
+  font-weight: 700;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.risk-btn.active {
+  background: var(--gold-gradient);
+  color: #000;
+  border-color: #FFF;
+}
+
+/* Sélecteur de nombre de billes */
+.plinko-ball-selector {
+  display: flex;
+  gap: 0.4rem;
+  margin-bottom: 0.75rem;
+}
+
+.ball-count-btn {
+  flex: 1;
+  padding: 0.5rem 0.2rem;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius-md);
+  color: #FFF;
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+  text-align: center;
+}
+
+.ball-count-btn:hover {
+  background: rgba(212, 175, 55, 0.15);
+  border-color: var(--gold-primary);
+  transform: translateY(-2px);
+}
+
+.ball-count-btn.active {
+  background: var(--gold-gradient);
+  color: #0A1F44;
+  border-color: #FFF;
+  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.35);
+}
+
+/* Récapitulatif du coût total */
+.plinko-cost-summary {
+  background: rgba(10, 31, 68, 0.6);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  border-radius: var(--radius-md);
+  padding: 0.75rem;
+  margin-bottom: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.cost-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.cost-line.total {
+  border-top: 1px dashed rgba(255, 255, 255, 0.15);
+  padding-top: 0.4rem;
+  margin-top: 0.2rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #FFF;
+}
+
+.cost-total-value {
+  color: var(--gold-primary);
+  font-weight: 800;
+  font-size: 1.05rem;
+}
+
+/* Résultat détaillé par bille */
+.plinko-breakdown-box {
+  margin-top: 1rem;
+  width: 100%;
+  max-width: 480px;
+  background: rgba(6, 18, 42, 0.85);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  border-radius: var(--radius-lg);
+  padding: 0.85rem 1rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  animation: fadeIn 0.3s ease;
+}
+
+.breakdown-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.6rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.breakdown-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--gold-primary);
+}
+
+.breakdown-badge {
+  font-size: 0.8rem;
+  font-weight: 800;
+  padding: 0.2rem 0.6rem;
+  border-radius: var(--radius-full);
+}
+
+.breakdown-badge.win {
+  background: rgba(16, 185, 129, 0.2);
+  color: #34D399;
+  border: 1px solid #10B981;
+}
+
+.breakdown-badge.lose {
+  background: rgba(239, 68, 68, 0.2);
+  color: #F87171;
+  border: 1px solid #EF4444;
+}
+
+.plinko-ball-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 0.4rem;
+  max-height: 160px;
+  overflow-y: auto;
+}
+
+.plinko-ball-pill {
+  display: flex;
+  flex-direction: column;
+  padding: 0.4rem 0.6rem;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 0.78rem;
+  transition: transform 0.2s ease;
+}
+
+.plinko-ball-pill:hover {
+  transform: translateY(-1px);
+}
+
+.plinko-ball-pill .pill-top {
+  display: flex;
+  justify-content: space-between;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.plinko-ball-pill .pill-payout {
+  font-weight: 800;
+  font-size: 0.88rem;
+  margin-top: 0.2rem;
+}
+
+.plinko-ball-pill.win .pill-payout {
+  color: #34D399;
+}
+
+.plinko-ball-pill.neutral .pill-payout {
+  color: var(--gold-primary);
+}
+
+.plinko-ball-pill.lose .pill-payout {
+  color: #F87171;
+}
+

@@ -1,0 +1,78 @@
+/* Free Daily Wheel Styles */
+
+.free-wheel-banner {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(14, 39, 84, 0.95) 100%);
+  border: 1.5px solid #10B981;
+  border-radius: var(--radius-xl);
+  padding: 1.5rem 2rem;
+  margin-bottom: 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 20px rgba(16, 185, 129, 0.2);
+}
+
+.free-wheel-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: rgba(16, 185, 129, 0.2);
+  border: 1px solid #10B981;
+  border-radius: var(--radius-full);
+  padding: 0.3rem 0.8rem;
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #34D399;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 0.5rem;
+}
+
+/* Countdown Timer Badge */
+.countdown-timer-box {
+  background: rgba(4, 12, 28, 0.85);
+  border: 1px solid var(--gold-primary);
+  border-radius: var(--radius-md);
+  padding: 0.75rem 1.25rem;
+  text-align: center;
+}
+
+.countdown-timer-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 0.25rem;
+}
+
+.countdown-timer-digits {
+  font-family: var(--font-mono);
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--gold-light);
+  letter-spacing: 2px;
+}
+
+.countdown-timer-digits.ready {
+  color: #34D399;
+  animation: pulseLight 1s infinite alternate;
+}
+
+/* Free Wheel Card in Lobby */
+.game-card.free-wheel-card {
+  border-color: #10B981;
+  background: linear-gradient(180deg, rgba(6, 78, 59, 0.5) 0%, rgba(10, 26, 56, 0.95) 100%);
+}
+
+.game-card.free-wheel-card::before {
+  background: linear-gradient(90deg, #10B981 0%, #34D399 100%);
+}
+
+.game-badge.free {
+  background: rgba(16, 185, 129, 0.2);
+  border: 1px solid #10B981;
+  color: #34D399;
+  font-weight: 800;
+}

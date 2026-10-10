@@ -1,0 +1,29 @@
+{
+  "name": "marsabet",
+  "version": "1.0.0",
+  "description": "Marsabet est un site de casino fictif concu par le BDE Epitech Marseille qui permet a ses etudiants de jouer a tout les jeux majeurs du casino fictivement avec la possibilité d'échanger ses coins contre des biens fictifs (boissons, nourriture etc...)",
+  "main": "index.js",
+  "scripts": {
+    "start": "node server/server.js",
+    "dev": "node --watch server/server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/leo-puechal/Marsabet.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/leo-puechal/Marsabet/issues"
+  },
+  "homepage": "https://github.com/leo-puechal/Marsabet#readme",
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "better-sqlite3": "^9.6.0",
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.7",
+    "express": "^5.3.0",
+    "jsonwebtoken": "^9.0.3"
+  }
+}
