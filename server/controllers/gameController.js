@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const db = require('../database/db');
 const slotsEngine = require('../services/games/slotsEngine');
 const blackjackEngine = require('../services/games/blackjackEngine');
@@ -6,6 +7,8 @@ const diceEngine = require('../services/games/diceEngine');
 const wheelEngine = require('../services/games/wheelEngine');
 const plinkoEngine = require('../services/games/plinkoEngine');
 const freeWheelEngine = require('../services/games/freeWheelEngine');
+const sliderEngine = require('../services/games/sliderEngine');
+const crashEngine = require('../services/games/crashEngine');
 const vipService = require('../services/vipService');
 
 // Helper transactionnel pour mettre à jour le joueur, wager, rang VIP et l'historique
@@ -965,5 +968,232 @@ exports.spinFreeWheel = (req, res) => {
   } catch (err) {
     console.error('Erreur spin roue gratuite:', err);
     return res.status(500).json({ error: 'Erreur lors du spin gratuit.' });
+  }
+};
+
+// ======================== SLIDER (JEU INDÉPENDANT) ========================
+exports.playSlider = (req, res) => {
+  try {
+    const userId = req.user.id;
+    const bet = Number(req.body.bet);
+    const target = parseFloat(req.body.target) || 50;
+    const condition = req.body.condition || 'under';
+
+    if (!Number.isInteger(bet) || bet <= 0) {
+      return res.status(400).json({ error: 'Mise invalide (minimum 1 jeton).' });
+    }
+
+    const user = db.prepare('SELECT coins FROM users WHERE id = ?').get(userId);
+    if (!user || user.coins < bet) {
+      return res.status(400).json({ error: 'Solde insuffisant pour cette mise.' });
+    }
+
+    const result = sliderEngine.playSlider(bet, target, condition);
+    const { newCoins } = recordGameResult(userId, 'slider', bet, result.payout, result);
+
+    return res.json({
+      ...result,
+      coins: newCoins
+    });
+  } catch (err) {
+    console.error('Erreur slider:', err);
+    return res.status(err.message === 'Solde insuffisant.' ? 400 : 500).json({ error: err.message || 'Erreur lors du jeu Slider.' });
+  }
+};
+
+// ======================== CRASH (FUSÉE COSMIQUE) ========================
+exports.getCrashHistory = (req, res) => {
+  try {
+    const rows = db.prepare('SELECT crash_point FROM crash_history ORDER BY id DESC LIMIT 25').all();
+    const history = rows.map(r => r.crash_point);
+    return res.json({ history });
+  } catch (err) {
+    console.error('Erreur historique crash:', err);
+    return res.status(500).json({ error: 'Impossible de récupérer l\'historique.' });
+  }
+};
+
+exports.startCrash = (req, res) => {
+  try {
+    const userId = req.user.id;
+    const bet = Number(req.body.bet);
+
+    if (!Number.isInteger(bet) || bet <= 0) {
+      return res.status(400).json({ error: 'Mise invalide (minimum 1 jeton).' });
+    }
+
+    const user = db.prepare('SELECT coins FROM users WHERE id = ?').get(userId);
+    if (!user || user.coins < bet) {
+      return res.status(400).json({ error: 'Solde insuffisant pour cette mise.' });
+    }
+
+    // Déduction immédiate de la mise
+    const gameId = crypto.randomUUID();
+    const crashPoint = crashEngine.generateCrashPoint();
+
+    const runTx = db.transaction(() => {
+      db.prepare('UPDATE users SET coins = coins - ?, total_wagered = total_wagered + ?, games_played = games_played + 1 WHERE id = ?').run(bet, bet, userId);
+      db.prepare(`
+        INSERT INTO crash_sessions (id, user_id, bet, crash_point, status)
+        VALUES (?, ?, ?, ?, 'running')
+      `).run(gameId, userId, bet, crashPoint);
+      return db.prepare('SELECT coins FROM users WHERE id = ?').get(userId).coins;
+    });
+
+    const updatedCoins = runTx();
+
+    return res.json({
+      success: true,
+      gameId,
+      bet,
+      crashPoint, // Secret côté serveur mais calculé d'avance et transmis au moteur
+      coins: updatedCoins
+    });
+  } catch (err) {
+    console.error('Erreur démarrage crash:', err);
+    return res.status(err.message === 'Solde insuffisant.' ? 400 : 500).json({ error: err.message || 'Erreur lors du démarrage du tour de Crash.' });
+  }
+};
+
+exports.cashoutCrash = (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { gameId, multiplier } = req.body;
+    const userMult = Math.max(1.00, Number(multiplier) || 1.00);
+
+    const session = db.prepare('SELECT * FROM crash_sessions WHERE id = ? AND user_id = ?').get(gameId, userId);
+    if (!session) {
+      return res.status(404).json({ error: 'Partie introuvable.' });
+    }
+
+    if (session.status !== 'running') {
+      return res.status(400).json({ error: 'Cette partie est déjà terminée.' });
+    }
+
+    const crashPoint = session.crash_point;
+
+    // Vérifier si l'utilisateur a encaissé avant le point de crash
+    if (userMult <= crashPoint) {
+      const payout = Math.floor(session.bet * userMult);
+      const profit = payout - session.bet;
+
+      const runTx = db.transaction(() => {
+        db.prepare(`
+          UPDATE crash_sessions
+          SET status = 'cashed_out',
+              cashed_multiplier = ?,
+              payout = ?
+          WHERE id = ?
+        `).run(userMult, payout, gameId);
+
+        db.prepare(`
+          UPDATE users
+          SET coins = coins + ?,
+              total_won = total_won + ?,
+              biggest_win = MAX(biggest_win, ?)
+          WHERE id = ?
+        `).run(payout, payout, payout, userId);
+
+        db.prepare(`
+          INSERT INTO game_history (user_id, game_type, bet, payout, profit, details)
+          VALUES (?, 'crash', ?, ?, ?, ?)
+        `).run(userId, session.bet, payout, profit, JSON.stringify({
+          multiplier: userMult,
+          crashPoint,
+          outcome: 'cashed_out'
+        }));
+
+        db.prepare('INSERT INTO crash_history (crash_point) VALUES (?)').run(crashPoint);
+
+        return db.prepare('SELECT coins FROM users WHERE id = ?').get(userId).coins;
+      });
+
+      const updatedCoins = runTx();
+
+      return res.json({
+        won: true,
+        multiplier: userMult,
+        payout,
+        profit,
+        crashPoint,
+        coins: updatedCoins
+      });
+    } else {
+      // Trop tard : partie crashée
+      db.transaction(() => {
+        db.prepare(`
+          UPDATE crash_sessions
+          SET status = 'crashed',
+              payout = 0
+          WHERE id = ?
+        `).run(gameId);
+
+        db.prepare(`
+          INSERT INTO game_history (user_id, game_type, bet, payout, profit, details)
+          VALUES (?, 'crash', ?, 0, ?, ?)
+        `).run(userId, session.bet, -session.bet, JSON.stringify({
+          multiplier: userMult,
+          crashPoint,
+          outcome: 'crashed'
+        }));
+
+        db.prepare('INSERT INTO crash_history (crash_point) VALUES (?)').run(crashPoint);
+      })();
+
+      const currentCoins = db.prepare('SELECT coins FROM users WHERE id = ?').get(userId).coins;
+
+      return res.json({
+        won: false,
+        multiplier: 0,
+        payout: 0,
+        profit: -session.bet,
+        crashPoint,
+        coins: currentCoins
+      });
+    }
+  } catch (err) {
+    console.error('Erreur cashout crash:', err);
+    return res.status(500).json({ error: err.message || 'Erreur lors de l\'encaissement.' });
+  }
+};
+
+exports.finishCrash = (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { gameId } = req.body;
+
+    const session = db.prepare('SELECT * FROM crash_sessions WHERE id = ? AND user_id = ?').get(gameId, userId);
+    if (!session || session.status !== 'running') {
+      return res.json({ success: true });
+    }
+
+    const crashPoint = session.crash_point;
+
+    db.transaction(() => {
+      db.prepare(`
+        UPDATE crash_sessions
+        SET status = 'crashed',
+            payout = 0
+        WHERE id = ?
+      `).run(gameId);
+
+      db.prepare(`
+        INSERT INTO game_history (user_id, game_type, bet, payout, profit, details)
+        VALUES (?, 'crash', ?, 0, ?, ?)
+      `).run(userId, session.bet, -session.bet, JSON.stringify({
+        crashPoint,
+        outcome: 'crashed'
+      }));
+
+      db.prepare('INSERT INTO crash_history (crash_point) VALUES (?)').run(crashPoint);
+    })();
+
+    return res.json({
+      success: true,
+      crashPoint
+    });
+  } catch (err) {
+    console.error('Erreur finish crash:', err);
+    return res.status(500).json({ error: 'Erreur lors de la clôture du tour.' });
   }
 };

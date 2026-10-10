@@ -15,6 +15,8 @@ const Router = {
     '/jeux/blackjack': 'blackjack',
     '/jeux/roulette': 'roulette',
     '/jeux/des': 'dice',
+    '/jeux/slider': 'slider',
+    '/jeux/crash': 'crash',
     '/jeux/roue': 'wheel',
     '/jeux/roue-quotidienne': 'free-wheel',
     '/jeux/plinko': 'plinko',
@@ -34,6 +36,8 @@ const Router = {
     'blackjack': '/jeux/blackjack',
     'roulette': '/jeux/roulette',
     'dice': '/jeux/des',
+    'slider': '/jeux/slider',
+    'crash': '/jeux/crash',
     'wheel': '/jeux/roue',
     'free-wheel': '/jeux/roue-quotidienne',
     'plinko': '/jeux/plinko',
@@ -169,6 +173,8 @@ const Router = {
       window.FortuneWheels.loadWheelArena(param || 'quotidienne');
     } else if (viewName === 'free-wheel' && window.FreeWheelGame) {
       window.FreeWheelGame.fetchStatus();
+    } else if (viewName === 'crash' && window.CrashGame) {
+      window.CrashGame.resizeCanvas();
     } else if (viewName === 'admin' && window.AdminBDE) {
       window.AdminBDE.switchTab('orders');
     }
@@ -199,7 +205,9 @@ const Router = {
       'slots': 'Machine à Sous Cosmique — Marsabet',
       'blackjack': 'Table de Blackjack — Marsabet',
       'roulette': 'Roulette Européenne — Marsabet',
-      'dice': 'Jeu de Dés & Craps — Marsabet',
+      'dice': 'Jeu de Dés (Craps) — Marsabet',
+      'slider': 'Slider Over/Under — Marsabet',
+      'crash': 'Crash Galactique — Marsabet',
       'wheel': 'Roue de la Fortune — Marsabet',
       'free-wheel': 'Roue Quotidienne Gratuite — Marsabet',
       'plinko': 'Plinko Cosmique — Marsabet',

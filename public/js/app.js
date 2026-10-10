@@ -274,6 +274,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   window.BlackjackGame.init();
   window.RouletteGame.init();
   window.DiceGame.init();
+  if (window.SliderGame) window.SliderGame.init();
+  if (window.CrashGame) window.CrashGame.init();
   window.WheelGame.init();
   window.PlinkoGame.init();
   if (window.FreeWheelGame) window.FreeWheelGame.init();

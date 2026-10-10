@@ -302,6 +302,43 @@ const API = {
     return this.request('/games/free-wheel/spin', {
       method: 'POST'
     });
+  },
+
+  // Slider
+  async playSlider(data) {
+    return this.request('/games/slider/play', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  },
+
+  // Crash
+  async getCrashHistory() {
+    return this.request('/games/crash/history');
+  },
+
+  async startCrash(param) {
+    const body = (typeof param === 'object' && param !== null) ? param : { bet: param };
+    return this.request('/games/crash/play', {
+      method: 'POST',
+      body: JSON.stringify(body)
+    });
+  },
+
+  async cashoutCrash(param1, param2) {
+    const body = (typeof param1 === 'object' && param1 !== null) ? param1 : { gameId: param1, multiplier: param2 };
+    return this.request('/games/crash/cashout', {
+      method: 'POST',
+      body: JSON.stringify(body)
+    });
+  },
+
+  async finishCrash(param) {
+    const body = (typeof param === 'object' && param !== null) ? param : { gameId: param };
+    return this.request('/games/crash/finish', {
+      method: 'POST',
+      body: JSON.stringify(body)
+    });
   }
 };
 

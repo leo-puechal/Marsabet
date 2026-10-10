@@ -31,6 +31,16 @@ router.post('/wheel/spin', gameController.playWheel);
 // Plinko
 router.post('/plinko/drop', gameController.playPlinko);
 
+// Slider
+router.post('/slider/play', gameController.playSlider);
+
+// Crash
+router.get('/crash/history', gameController.getCrashHistory);
+router.post('/crash/play', gameController.startCrash);
+router.post('/crash/start', gameController.startCrash);
+router.post('/crash/cashout', gameController.cashoutCrash);
+router.post('/crash/finish', gameController.finishCrash);
+
 // Free Daily Wheel
 router.get('/free-wheel/status', gameController.getFreeWheelStatus);
 router.post('/free-wheel/spin', gameController.spinFreeWheel);

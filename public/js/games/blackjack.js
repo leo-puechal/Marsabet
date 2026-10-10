@@ -72,23 +72,55 @@ const BlackjackGame = {
     cardDiv.className = `bj-card ${isFacedown ? 'flipped' : ''}`;
 
     // Face avant
+    const color = (card.suit === '♥' || card.suit === '♦' || card.color === 'red') ? 'red' : 'black';
+    const rank = card.rank && card.rank !== '?' ? card.rank : '';
+    const suit = card.suit && card.suit !== '?' ? card.suit : '';
+
+    let centerHtml = suit;
+    if (['J', 'Q', 'K'].includes(rank)) {
+      const figureGlyphs = { 'K': '👑', 'Q': '👸', 'J': '⚔️' };
+      centerHtml = `
+        <div class="figure-illustration">
+          <span class="figure-avatar">${figureGlyphs[rank] || '👑'}</span>
+          <span class="figure-suit-mini">${suit}</span>
+        </div>
+      `;
+    } else if (rank === 'A') {
+      centerHtml = `<div class="ace-center">${suit}</div>`;
+    } else if (rank) {
+      centerHtml = `
+        <div class="number-center">
+          <span class="pip-val">${rank}</span>
+          <span class="pip-suit">${suit}</span>
+        </div>
+      `;
+    }
+
     const frontDiv = document.createElement('div');
-    frontDiv.className = `bj-card-front ${card.color || 'black'}`;
+    frontDiv.className = `bj-card-front ${color}`;
     frontDiv.innerHTML = `
-      <div class="card-top">
-        <span class="card-rank">${card.rank === '?' ? '' : card.rank}</span>
-        <span class="card-suit">${card.suit || ''}</span>
+      <div class="card-corner card-top-left">
+        <span class="card-rank">${rank}</span>
+        <span class="card-suit">${suit}</span>
       </div>
-      <div class="card-center">${card.suit || ''}</div>
-      <div class="card-bottom">
-        <span class="card-rank">${card.rank === '?' ? '' : card.rank}</span>
-        <span class="card-suit">${card.suit || ''}</span>
+      <div class="card-center">${centerHtml}</div>
+      <div class="card-corner card-bottom-right">
+        <span class="card-rank">${rank}</span>
+        <span class="card-suit">${suit}</span>
       </div>
     `;
 
     // Face arrière (Cosmique Mars)
     const backDiv = document.createElement('div');
     backDiv.className = 'bj-card-back';
+    backDiv.innerHTML = `
+      <div class="card-back-pattern">
+        <div class="card-back-crest">
+          <span class="crest-icon">🪐</span>
+          <span class="crest-text">MARSABET</span>
+        </div>
+      </div>
+    `;
 
     cardDiv.appendChild(frontDiv);
     cardDiv.appendChild(backDiv);
@@ -116,7 +148,7 @@ const BlackjackGame = {
     if (dealerCardsEl && data.dealerHand) {
       dealerCardsEl.innerHTML = '';
       data.dealerHand.forEach((c, idx) => {
-        const isHidden = (c.rank === '?' || c.color === 'hidden');
+        const isHidden = (idx === 1 && (c.rank === '?' || data.status === 'playing'));
         dealerCardsEl.appendChild(this.createCardElement(c, isHidden, false));
       });
     }
@@ -195,35 +227,35 @@ const BlackjackGame = {
       if (playerScoreEl) playerScoreEl.textContent = '-';
 
       // Séquence de distribution une par une (ordre casino officiel) :
-      // 1. Joueur Carte 1
+      // 1. Joueur Carte 1 (Face Visible)
       if (playerCardsEl && data.playerHand[0]) {
         this.pulseShoe();
         if (window.sound) window.sound.playCard();
         playerCardsEl.appendChild(this.createCardElement(data.playerHand[0], false, true));
-        await this.sleep(450);
+        await this.sleep(400);
       }
 
-      // 2. Croupier Carte 1 (Face Cachée)
+      // 2. Croupier Carte 1 (Face Visible — Up-card)
       if (dealerCardsEl && data.dealerHand[0]) {
         this.pulseShoe();
         if (window.sound) window.sound.playCard();
-        dealerCardsEl.appendChild(this.createCardElement(data.dealerHand[0], true, true));
-        await this.sleep(450);
+        dealerCardsEl.appendChild(this.createCardElement(data.dealerHand[0], false, true));
+        await this.sleep(400);
       }
 
-      // 3. Joueur Carte 2
+      // 3. Joueur Carte 2 (Face Visible)
       if (playerCardsEl && data.playerHand[1]) {
         this.pulseShoe();
         if (window.sound) window.sound.playCard();
         playerCardsEl.appendChild(this.createCardElement(data.playerHand[1], false, true));
-        await this.sleep(450);
+        await this.sleep(400);
       }
 
-      // 4. Croupier Carte 2 (Face Visible)
+      // 4. Croupier Carte 2 (Face Cachée — Hole-card avec dos de carte stylisé)
       if (dealerCardsEl && data.dealerHand[1]) {
         this.pulseShoe();
         if (window.sound) window.sound.playCard();
-        dealerCardsEl.appendChild(this.createCardElement(data.dealerHand[1], false, true));
+        dealerCardsEl.appendChild(this.createCardElement(data.dealerHand[1], true, true));
         await this.sleep(400);
       }
 
@@ -236,8 +268,10 @@ const BlackjackGame = {
       this.updateControls(data);
 
       if (data.status === 'finished') {
-        // En cas de Blackjack naturel immédiat, retourner la carte cachée
-        await this.revealHiddenDealerCard(data.dealerHand[0]);
+        // En cas de Blackjack naturel immédiat, retourner la carte cachée (index 1)
+        if (data.dealerHand && data.dealerHand[1]) {
+          await this.revealHiddenDealerCard(data.dealerHand[1]);
+        }
         if (dealerScoreEl) dealerScoreEl.textContent = data.dealerScore;
         this.handleFinish(data);
       }
@@ -275,8 +309,8 @@ const BlackjackGame = {
       this.updateControls(data);
 
       if (data.status === 'finished') {
-        if (data.dealerHand && data.dealerHand[0]) {
-          await this.revealHiddenDealerCard(data.dealerHand[0]);
+        if (data.dealerHand && data.dealerHand[1]) {
+          await this.revealHiddenDealerCard(data.dealerHand[1]);
         }
         const dealerScoreEl = document.getElementById('bjDealerScore');
         if (dealerScoreEl) dealerScoreEl.textContent = data.dealerScore;
@@ -344,37 +378,63 @@ const BlackjackGame = {
     }
   },
 
-  // Animation Flip 3D pour révéler la carte cachée du croupier
+  // Animation Flip 3D pour révéler la carte cachée du croupier (index 1)
   async revealHiddenDealerCard(trueCard) {
     const dealerCardsEl = document.getElementById('bjDealerCards');
-    if (!dealerCardsEl) return;
+    if (!dealerCardsEl || dealerCardsEl.children.length < 2) return;
 
-    const firstCardWrapper = dealerCardsEl.children[0];
-    if (!firstCardWrapper) return;
+    // La carte cachée du croupier est la 2ème carte (index 1) !
+    const hiddenCardWrapper = dealerCardsEl.children[1];
+    if (!hiddenCardWrapper) return;
 
-    const cardDiv = firstCardWrapper.querySelector('.bj-card');
+    const cardDiv = hiddenCardWrapper.querySelector('.bj-card');
     if (!cardDiv) return;
 
     // Si on a les vraies infos de la carte, les injecter dans la face avant
-    if (trueCard && trueCard.rank !== '?') {
+    if (trueCard && trueCard.rank && trueCard.rank !== '?') {
       const frontDiv = cardDiv.querySelector('.bj-card-front');
       if (frontDiv) {
-        frontDiv.className = `bj-card-front ${trueCard.color || 'black'}`;
+        const color = (trueCard.suit === '♥' || trueCard.suit === '♦' || trueCard.color === 'red') ? 'red' : 'black';
+        frontDiv.className = `bj-card-front ${color}`;
+
+        const rank = trueCard.rank;
+        const suit = trueCard.suit;
+
+        let centerHtml = suit;
+        if (['J', 'Q', 'K'].includes(rank)) {
+          const figureGlyphs = { 'K': '👑', 'Q': '👸', 'J': '⚔️' };
+          centerHtml = `
+            <div class="figure-illustration">
+              <span class="figure-avatar">${figureGlyphs[rank] || '👑'}</span>
+              <span class="figure-suit-mini">${suit}</span>
+            </div>
+          `;
+        } else if (rank === 'A') {
+          centerHtml = `<div class="ace-center">${suit}</div>`;
+        } else {
+          centerHtml = `
+            <div class="number-center">
+              <span class="pip-val">${rank}</span>
+              <span class="pip-suit">${suit}</span>
+            </div>
+          `;
+        }
+
         frontDiv.innerHTML = `
-          <div class="card-top">
-            <span class="card-rank">${trueCard.rank}</span>
-            <span class="card-suit">${trueCard.suit}</span>
+          <div class="card-corner card-top-left">
+            <span class="card-rank">${rank}</span>
+            <span class="card-suit">${suit}</span>
           </div>
-          <div class="card-center">${trueCard.suit}</div>
-          <div class="card-bottom">
-            <span class="card-rank">${trueCard.rank}</span>
-            <span class="card-suit">${trueCard.suit}</span>
+          <div class="card-center">${centerHtml}</div>
+          <div class="card-corner card-bottom-right">
+            <span class="card-rank">${rank}</span>
+            <span class="card-suit">${suit}</span>
           </div>
         `;
       }
     }
 
-    if (window.sound) window.sound.playCard();
+    if (window.sound && typeof window.sound.playCard === 'function') window.sound.playCard();
     // Déclencher la rotation 3D fluide
     cardDiv.classList.remove('flipped');
     await this.sleep(600);
@@ -385,9 +445,9 @@ const BlackjackGame = {
     const dealerCardsEl = document.getElementById('bjDealerCards');
     const dealerScoreEl = document.getElementById('bjDealerScore');
 
-    // 1. Retourner la carte cachée
-    if (data.dealerHand && data.dealerHand[0]) {
-      await this.revealHiddenDealerCard(data.dealerHand[0]);
+    // 1. Retourner la carte cachée (index 1)
+    if (data.dealerHand && data.dealerHand[1]) {
+      await this.revealHiddenDealerCard(data.dealerHand[1]);
     }
 
     // 2. Tirer séquentiellement chaque carte additionnelle du croupier (> 2 cartes)

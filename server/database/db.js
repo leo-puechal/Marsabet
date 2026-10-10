@@ -90,6 +90,23 @@ function initDb() {
       pending_gamble_amount INTEGER NOT NULL DEFAULT 0,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
+
+    CREATE TABLE IF NOT EXISTS crash_sessions (
+      id TEXT PRIMARY KEY,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      bet INTEGER NOT NULL,
+      crash_point REAL NOT NULL,
+      status TEXT NOT NULL DEFAULT 'running',
+      cashed_multiplier REAL DEFAULT NULL,
+      payout INTEGER NOT NULL DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS crash_history (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      crash_point REAL NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
   `);
 
   // Assainissement préalable : aucun solde existant ne doit être inférieur à 0
@@ -374,6 +391,14 @@ function initDb() {
     `).run(hash);
   } else {
     db.prepare("UPDATE users SET role = 'admin' WHERE username = 'bde_admin'").run();
+  }
+
+  // Initialisation de l'historique de Crash si vide
+  const crashCount = db.prepare('SELECT COUNT(*) as count FROM crash_history').get().count;
+  if (crashCount === 0) {
+    const seedPoints = [1.25, 2.14, 1.05, 5.82, 1.88, 3.40, 1.12, 12.45, 1.95, 2.70, 1.01, 4.10, 8.20, 1.45, 1.76];
+    const insertHistory = db.prepare('INSERT INTO crash_history (crash_point) VALUES (?)');
+    seedPoints.forEach(p => insertHistory.run(p));
   }
 }
 

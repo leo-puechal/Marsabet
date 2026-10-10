@@ -1,9 +1,8 @@
-// Dice Game Frontend Logic
+// Dice Game Frontend Logic — Craps Cosmique Marsabet
 
 const DiceGame = {
   isRolling: false,
   currentBet: 25,
-  currentMode: 'classic', // 'classic' ou 'over_under'
   selectedCrapsBet: 'seven',
   diceIcons: ['', '⚀', '⚁', '⚂', '⚃', '⚄', '⚅'],
 
@@ -15,65 +14,33 @@ const DiceGame = {
     const rollBtn = document.getElementById('diceRollBtn');
     if (rollBtn) rollBtn.addEventListener('click', () => this.roll());
 
-    // Switch de mode
-    const tabClassic = document.getElementById('tabDiceClassic');
-    const tabSlider = document.getElementById('tabDiceSlider');
-    const areaClassic = document.getElementById('diceClassicArea');
-    const areaSlider = document.getElementById('diceSliderArea');
-
-    if (tabClassic && tabSlider) {
-      tabClassic.addEventListener('click', () => {
-        this.currentMode = 'classic';
-        tabClassic.classList.add('active');
-        tabSlider.classList.remove('active');
-        if (areaClassic) areaClassic.style.display = 'block';
-        if (areaSlider) areaSlider.style.display = 'none';
-      });
-
-      tabSlider.addEventListener('click', () => {
-        this.currentMode = 'over_under';
-        tabSlider.classList.add('active');
-        tabClassic.classList.remove('active');
-        if (areaClassic) areaClassic.style.display = 'none';
-        if (areaSlider) areaSlider.style.display = 'block';
-      });
-    }
-
     // Choix des paris Craps
     document.querySelectorAll('.dice-bet-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
         document.querySelectorAll('.dice-bet-btn').forEach(b => b.classList.remove('active'));
         e.currentTarget.classList.add('active');
         this.selectedCrapsBet = e.currentTarget.dataset.type;
-        window.sound.playChip();
+        if (window.sound) window.sound.playChip();
       });
     });
-
-    // Curseur Over/Under
-    const slider = document.getElementById('diceTargetSlider');
-    const targetValDisplay = document.getElementById('diceTargetDisplay');
-    const multDisplay = document.getElementById('diceMultDisplay');
-    const conditionSelect = document.getElementById('diceConditionSelect');
-
-    const updateSliderStats = () => {
-      if (!slider) return;
-      const val = parseFloat(slider.value);
-      if (targetValDisplay) targetValDisplay.textContent = val.toFixed(0);
-      const cond = conditionSelect ? conditionSelect.value : 'over';
-      const winChance = cond === 'over' ? 100 - val : val;
-      const mult = (97 / winChance).toFixed(2);
-      if (multDisplay) multDisplay.textContent = `${mult}x`;
-    };
-
-    if (slider) slider.addEventListener('input', updateSliderStats);
-    if (conditionSelect) conditionSelect.addEventListener('change', updateSliderStats);
 
     // Jetons de mise
     document.querySelectorAll('#view-dice .casino-chip').forEach(chip => {
       chip.addEventListener('click', (e) => {
         const val = parseInt(e.currentTarget.dataset.val);
         this.setBet(val);
-        window.sound.playChip();
+        if (window.sound) window.sound.playChip();
+      });
+    });
+
+    const multBtns = document.querySelectorAll('#view-dice .btn-mult');
+    multBtns.forEach(b => {
+      b.addEventListener('click', (e) => {
+        const action = e.currentTarget.dataset.action;
+        if (action === 'half') this.setBet(Math.max(1, Math.floor(this.currentBet / 2)));
+        if (action === 'double') this.setBet(this.currentBet * 2);
+        if (action === 'max' && window.State && window.State.user) this.setBet(window.State.user.coins);
+        if (window.sound) window.sound.playChip();
       });
     });
 
@@ -95,7 +62,7 @@ const DiceGame = {
   async roll() {
     if (this.isRolling) return;
 
-    if (!window.State.isAuthenticated) {
+    if (!window.State || !window.State.isAuthenticated) {
       window.UI.showToast('Connecte-toi pour lancer les dés.', 'error');
       window.UI.openAuthModal('login');
       return;
@@ -118,18 +85,11 @@ const DiceGame = {
     if (die1) die1.classList.add('rolling');
     if (die2) die2.classList.add('rolling');
 
-    const slider = document.getElementById('diceTargetSlider');
-    const cond = document.getElementById('diceConditionSelect');
-
-    const options = this.currentMode === 'classic'
-      ? { betType: this.selectedCrapsBet }
-      : { target: slider ? slider.value : 50, condition: cond ? cond.value : 'over' };
-
     try {
-      const data = await window.API.rollDice(this.currentBet, this.currentMode, options);
+      const data = await window.API.rollDice(this.currentBet, 'classic', { betType: this.selectedCrapsBet });
 
-      // Simulation de lancer 700ms
-      await new Promise(r => setTimeout(r, 700));
+      // Animation de roulement 650ms
+      await new Promise(r => setTimeout(r, 650));
 
       if (die1) {
         die1.classList.remove('rolling');
@@ -140,25 +100,22 @@ const DiceGame = {
         die2.textContent = this.diceIcons[data.die2 || 6];
       }
 
-      if (data.mode === 'over_under') {
-        const rollDisplay = document.getElementById('diceRollNumberDisplay');
-        if (rollDisplay) rollDisplay.textContent = data.roll.toFixed(2);
+      if (data.coins !== undefined) {
+        window.State.updateCoins(data.coins);
       }
-
-      window.State.updateCoins(data.coins);
 
       if (banner) {
         if (data.won) {
-          banner.textContent = `🎲 GAGNÉ ! +${data.payout} JETONS (x${data.multiplier})`;
+          banner.textContent = `🎲 GAGNÉ ! Total ${data.sum} • +${data.payout} JETONS (x${data.multiplier})`;
           banner.className = 'result-banner win';
           banner.style.display = 'block';
-          window.sound.playWin();
-          window.UI.triggerConfetti();
+          if (window.sound) window.sound.playWin();
+          if (window.UI) window.UI.triggerConfetti();
         } else {
-          banner.textContent = `❌ PERDU ! Tirage : ${data.mode === 'classic' ? 'Total ' + data.sum : data.roll}`;
+          banner.textContent = `❌ PERDU ! Total ${data.sum} (Dés : ${data.die1} + ${data.die2})`;
           banner.className = 'result-banner lose';
           banner.style.display = 'block';
-          window.sound.playLose();
+          if (window.sound) window.sound.playLose();
         }
       }
     } catch (err) {
