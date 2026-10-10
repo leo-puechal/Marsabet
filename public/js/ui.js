@@ -114,7 +114,7 @@ const UI = {
   },
 
   // Switch views
-  switchView(viewName) {
+  switchView(viewName, updateUrl = true) {
     const views = document.querySelectorAll('.section-view');
     views.forEach(v => v.classList.remove('active'));
 
@@ -122,6 +122,16 @@ const UI = {
     if (target) {
       target.classList.add('active');
       window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    if (updateUrl && window.Router && window.Router.viewToPath[viewName]) {
+      const targetPath = window.Router.viewToPath[viewName];
+      if (window.location.pathname !== targetPath) {
+        window.history.pushState({ path: targetPath, view: viewName }, '', targetPath);
+      }
+      if (window.Router.updateDocumentTitle) {
+        window.Router.updateDocumentTitle(viewName);
+      }
     }
 
     // Mettre à jour l'état actif dans la navbar

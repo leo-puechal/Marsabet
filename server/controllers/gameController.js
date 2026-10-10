@@ -5,33 +5,38 @@ const rouletteEngine = require('../services/games/rouletteEngine');
 const diceEngine = require('../services/games/diceEngine');
 const wheelEngine = require('../services/games/wheelEngine');
 const plinkoEngine = require('../services/games/plinkoEngine');
+const freeWheelEngine = require('../services/games/freeWheelEngine');
+const vipService = require('../services/vipService');
 
-// Helper transactionnel pour mettre à jour le joueur et l'historique
+// Helper transactionnel pour mettre à jour le joueur, wager, rang VIP et l'historique
 function recordGameResult(userId, gameType, bet, payout, details) {
   const profit = payout - bet;
 
   const runTx = db.transaction(() => {
-    const user = db.prepare('SELECT coins, biggest_win FROM users WHERE id = ?').get(userId);
+    const user = db.prepare('SELECT coins, biggest_win, total_wagered FROM users WHERE id = ?').get(userId);
 
     const newCoins = user.coins - bet + payout;
     const newBiggestWin = Math.max(user.biggest_win, payout);
+    const newWager = user.total_wagered + bet;
+    const vipInfo = vipService.getVipInfo(newWager);
 
     db.prepare(`
       UPDATE users
       SET coins = ?,
-          total_wagered = total_wagered + ?,
+          total_wagered = ?,
           total_won = total_won + ?,
           games_played = games_played + 1,
-          biggest_win = ?
+          biggest_win = ?,
+          vip_rank = ?
       WHERE id = ?
-    `).run(newCoins, bet, payout, newBiggestWin, userId);
+    `).run(newCoins, newWager, payout, newBiggestWin, vipInfo.currentTier.name, userId);
 
     const hist = db.prepare(`
       INSERT INTO game_history (user_id, game_type, bet, payout, profit, details)
       VALUES (?, ?, ?, ?, ?, ?)
     `).run(userId, gameType, bet, payout, profit, JSON.stringify(details));
 
-    return { newCoins, historyId: hist.lastInsertRowid };
+    return { newCoins, newWager, vipInfo, historyId: hist.lastInsertRowid };
   });
 
   return runTx();
@@ -552,5 +557,117 @@ exports.playPlinko = (req, res) => {
   } catch (err) {
     console.error('Erreur plinko:', err);
     return res.status(500).json({ error: 'Erreur lors du lâcher de bille.' });
+  }
+};
+
+// ======================== ROUE QUOTIDIENNE GRATUITE ========================
+exports.getFreeWheelStatus = (req, res) => {
+  try {
+    const userId = req.user.id;
+    const user = db.prepare('SELECT last_free_spin, free_spin_streak, total_wagered FROM users WHERE id = ?').get(userId);
+
+    const COOLDOWN_MS = 24 * 60 * 60 * 1000; // 24h en millisecondes
+    const STREAK_RESET_MS = 48 * 60 * 60 * 1000; // Si > 48h sans tourner, streak reset à 0
+
+    let canSpin = true;
+    let remainingMs = 0;
+    let currentStreak = user.free_spin_streak || 0;
+
+    if (user.last_free_spin) {
+      const lastSpinTime = new Date(user.last_free_spin).getTime();
+      const elapsed = Date.now() - lastSpinTime;
+
+      if (elapsed < COOLDOWN_MS) {
+        canSpin = false;
+        remainingMs = COOLDOWN_MS - elapsed;
+      } else if (elapsed > STREAK_RESET_MS) {
+        // Trop de temps écoulé, le streak est réinitialisé
+        currentStreak = 0;
+      }
+    }
+
+    const vipInfo = vipService.getVipInfo(user.total_wagered);
+
+    return res.json({
+      canSpin,
+      remainingMs,
+      streak: currentStreak,
+      vipInfo,
+      lastFreeSpin: user.last_free_spin
+    });
+  } catch (err) {
+    console.error('Erreur statut roue gratuite:', err);
+    return res.status(500).json({ error: 'Impossible de charger le statut de la roue gratuite.' });
+  }
+};
+
+exports.spinFreeWheel = (req, res) => {
+  try {
+    const userId = req.user.id;
+    const user = db.prepare('SELECT coins, last_free_spin, free_spin_streak, total_wagered FROM users WHERE id = ?').get(userId);
+
+    const COOLDOWN_MS = 24 * 60 * 60 * 1000;
+    const STREAK_RESET_MS = 48 * 60 * 60 * 1000;
+
+    if (user.last_free_spin) {
+      const lastSpinTime = new Date(user.last_free_spin).getTime();
+      const elapsed = Date.now() - lastSpinTime;
+
+      if (elapsed < COOLDOWN_MS) {
+        const remainingSeconds = Math.ceil((COOLDOWN_MS - elapsed) / 1000);
+        return res.status(400).json({
+          error: `Patience ! Ton prochain spin gratuit sera disponible dans ${Math.floor(remainingSeconds / 3600)}h ${Math.floor((remainingSeconds % 3600) / 60)}m.`,
+          remainingMs: COOLDOWN_MS - elapsed
+        });
+      }
+    }
+
+    // Calcul du streak
+    let newStreak = 1;
+    if (user.last_free_spin) {
+      const elapsed = Date.now() - new Date(user.last_free_spin).getTime();
+      if (elapsed <= STREAK_RESET_MS) {
+        newStreak = (user.free_spin_streak || 0) + 1;
+      }
+    }
+
+    const vipInfo = vipService.getVipInfo(user.total_wagered);
+    const result = freeWheelEngine.spinFreeWheel(newStreak, vipInfo.currentTier.bonusMultiplier);
+
+    const newCoins = user.coins + result.finalCoins;
+    const nowIso = new Date().toISOString();
+
+    db.transaction(() => {
+      db.prepare(`
+        UPDATE users
+        SET coins = ?,
+            last_free_spin = ?,
+            free_spin_streak = ?
+        WHERE id = ?
+      `).run(newCoins, nowIso, newStreak, userId);
+
+      db.prepare(`
+        INSERT INTO game_history (user_id, game_type, bet, payout, profit, details)
+        VALUES (?, 'free_daily_wheel', 0, ?, ?, ?)
+      `).run(userId, result.finalCoins, result.finalCoins, JSON.stringify({
+        segment: result.segment.label,
+        baseCoins: result.baseCoins,
+        streak: newStreak,
+        streakBonusPercent: result.streakBonusPercent,
+        vipRank: vipInfo.currentTier.name,
+        vipMultiplier: vipInfo.currentTier.bonusMultiplier
+      }));
+    })();
+
+    return res.json({
+      ...result,
+      coins: newCoins,
+      newStreak,
+      lastFreeSpin: nowIso,
+      vipInfo
+    });
+  } catch (err) {
+    console.error('Erreur spin roue gratuite:', err);
+    return res.status(500).json({ error: 'Erreur lors du spin gratuit.' });
   }
 };

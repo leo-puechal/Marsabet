@@ -69,6 +69,10 @@ class CasinoAudio {
     osc.stop(this.ctx.currentTime + 0.03);
   }
 
+  playWheelTick() {
+    this.playSpinTick();
+  }
+
   // Son de carte distribuée
   playCard() {
     if (this.muted) return;

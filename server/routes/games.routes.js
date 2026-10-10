@@ -28,4 +28,8 @@ router.post('/wheel/spin', gameController.playWheel);
 // Plinko
 router.post('/plinko/drop', gameController.playPlinko);
 
+// Free Daily Wheel
+router.get('/free-wheel/status', gameController.getFreeWheelStatus);
+router.post('/free-wheel/spin', gameController.spinFreeWheel);
+
 module.exports = router;

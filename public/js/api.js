@@ -213,6 +213,17 @@ const API = {
       method: 'POST',
       body: JSON.stringify({ bet, risk })
     });
+  },
+
+  // Free Daily Wheel
+  async getFreeWheelStatus() {
+    return this.request('/games/free-wheel/status');
+  },
+
+  async spinFreeWheel() {
+    return this.request('/games/free-wheel/spin', {
+      method: 'POST'
+    });
   }
 };
 

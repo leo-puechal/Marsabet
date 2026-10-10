@@ -162,7 +162,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   window.DiceGame.init();
   window.WheelGame.init();
   window.PlinkoGame.init();
+  if (window.FreeWheelGame) window.FreeWheelGame.init();
   if (window.AdminBDE) window.AdminBDE.init();
+  if (window.Router) window.Router.init();
 
   // Fermeture modale Ticket
   const closeTicketBtn = document.getElementById('closeTicketModal');
@@ -184,8 +186,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.State.user.role = 'admin';
         window.State.updateUI();
         window.UI.showToast(res.message, 'success');
-        window.UI.switchView('admin');
-        window.AdminBDE.switchTab('claims');
+        if (window.Router) {
+          window.Router.navigate('/admin');
+        } else {
+          window.UI.switchView('admin');
+        }
+        if (window.AdminBDE) window.AdminBDE.switchTab('claims');
       } catch (err) {
         window.UI.showToast(err.message, 'error');
       }
@@ -206,6 +212,9 @@ async function checkSession() {
     window.State.setUser(data.user);
     if (window.BlackjackGame) {
       window.BlackjackGame.checkExistingGame();
+    }
+    if (window.FreeWheelGame) {
+      window.FreeWheelGame.fetchStatus();
     }
   } catch (err) {
     window.API.clearToken();
@@ -257,11 +266,19 @@ async function loadLeaderboard() {
     const podiumP3Name = document.getElementById('podiumP3Name');
     const podiumP3Score = document.getElementById('podiumP3Score');
 
-    if (podiumP1Name) podiumP1Name.textContent = p1 ? p1.username : 'En attente';
+    if (podiumP1Name) {
+      podiumP1Name.innerHTML = p1 ? `<span class="vip-badge ${p1.vipBadgeClass || 'vip-bronze'}" style="margin-right:4px; font-size:0.65rem;">${p1.vipIcon || '🥉'}</span> ${escapeHtml(p1.username)}` : 'En attente';
+    }
     if (podiumP1Score) podiumP1Score.textContent = p1 ? `${p1.coins.toLocaleString()} 🪙` : '-';
-    if (podiumP2Name) podiumP2Name.textContent = p2 ? p2.username : 'En attente';
+
+    if (podiumP2Name) {
+      podiumP2Name.innerHTML = p2 ? `<span class="vip-badge ${p2.vipBadgeClass || 'vip-bronze'}" style="margin-right:4px; font-size:0.65rem;">${p2.vipIcon || '🥉'}</span> ${escapeHtml(p2.username)}` : 'En attente';
+    }
     if (podiumP2Score) podiumP2Score.textContent = p2 ? `${p2.coins.toLocaleString()} 🪙` : '-';
-    if (podiumP3Name) podiumP3Name.textContent = p3 ? p3.username : 'En attente';
+
+    if (podiumP3Name) {
+      podiumP3Name.innerHTML = p3 ? `<span class="vip-badge ${p3.vipBadgeClass || 'vip-bronze'}" style="margin-right:4px; font-size:0.65rem;">${p3.vipIcon || '🥉'}</span> ${escapeHtml(p3.username)}` : 'En attente';
+    }
     if (podiumP3Score) podiumP3Score.textContent = p3 ? `${p3.coins.toLocaleString()} 🪙` : '-';
 
     // Remplir le tableau
@@ -273,11 +290,17 @@ async function loadLeaderboard() {
       if (rank === 3) badge = '🥉';
 
       const isCurrent = window.State.user && window.State.user.id === u.id;
+      const vipClass = u.vipBadgeClass || 'vip-bronze';
+      const vipIcon = u.vipIcon || '🥉';
+      const vipRank = u.vipRank || 'Bronze';
 
       return `
         <tr style="${isCurrent ? 'background: rgba(212, 175, 55, 0.15); font-weight: bold;' : ''}">
           <td><span class="leader-rank-badge">${badge}</span></td>
-          <td><strong>${escapeHtml(u.username)}</strong> ${isCurrent ? '<span style="color:var(--gold-light); font-size:0.75rem;">(Toi)</span>' : ''}</td>
+          <td>
+            <span class="vip-badge ${vipClass}" style="margin-right:6px; font-size:0.65rem;">${vipIcon} ${vipRank}</span>
+            <strong>${escapeHtml(u.username)}</strong> ${isCurrent ? '<span style="color:var(--gold-light); font-size:0.75rem;">(Toi)</span>' : ''}
+          </td>
           <td class="leader-coins">${u.coins.toLocaleString()} 🪙</td>
           <td>🔥 ${u.daily_streak}j</td>
           <td>${u.biggest_win ? u.biggest_win.toLocaleString() + ' 🪙' : '-'}</td>
@@ -298,6 +321,12 @@ async function loadProfile() {
   try {
     const data = await window.API.getProfile();
     const u = data.user;
+    const vip = data.vipInfo || {
+      currentTier: { name: 'Bronze', icon: '🥉', color: '#CD7F32', badgeClass: 'vip-bronze', bonusMultiplier: 1.0, perks: ['Badge Bronze standard'] },
+      nextTier: { name: 'Argent', minWager: 50000 },
+      wagerNeeded: 50000,
+      progressPercent: 0
+    };
 
     const profileUsername = document.getElementById('profileUsername');
     const profileRank = document.getElementById('profileRank');
@@ -306,6 +335,7 @@ async function loadProfile() {
     const profileBiggestWin = document.getElementById('profileBiggestWin');
     const profileTotalWon = document.getElementById('profileTotalWon');
     const profileStreak = document.getElementById('profileStreak');
+    const profileStatWager = document.getElementById('profileStatWager');
 
     if (profileUsername) profileUsername.textContent = u.username;
     if (profileRank) profileRank.textContent = `Rang #${u.rank || '-'}`;
@@ -314,6 +344,59 @@ async function loadProfile() {
     if (profileBiggestWin) profileBiggestWin.textContent = `${u.biggest_win.toLocaleString()} 🪙`;
     if (profileTotalWon) profileTotalWon.textContent = `${u.total_won.toLocaleString()} 🪙`;
     if (profileStreak) profileStreak.textContent = `${u.daily_streak} jour${u.daily_streak > 1 ? 's' : ''}`;
+    if (profileStatWager) profileStatWager.textContent = `${(u.total_wagered || 0).toLocaleString()} 🪙`;
+
+    // Progression VIP
+    const totalWageredEl = document.getElementById('profileTotalWagered');
+    const vipTierNameEl = document.getElementById('profileVipTierName');
+    const vipBadgeEl = document.getElementById('profileVipBadge');
+    const vipAvatarEl = document.getElementById('profileVipAvatar');
+    const vipMultiplierEl = document.getElementById('profileVipMultiplier');
+    const vipProgressFill = document.getElementById('profileVipProgressFill');
+    const vipProgressPercent = document.getElementById('profileVipProgressPercent');
+    const vipNextTierText = document.getElementById('profileVipNextTierText');
+
+    if (totalWageredEl) totalWageredEl.textContent = `${(u.total_wagered || 0).toLocaleString()} 🪙`;
+    if (vipTierNameEl) vipTierNameEl.textContent = `VIP ${vip.currentTier.name.toUpperCase()}`;
+    if (vipBadgeEl) {
+      vipBadgeEl.className = `vip-badge ${vip.currentTier.badgeClass}`;
+      vipBadgeEl.textContent = `${vip.currentTier.icon} ${vip.currentTier.name.toUpperCase()}`;
+    }
+    if (vipAvatarEl) {
+      vipAvatarEl.textContent = vip.currentTier.icon;
+      vipAvatarEl.style.borderColor = vip.currentTier.color;
+    }
+    if (vipMultiplierEl) {
+      vipMultiplierEl.textContent = `Bonus Quotidien x${vip.currentTier.bonusMultiplier} (${vip.currentTier.perks[0] || ''})`;
+    }
+    if (vipProgressFill) {
+      vipProgressFill.style.width = `${vip.progressPercent}%`;
+    }
+    if (vipProgressPercent) {
+      vipProgressPercent.textContent = `Progression : ${vip.progressPercent}%`;
+    }
+    if (vipNextTierText) {
+      if (vip.nextTier) {
+        vipNextTierText.textContent = `Encore ${vip.wagerNeeded.toLocaleString()} 🪙 de mises vers ${vip.nextTier.name}`;
+      } else {
+        vipNextTierText.textContent = '👑 Rang VIP Maximum Atteint !';
+      }
+    }
+
+    // Mise à jour de la roadmap VIP
+    document.querySelectorAll('#profileVipRoadmap .vip-roadmap-tier').forEach(tierEl => {
+      const tierName = tierEl.dataset.tier;
+      if (tierName === vip.currentTier.name) {
+        tierEl.classList.add('active');
+      } else {
+        tierEl.classList.remove('active');
+      }
+    });
+
+    // Rafraîchir le compte à rebours de la roue quotidienne
+    if (window.FreeWheelGame) {
+      window.FreeWheelGame.fetchStatus();
+    }
 
     // Historique
     const histTable = document.getElementById('profileHistoryList');
@@ -527,6 +610,7 @@ function gameLabel(type) {
     roulette: '🎡 Roulette',
     dice: '🎲 Dés',
     wheel: '🎪 Roue de la fortune',
+    free_daily_wheel: '🎁 Roue Quotidienne',
     plinko: '💧 Plinko',
     daily_bonus: '🎁 Bonus quotidien'
   };
@@ -545,3 +629,9 @@ function escapeHtml(str) {
     tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
   );
 }
+
+window.loadLeaderboard = loadLeaderboard;
+window.loadProfile = loadProfile;
+window.loadShop = loadShop;
+window.loadGlobalStats = loadGlobalStats;
+

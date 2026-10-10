@@ -80,11 +80,23 @@ function initDb() {
     CREATE INDEX IF NOT EXISTS idx_orders_user ON shop_orders(user_id, status);
   `);
 
-  // Migration de la table users au cas où la colonne role n'existe pas encore
+  // Migration de la table users au cas où les nouvelles colonnes n'existent pas encore
   const userColumns = db.prepare("PRAGMA table_info(users)").all();
   const hasRole = userColumns.some(c => c.name === 'role');
   if (!hasRole) {
     db.exec("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'student'");
+  }
+  const hasLastFreeSpin = userColumns.some(c => c.name === 'last_free_spin');
+  if (!hasLastFreeSpin) {
+    db.exec("ALTER TABLE users ADD COLUMN last_free_spin TEXT DEFAULT NULL");
+  }
+  const hasFreeSpinStreak = userColumns.some(c => c.name === 'free_spin_streak');
+  if (!hasFreeSpinStreak) {
+    db.exec("ALTER TABLE users ADD COLUMN free_spin_streak INTEGER NOT NULL DEFAULT 0");
+  }
+  const hasVipRank = userColumns.some(c => c.name === 'vip_rank');
+  if (!hasVipRank) {
+    db.exec("ALTER TABLE users ADD COLUMN vip_rank TEXT NOT NULL DEFAULT 'Bronze'");
   }
 
   // Migration de shop_items pour ajouter stock, initial_stock, is_active, created_at si absents

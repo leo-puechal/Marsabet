@@ -63,6 +63,12 @@ const State = {
           headerUsername.innerHTML = `${this.user.username} <span style="font-size:0.7rem; background:#EF4444; color:#FFF; padding:2px 6px; border-radius:99px; margin-left:4px;">ADMIN</span>`;
         }
       }
+      const vipBadge = document.getElementById('headerUserVipBadge');
+      if (vipBadge) {
+        const vip = this.user.vipInfo?.currentTier || { name: 'Bronze', icon: '🥉', badgeClass: 'vip-bronze' };
+        vipBadge.className = `vip-badge ${vip.badgeClass}`;
+        vipBadge.textContent = `${vip.icon} ${vip.name.toUpperCase()}`;
+      }
       if (adminNavLink) {
         adminNavLink.style.display = (this.user.role === 'admin') ? 'inline-flex' : 'none';
       }

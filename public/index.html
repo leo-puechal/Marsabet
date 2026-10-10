@@ -25,6 +25,8 @@
   <link rel="stylesheet" href="/css/leaderboard.css">
   <link rel="stylesheet" href="/css/profile.css">
   <link rel="stylesheet" href="/css/admin.css">
+  <link rel="stylesheet" href="/css/vip.css">
+  <link rel="stylesheet" href="/css/free-wheel.css">
 </head>
 <body>
 
@@ -66,9 +68,10 @@
         <!-- Bouton Connexion / Profil -->
         <button class="btn btn-gold" id="headerAuthBtn">Se Connecter</button>
 
-        <div class="user-profile-btn" id="headerUserMenu" style="display: none;" onclick="window.UI.switchView('profile');">
-          <div class="user-avatar">👤</div>
+        <div class="user-profile-btn" id="headerUserMenu" style="display: none;" onclick="window.Router ? window.Router.navigate('/profil') : window.UI.switchView('profile');">
+          <div class="user-avatar" id="headerUserAvatar">👤</div>
           <span id="headerUsername" style="font-weight: 600; font-size: 0.9rem;">Joueur</span>
+          <span id="headerUserVipBadge" class="vip-badge vip-bronze">🥉 BRONZE</span>
           <button id="logoutBtn" style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:1rem; margin-left:4px;" title="Déconnexion">🚪</button>
         </div>
       </div>
@@ -136,6 +139,27 @@
       </div>
 
       <div class="games-grid" id="casinoGamesGrid">
+        <!-- Roue Quotidienne Gratuite -->
+        <div class="game-card free-wheel-card" data-game="free-wheel">
+          <div>
+            <div class="game-card-top">
+              <div class="game-icon-box" style="background: rgba(16, 185, 129, 0.2); border-color: #10B981;">🎁</div>
+              <div class="game-badges">
+                <span class="game-badge free" id="lobbyFreeWheelBadge">✨ GRATUIT</span>
+                <span class="game-badge hot">24H RECHARGE</span>
+              </div>
+            </div>
+            <div class="game-card-body">
+              <h3 style="color: #34D399;">Roue Quotidienne Gratuite</h3>
+              <p>Tourne chaque jour sans miser le moindre jeton pour remporter jusqu'à 1 000 coins gratuits et accumuler des bonus de série consécutive !</p>
+            </div>
+          </div>
+          <div class="game-card-footer">
+            <span class="game-min-bet" id="lobbyFreeWheelCountdown" style="color: #34D399; font-weight:700;">🎁 Prêt à tourner !</span>
+            <button class="btn btn-gold btn-play" style="background: linear-gradient(135deg, #10B981 0%, #059669 100%); border-color: #34D399; color: #FFF;">Tourner ▶</button>
+          </div>
+        </div>
+
         <!-- Jeu 1 : Slots -->
         <div class="game-card" data-game="slots">
           <div>
@@ -350,8 +374,14 @@
 
         <div class="game-layout">
           <!-- Zone Table Feutrée -->
-          <div class="game-stage">
+          <div class="game-stage" style="position:relative;">
             <div id="bjResultBanner" class="result-banner"></div>
+
+            <!-- Sabot de cartes (Deck Shoe) -->
+            <div class="bj-shoe-container" title="Sabot de distribution Marsabet">
+              <div class="bj-deck-shoe" id="bjDeckShoe">🪐</div>
+              <span class="bj-shoe-label">Sabot 6 Jeux</span>
+            </div>
 
             <div class="bj-table">
               <!-- Main Croupier -->
@@ -649,6 +679,70 @@
       </div>
     </section>
 
+    <!-- ==================== VUE ROUE QUOTIDIENNE GRATUITE ==================== -->
+    <section id="view-free-wheel" class="section-view">
+      <div class="game-view-container">
+        <div class="game-header-bar">
+          <div class="game-title-group">
+            <button class="btn btn-outline btn-back-lobby">◀ Lobby</button>
+            <span class="game-title-icon">🎁</span>
+            <h2 class="game-title-name">Roue Quotidienne Gratuite</h2>
+          </div>
+          <div class="game-badges">
+            <span class="game-badge free">✨ 100% GRATUIT</span>
+            <span class="game-badge rtp">Cooldown 24h</span>
+          </div>
+        </div>
+
+        <!-- Bannière d'informations de série et compte à rebours -->
+        <div class="free-wheel-banner">
+          <div>
+            <div class="free-wheel-badge">🎁 Cadeau Journalier Étudiant</div>
+            <h3 style="font-size: 1.4rem; color: #FFF; margin: 0 0 0.5rem 0;">Tourne chaque jour sans miser le moindre jeton</h3>
+            <p style="color: var(--text-secondary); margin: 0; font-size: 0.95rem;">
+              Série consécutive : <strong id="freeWheelStreakDisplay" style="color:#34D399;">0 jour</strong>
+              <span style="color: var(--gold-light); margin-left: 0.5rem;">(Bonus Série : <strong id="freeWheelStreakBonusDisplay">+0%</strong>)</span>
+            </p>
+          </div>
+          <div class="countdown-timer-box">
+            <div class="countdown-timer-label">Prochain spin dans :</div>
+            <div class="countdown-timer-digits free-wheel-countdown-text">Disponible !</div>
+          </div>
+        </div>
+
+        <div class="game-layout">
+          <!-- Zone Roue -->
+          <div class="game-stage" style="display:flex; flex-direction:column; align-items:center; position:relative;">
+            <div id="freeWheelResultBanner" class="result-banner"></div>
+
+            <div class="wheel-stage-container">
+              <div class="wheel-pointer" style="border-top-color: #10B981;"></div>
+              <canvas id="freeWheelCanvas" class="wheel-canvas"></canvas>
+            </div>
+          </div>
+
+          <!-- Panneau d'action & règles -->
+          <div class="game-controls-panel">
+            <h3 class="panel-title">🎁 Récompenses & Règles</h3>
+            
+            <div style="background: rgba(4, 12, 28, 0.6); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: var(--radius-md); padding: 1.25rem; margin-bottom: 1.5rem;">
+              <div style="font-weight: 700; color: #34D399; margin-bottom: 0.5rem;">Gains Garantis :</div>
+              <ul style="list-style: none; padding: 0; margin: 0; font-size: 0.85rem; color: var(--text-secondary); line-height: 1.7;">
+                <li>🪙 Entre <strong>50 et 1 000 coins</strong> à chaque lancer</li>
+                <li>🔥 <strong>+10% de bonus par jour de streak consécutif</strong> (jusqu'à +70% au 7ème jour)</li>
+                <li>👑 Multiplicateur de bonus amplifié selon ton <strong>rang VIP</strong></li>
+                <li>⏱️ Rechargement automatique 24h après le dernier spin</li>
+              </ul>
+            </div>
+
+            <button class="btn btn-gold" id="freeWheelSpinBtn" style="padding: 1.1rem; font-size: 1.15rem; width:100%; background: linear-gradient(135deg, #10B981 0%, #059669 100%); border-color: #34D399; color: #FFF; box-shadow: 0 0 15px rgba(16, 185, 129, 0.4);">
+              🎁 Lancer mon Spin Quotidien Gratuit !
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- ==================== VUE JEU 6 : PLINKO ==================== -->
     <section id="view-plinko" class="section-view">
       <div class="game-view-container">
@@ -773,11 +867,83 @@
           </div>
         </div>
 
+        <!-- Carte Progression VIP basée sur le Wager -->
+        <div class="vip-progress-card" id="profileVipCard">
+          <div class="vip-header-row">
+            <div class="vip-current-info">
+              <div class="vip-current-avatar" id="profileVipAvatar" style="border: 2px solid #CD7F32; background: rgba(184, 115, 51, 0.2);">
+                🥉
+              </div>
+              <div>
+                <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
+                  <span style="font-size: 1.25rem; font-weight: 800; font-family: var(--font-display);" id="profileVipTierName">VIP BRONZE</span>
+                  <span class="vip-badge vip-bronze" id="profileVipBadge">BRONZE</span>
+                </div>
+                <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.25rem;">
+                  Wager Total : <strong id="profileTotalWagered" style="color:var(--gold-light);">0 🪙</strong>
+                </div>
+              </div>
+            </div>
+            <div style="text-align: right;">
+              <div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;">Avantage VIP</div>
+              <div style="font-size: 1rem; font-weight: 700; color: #34D399;" id="profileVipMultiplier">Bonus Quotidien x1.0</div>
+            </div>
+          </div>
+
+          <!-- Barre de progression -->
+          <div class="vip-progress-bar-container">
+            <div class="vip-progress-bar-fill" id="profileVipProgressFill" style="width: 0%;"></div>
+          </div>
+
+          <div class="vip-progress-stats">
+            <span id="profileVipProgressPercent">Progression : 0%</span>
+            <span id="profileVipNextTierText">Encore 50 000 🪙 de mises vers Argent</span>
+          </div>
+
+          <!-- Feuille de route des 6 rangs VIP -->
+          <div class="vip-tiers-roadmap" id="profileVipRoadmap">
+            <div class="vip-roadmap-tier active" data-tier="Bronze">
+              <div style="font-size: 1.2rem;">🥉</div>
+              <div style="font-weight: 800; font-size: 0.8rem; margin: 0.25rem 0;">Bronze</div>
+              <div style="font-size: 0.7rem; color: var(--text-muted);">0 🪙</div>
+            </div>
+            <div class="vip-roadmap-tier" data-tier="Argent">
+              <div style="font-size: 1.2rem;">🥈</div>
+              <div style="font-weight: 800; font-size: 0.8rem; margin: 0.25rem 0;">Argent</div>
+              <div style="font-size: 0.7rem; color: var(--text-muted);">50k 🪙</div>
+            </div>
+            <div class="vip-roadmap-tier" data-tier="Or">
+              <div style="font-size: 1.2rem;">🥇</div>
+              <div style="font-weight: 800; font-size: 0.8rem; margin: 0.25rem 0;">Or</div>
+              <div style="font-size: 0.7rem; color: var(--text-muted);">200k 🪙</div>
+            </div>
+            <div class="vip-roadmap-tier" data-tier="Platine">
+              <div style="font-size: 1.2rem;">💎</div>
+              <div style="font-weight: 800; font-size: 0.8rem; margin: 0.25rem 0;">Platine</div>
+              <div style="font-size: 0.7rem; color: var(--text-muted);">500k 🪙</div>
+            </div>
+            <div class="vip-roadmap-tier" data-tier="Diamant">
+              <div style="font-size: 1.2rem;">👑</div>
+              <div style="font-weight: 800; font-size: 0.8rem; margin: 0.25rem 0;">Diamant</div>
+              <div style="font-size: 0.7rem; color: var(--text-muted);">1M 🪙</div>
+            </div>
+            <div class="vip-roadmap-tier" data-tier="Maître Marsabet">
+              <div style="font-size: 1.2rem;">🪐</div>
+              <div style="font-weight: 800; font-size: 0.8rem; margin: 0.25rem 0;">Maître</div>
+              <div style="font-size: 0.7rem; color: var(--text-muted);">2.5M 🪙</div>
+            </div>
+          </div>
+        </div>
+
         <!-- Statistiques -->
         <div class="stats-grid">
           <div class="stat-box">
             <div class="stat-label">Parties Jouées</div>
             <div class="stat-val" id="profileGamesPlayed">0</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Wager Total (Mises)</div>
+            <div class="stat-val gold" id="profileStatWager">0 🪙</div>
           </div>
           <div class="stat-box">
             <div class="stat-label">Plus Gros Gain</div>
@@ -790,6 +956,10 @@
           <div class="stat-box">
             <div class="stat-label">Série Connexion</div>
             <div class="stat-val" id="profileStreak">0 jour</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Spin Quotidien Gratuit</div>
+            <div class="stat-val free-wheel-countdown-text" id="profileFreeWheelCountdown" style="color:#34D399; font-size:1.1rem;">Disponible !</div>
           </div>
         </div>
 
@@ -1161,8 +1331,10 @@
   <script src="/js/games/roulette.js"></script>
   <script src="/js/games/dice.js"></script>
   <script src="/js/games/wheel.js"></script>
+  <script src="/js/games/freeWheel.js"></script>
   <script src="/js/games/plinko.js"></script>
   <script src="/js/admin.js"></script>
+  <script src="/js/router.js"></script>
   <script src="/js/app.js"></script>
 </body>
 </html>

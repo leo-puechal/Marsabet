@@ -2,6 +2,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const db = require('../database/db');
 const config = require('../config/config');
+const vipService = require('../services/vipService');
 
 function generateToken(user) {
   return jwt.sign(
@@ -58,12 +59,14 @@ exports.register = async (req, res) => {
     `).get(result.lastInsertRowid);
 
     const token = generateToken(newUser);
+    const vipInfo = vipService.getVipInfo(newUser.total_wagered);
 
     return res.status(201).json({
       message: 'Compte créé avec succès ! 1000 jetons de bienvenue offerts.',
       token,
       user: {
         ...newUser,
+        vipInfo,
         canClaimDaily: true,
       }
     });
@@ -97,6 +100,8 @@ exports.login = async (req, res) => {
     const today = getTodayString();
     const canClaimDaily = user.last_daily_claim !== today;
 
+    const vipInfo = vipService.getVipInfo(user.total_wagered);
+
     const safeUser = {
       id: user.id,
       username: user.username,
@@ -104,11 +109,14 @@ exports.login = async (req, res) => {
       coins: user.coins,
       daily_streak: user.daily_streak,
       last_daily_claim: user.last_daily_claim,
+      last_free_spin: user.last_free_spin,
+      free_spin_streak: user.free_spin_streak || 0,
       total_wagered: user.total_wagered,
       total_won: user.total_won,
       games_played: user.games_played,
       biggest_win: user.biggest_win,
       created_at: user.created_at,
+      vipInfo,
       canClaimDaily
     };
 
@@ -127,10 +135,12 @@ exports.getMe = (req, res) => {
   const user = req.user;
   const today = getTodayString();
   const canClaimDaily = user.last_daily_claim !== today;
+  const vipInfo = vipService.getVipInfo(user.total_wagered);
 
   return res.json({
     user: {
       ...user,
+      vipInfo,
       canClaimDaily
     }
   });

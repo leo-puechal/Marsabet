@@ -1,15 +1,28 @@
 const db = require('../database/db');
+const vipService = require('../services/vipService');
 
 exports.getLeaderboard = (req, res) => {
   try {
     const limit = Math.min(parseInt(req.query.limit) || 20, 100);
 
     const leaders = db.prepare(`
-      SELECT id, username, coins, daily_streak, games_played, biggest_win, created_at
+      SELECT id, username, coins, daily_streak, games_played, biggest_win, total_wagered, vip_rank, created_at
       FROM users
       ORDER BY coins DESC, biggest_win DESC
       LIMIT ?
     `).all(limit);
+
+    // Enrichir chaque joueur avec son statut VIP
+    const enrichedLeaders = leaders.map(l => {
+      const vip = vipService.getVipInfo(l.total_wagered);
+      return {
+        ...l,
+        vipRank: vip.currentTier.name,
+        vipIcon: vip.currentTier.icon,
+        vipColor: vip.currentTier.color,
+        vipBadgeClass: vip.currentTier.badgeClass
+      };
+    });
 
     // Si l'utilisateur est connecté, récupérer son rang
     let userRank = null;
@@ -23,7 +36,7 @@ exports.getLeaderboard = (req, res) => {
     }
 
     return res.json({
-      leaderboard: leaders,
+      leaderboard: enrichedLeaders,
       userRank
     });
   } catch (err) {
@@ -37,9 +50,11 @@ exports.getProfile = (req, res) => {
     const userId = req.user.id;
 
     const user = db.prepare(`
-      SELECT id, username, coins, daily_streak, last_daily_claim, total_wagered, total_won, games_played, biggest_win, created_at
+      SELECT id, username, role, coins, daily_streak, last_daily_claim, last_free_spin, free_spin_streak, total_wagered, total_won, games_played, biggest_win, created_at
       FROM users WHERE id = ?
     `).get(userId);
+
+    const vipInfo = vipService.getVipInfo(user.total_wagered);
 
     const rankRow = db.prepare(`
       SELECT COUNT(*) + 1 as rank
@@ -79,6 +94,7 @@ exports.getProfile = (req, res) => {
         ...user,
         rank: rankRow ? rankRow.rank : 1
       },
+      vipInfo,
       history: history.map(h => ({
         ...h,
         details: h.details ? JSON.parse(h.details) : null
