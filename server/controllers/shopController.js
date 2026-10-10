@@ -16,16 +16,19 @@ function generateClaimCode() {
 exports.getProducts = (req, res) => {
   try {
     const products = db.prepare(`
-      SELECT id, name, category, price, stock, initial_stock, icon, description, is_active
+      SELECT id, name, category, price, stock, initial_stock, icon, description, unit, variants, is_active
       FROM shop_items
       WHERE is_active = 1
-      ORDER BY price ASC
+      ORDER BY category ASC, price ASC
     `).all();
 
     return res.json({
       notice: 'Stock limité, disponible tant que les réserves du BDE le permettent. Jetons 100% gratuits gagnés aux jeux.',
+      conversionRate: '1 coin = 0,1 centime (1000 coins = 1,00 €)',
       products: products.map(p => ({
         ...p,
+        variants: p.variants ? JSON.parse(p.variants) : null,
+        unit: p.unit || 'Pièce',
         isAvailable: p.stock > 0
       }))
     });
@@ -38,7 +41,7 @@ exports.getProducts = (req, res) => {
 exports.orderProduct = (req, res) => {
   try {
     const userId = req.user.id;
-    const { productId } = req.body;
+    const { productId, variantId, variantName } = req.body;
 
     if (!productId) {
       return res.status(400).json({ error: 'Identifiant du produit manquant.' });
@@ -53,10 +56,33 @@ exports.orderProduct = (req, res) => {
       return res.status(400).json({ error: `Rupture de stock pour ${item.name} ! Reviens lors du prochain réapprovisionnement.` });
     }
 
+    let finalPrice = item.price;
+    let orderItemName = item.name;
+    let selectedVariantName = null;
+
+    if (item.variants) {
+      try {
+        const variants = JSON.parse(item.variants);
+        if (Array.isArray(variants) && variants.length > 0) {
+          const normalized = variantName ? variantName.trim().toLowerCase() : '';
+          const selected = variants.find(v => 
+            (normalized && v.name && v.name.trim().toLowerCase() === normalized) ||
+            (variantId && v.id === variantId) ||
+            (normalized && v.name && (v.name.toLowerCase().includes(normalized) || normalized.includes(v.name.toLowerCase())))
+          ) || variants[0];
+          if (selected) {
+            finalPrice = selected.price;
+            selectedVariantName = selected.name;
+            orderItemName = `${item.name} (${selected.name})`;
+          }
+        }
+      } catch (e) {}
+    }
+
     const user = db.prepare('SELECT coins, username FROM users WHERE id = ?').get(userId);
-    if (user.coins < item.price) {
+    if (!user || user.coins < finalPrice) {
       return res.status(400).json({
-        error: `Solde insuffisant ! Il te manque ${(item.price - user.coins).toLocaleString()} jetons pour récupérer ce produit.`
+        error: `Solde insuffisant ! Il te manque ${(finalPrice - (user ? user.coins : 0)).toLocaleString()} jetons pour récupérer ce produit.`
       });
     }
 
@@ -74,31 +100,34 @@ exports.orderProduct = (req, res) => {
         throw new Error('Le dernier exemplaire vient d’être réservé par un autre élève !');
       }
 
-      // 2. Déduire les jetons
-      const newCoins = user.coins - item.price;
-      db.prepare('UPDATE users SET coins = ? WHERE id = ?').run(newCoins, userId);
+      // 2. Déduire les jetons de façon atomique
+      const updateCoins = db.prepare('UPDATE users SET coins = coins - ? WHERE id = ? AND coins >= ?').run(finalPrice, userId, finalPrice);
+      if (updateCoins.changes === 0) {
+        throw new Error('Solde insuffisant.');
+      }
 
-      // 3. Créer la commande avec le code de retrait
+      // 3. Créer la commande avec le code de retrait et la variante
       const orderInsert = db.prepare(`
-        INSERT INTO shop_orders (claim_code, user_id, item_id, item_name, coins_paid, status)
-        VALUES (?, ?, ?, ?, ?, 'pending')
-      `).run(claimCode, userId, item.id, item.name, item.price);
+        INSERT INTO shop_orders (claim_code, user_id, item_id, item_name, variant_name, coins_paid, status)
+        VALUES (?, ?, ?, ?, ?, ?, 'pending')
+      `).run(claimCode, userId, item.id, orderItemName, selectedVariantName, finalPrice);
 
       // 4. Enregistrer dans l'historique
       db.prepare(`
         INSERT INTO game_history (user_id, game_type, bet, payout, profit, details)
         VALUES (?, 'bde_reward', ?, 0, ?, ?)
-      `).run(userId, item.price, -item.price, JSON.stringify({
+      `).run(userId, finalPrice, -finalPrice, JSON.stringify({
         claimCode,
-        itemName: item.name,
+        itemName: orderItemName,
         icon: item.icon
       }));
 
       const remainingStock = db.prepare('SELECT stock FROM shop_items WHERE id = ?').get(item.id).stock;
+      const updatedUser = db.prepare('SELECT coins FROM users WHERE id = ?').get(userId);
 
       return {
         orderId: orderInsert.lastInsertRowid,
-        newCoins,
+        newCoins: updatedUser.coins,
         remainingStock
       };
     });
@@ -106,18 +135,18 @@ exports.orderProduct = (req, res) => {
     const result = executeOrder();
 
     return res.status(201).json({
-      message: `Commande validée ! Présente ton code au stand BDE pour récupérer : ${item.name}.`,
+      message: `Commande validée ! Présente ton code au stand BDE pour récupérer : ${orderItemName}.`,
       claimCode,
+      coins: result.newCoins,
       order: {
         id: result.orderId,
         claimCode,
-        itemName: item.name,
+        itemName: orderItemName,
         icon: item.icon,
-        coinsPaid: item.price,
+        coinsPaid: finalPrice,
         status: 'pending',
-        createdAt: new Date().toISOString()
+        created_at: new Date().toISOString()
       },
-      coins: result.newCoins,
       remainingStock: result.remainingStock
     });
   } catch (err) {

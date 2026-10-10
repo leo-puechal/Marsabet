@@ -9,18 +9,29 @@ const freeWheelEngine = require('../services/games/freeWheelEngine');
 const vipService = require('../services/vipService');
 
 // Helper transactionnel pour mettre à jour le joueur, wager, rang VIP et l'historique
-function recordGameResult(userId, gameType, bet, payout, details) {
+function recordGameResult(userId, gameType, bet, payout, details, alreadyDeducted = false) {
   const profit = payout - bet;
 
   const runTx = db.transaction(() => {
     const user = db.prepare('SELECT coins, biggest_win, total_wagered FROM users WHERE id = ?').get(userId);
+    if (!user) {
+      throw new Error('Utilisateur introuvable.');
+    }
 
-    const newCoins = user.coins - bet + payout;
+    const deduction = alreadyDeducted ? 0 : bet;
+    if (user.coins < deduction) {
+      throw new Error('Solde insuffisant.');
+    }
+
+    const newCoins = user.coins - deduction + payout;
+    if (newCoins < 0) {
+      throw new Error('Solde insuffisant.');
+    }
     const newBiggestWin = Math.max(user.biggest_win, payout);
     const newWager = user.total_wagered + bet;
     const vipInfo = vipService.getVipInfo(newWager);
 
-    db.prepare(`
+    const updateRes = db.prepare(`
       UPDATE users
       SET coins = ?,
           total_wagered = ?,
@@ -28,8 +39,12 @@ function recordGameResult(userId, gameType, bet, payout, details) {
           games_played = games_played + 1,
           biggest_win = ?,
           vip_rank = ?
-      WHERE id = ?
-    `).run(newCoins, newWager, payout, newBiggestWin, vipInfo.currentTier.name, userId);
+      WHERE id = ? AND coins >= ?
+    `).run(newCoins, newWager, payout, newBiggestWin, vipInfo.currentTier.name, userId, deduction);
+
+    if (updateRes.changes === 0) {
+      throw new Error('Solde insuffisant.');
+    }
 
     const hist = db.prepare(`
       INSERT INTO game_history (user_id, game_type, bet, payout, profit, details)
@@ -46,15 +61,15 @@ function recordGameResult(userId, gameType, bet, payout, details) {
 exports.playSlots = (req, res) => {
   try {
     const userId = req.user.id;
-    const bet = parseInt(req.body.bet);
+    const bet = Number(req.body.bet);
 
-    if (isNaN(bet) || bet <= 0) {
+    if (!Number.isInteger(bet) || bet <= 0) {
       return res.status(400).json({ error: 'Mise invalide (minimum 1 jeton).' });
     }
 
     const user = db.prepare('SELECT coins FROM users WHERE id = ?').get(userId);
-    if (user.coins < bet) {
-      return res.status(400).json({ error: 'Solde insuffisant pour cette mise.' });
+    if (!user || user.coins < bet) {
+      return res.status(400).json({ error: 'Solde insuffisant.' });
     }
 
     const result = slotsEngine.spin(bet);
@@ -106,10 +121,10 @@ exports.getBlackjackState = (req, res) => {
 exports.dealBlackjack = (req, res) => {
   try {
     const userId = req.user.id;
-    const bet = parseInt(req.body.bet);
+    const bet = Number(req.body.bet);
 
-    if (isNaN(bet) || bet <= 0) {
-      return res.status(400).json({ error: 'Mise invalide.' });
+    if (!Number.isInteger(bet) || bet <= 0) {
+      return res.status(400).json({ error: 'Mise invalide (minimum 1 jeton).' });
     }
 
     // Vérifier si une partie est déjà active
@@ -119,12 +134,15 @@ exports.dealBlackjack = (req, res) => {
     }
 
     const user = db.prepare('SELECT coins FROM users WHERE id = ?').get(userId);
-    if (user.coins < bet) {
-      return res.status(400).json({ error: 'Solde insuffisant pour miser.' });
+    if (!user || user.coins < bet) {
+      return res.status(400).json({ error: 'Solde insuffisant.' });
     }
 
-    // Déduire la mise immédiatement
-    db.prepare('UPDATE users SET coins = coins - ? WHERE id = ?').run(bet, userId);
+    // Déduire la mise immédiatement de façon atomique
+    const updateDeduct = db.prepare('UPDATE users SET coins = coins - ? WHERE id = ? AND coins >= ?').run(bet, userId, bet);
+    if (updateDeduct.changes === 0) {
+      return res.status(400).json({ error: 'Solde insuffisant.' });
+    }
 
     const deck = blackjackEngine.createDeck();
     const playerHand = [deck.pop(), deck.pop()];
@@ -153,7 +171,7 @@ exports.dealBlackjack = (req, res) => {
         playerHand,
         dealerHand,
         outcome
-      });
+      }, true);
 
       return res.json({
         activeGame: false,
@@ -220,7 +238,7 @@ exports.hitBlackjack = (req, res) => {
         playerHand,
         dealerHand,
         outcome: 'bust'
-      });
+      }, true);
 
       return res.json({
         activeGame: false,
@@ -305,7 +323,7 @@ exports.standBlackjack = (req, res) => {
       playerScore: playerCalc.score,
       dealerScore: dealerCalc.score,
       outcome
-    });
+    }, true);
 
     return res.json({
       activeGame: false,
@@ -336,12 +354,15 @@ exports.doubleBlackjack = (req, res) => {
     const bet = session.bet;
     const user = db.prepare('SELECT coins FROM users WHERE id = ?').get(userId);
 
-    if (user.coins < bet) {
+    if (!user || user.coins < bet) {
       return res.status(400).json({ error: 'Solde insuffisant pour doubler la mise.' });
     }
 
-    // Déduire la mise supplémentaire
-    db.prepare('UPDATE users SET coins = coins - ? WHERE id = ?').run(bet, userId);
+    // Déduire la mise supplémentaire de façon atomique
+    const updateDeduct = db.prepare('UPDATE users SET coins = coins - ? WHERE id = ? AND coins >= ?').run(bet, userId, bet);
+    if (updateDeduct.changes === 0) {
+      return res.status(400).json({ error: 'Solde insuffisant pour doubler la mise.' });
+    }
     const totalBet = bet * 2;
 
     const deck = JSON.parse(session.deck);
@@ -361,7 +382,7 @@ exports.doubleBlackjack = (req, res) => {
         playerHand,
         dealerHand,
         outcome: 'bust'
-      });
+      }, true);
 
       return res.json({
         activeGame: false,
@@ -406,7 +427,7 @@ exports.doubleBlackjack = (req, res) => {
       dealerScore: dealerCalc.score,
       outcome,
       doubled: true
-    });
+    }, true);
 
     return res.json({
       activeGame: false,
@@ -437,16 +458,16 @@ exports.playRoulette = (req, res) => {
 
     let totalBet = 0;
     for (const b of bets) {
-      const amt = parseInt(b.amount);
-      if (isNaN(amt) || amt <= 0) {
+      const amt = Number(b.amount);
+      if (!Number.isInteger(amt) || amt <= 0) {
         return res.status(400).json({ error: 'Montant de pari invalide.' });
       }
       totalBet += amt;
     }
 
     const user = db.prepare('SELECT coins FROM users WHERE id = ?').get(userId);
-    if (user.coins < totalBet) {
-      return res.status(400).json({ error: `Solde insuffisant (mise totale: ${totalBet} jetons).` });
+    if (!user || user.coins < totalBet) {
+      return res.status(400).json({ error: 'Solde insuffisant.' });
     }
 
     const result = rouletteEngine.spinRoulette(bets);
@@ -462,7 +483,7 @@ exports.playRoulette = (req, res) => {
     });
   } catch (err) {
     console.error('Erreur roulette:', err);
-    return res.status(500).json({ error: 'Erreur Roulette.' });
+    return res.status(err.message === 'Solde insuffisant.' ? 400 : 500).json({ error: err.message || 'Erreur Roulette.' });
   }
 };
 
@@ -470,16 +491,16 @@ exports.playRoulette = (req, res) => {
 exports.playDice = (req, res) => {
   try {
     const userId = req.user.id;
-    const bet = parseInt(req.body.bet);
+    const bet = Number(req.body.bet);
     const mode = req.body.mode || 'classic';
     const options = req.body.options || {};
 
-    if (isNaN(bet) || bet <= 0) {
-      return res.status(400).json({ error: 'Mise invalide.' });
+    if (!Number.isInteger(bet) || bet <= 0) {
+      return res.status(400).json({ error: 'Mise invalide (minimum 1 jeton).' });
     }
 
     const user = db.prepare('SELECT coins FROM users WHERE id = ?').get(userId);
-    if (user.coins < bet) {
+    if (!user || user.coins < bet) {
       return res.status(400).json({ error: 'Solde insuffisant.' });
     }
 
@@ -492,7 +513,7 @@ exports.playDice = (req, res) => {
     });
   } catch (err) {
     console.error('Erreur dés:', err);
-    return res.status(500).json({ error: 'Erreur lors du lancer de dés.' });
+    return res.status(err.message === 'Solde insuffisant.' ? 400 : 500).json({ error: err.message || 'Erreur lors du lancer de dés.' });
   }
 };
 
@@ -500,14 +521,14 @@ exports.playDice = (req, res) => {
 exports.playWheel = (req, res) => {
   try {
     const userId = req.user.id;
-    const bet = parseInt(req.body.bet);
+    const bet = Number(req.body.bet);
 
-    if (isNaN(bet) || bet <= 0) {
-      return res.status(400).json({ error: 'Mise invalide.' });
+    if (!Number.isInteger(bet) || bet <= 0) {
+      return res.status(400).json({ error: 'Mise invalide (minimum 1 jeton).' });
     }
 
     const user = db.prepare('SELECT coins FROM users WHERE id = ?').get(userId);
-    if (user.coins < bet) {
+    if (!user || user.coins < bet) {
       return res.status(400).json({ error: 'Solde insuffisant.' });
     }
 
@@ -523,7 +544,7 @@ exports.playWheel = (req, res) => {
     });
   } catch (err) {
     console.error('Erreur roue:', err);
-    return res.status(500).json({ error: 'Erreur lors du spin de la roue.' });
+    return res.status(err.message === 'Solde insuffisant.' ? 400 : 500).json({ error: err.message || 'Erreur lors du spin de la roue.' });
   }
 };
 
@@ -531,15 +552,15 @@ exports.playWheel = (req, res) => {
 exports.playPlinko = (req, res) => {
   try {
     const userId = req.user.id;
-    const bet = parseInt(req.body.bet);
+    const bet = Number(req.body.bet);
     const risk = req.body.risk || 'medium';
 
-    if (isNaN(bet) || bet <= 0) {
-      return res.status(400).json({ error: 'Mise invalide.' });
+    if (!Number.isInteger(bet) || bet <= 0) {
+      return res.status(400).json({ error: 'Mise invalide (minimum 1 jeton).' });
     }
 
     const user = db.prepare('SELECT coins FROM users WHERE id = ?').get(userId);
-    if (user.coins < bet) {
+    if (!user || user.coins < bet) {
       return res.status(400).json({ error: 'Solde insuffisant.' });
     }
 
@@ -556,7 +577,7 @@ exports.playPlinko = (req, res) => {
     });
   } catch (err) {
     console.error('Erreur plinko:', err);
-    return res.status(500).json({ error: 'Erreur lors du lâcher de bille.' });
+    return res.status(err.message === 'Solde insuffisant.' ? 400 : 500).json({ error: err.message || 'Erreur lors du drop Plinko.' });
   }
 };
 

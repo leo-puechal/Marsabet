@@ -77,6 +77,7 @@ const FreeWheelGame = {
     const streakBonusEl = document.getElementById('freeWheelStreakBonusDisplay');
     const lobbyBadge = document.getElementById('lobbyFreeWheelBadge');
     const lobbyCountdown = document.getElementById('lobbyFreeWheelCountdown');
+    const gamesCountdown = document.getElementById('gamesFreeWheelCountdown');
 
     const streak = data.streak || 0;
     const streakBonusPercent = Math.min(Math.max(streak - 1, 0) * 10, 70);
@@ -93,6 +94,7 @@ const FreeWheelGame = {
           el.classList.add('ready');
         });
         if (lobbyCountdown) lobbyCountdown.textContent = '🎁 Prêt à tourner !';
+        if (gamesCountdown) gamesCountdown.textContent = '🎁 Prêt à tourner !';
         if (lobbyBadge) {
           lobbyBadge.textContent = 'DISPONIBLE';
           lobbyBadge.style.background = 'rgba(16, 185, 129, 0.3)';
@@ -109,6 +111,7 @@ const FreeWheelGame = {
           el.classList.remove('ready');
         });
         if (lobbyCountdown) lobbyCountdown.textContent = `Prochain spin dans ${timeStr}`;
+        if (gamesCountdown) gamesCountdown.textContent = `Prochain spin dans ${timeStr}`;
         if (lobbyBadge) {
           lobbyBadge.textContent = 'EN ATTENTE';
           lobbyBadge.style.background = 'rgba(100, 116, 139, 0.2)';

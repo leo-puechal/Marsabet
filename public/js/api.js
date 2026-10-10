@@ -86,10 +86,10 @@ const API = {
     return this.request('/user/shop');
   },
 
-  async orderShopProduct(productId) {
+  async orderShopProduct(productId, variantName = null) {
     return this.request('/user/shop/order', {
       method: 'POST',
-      body: JSON.stringify({ productId })
+      body: JSON.stringify({ productId, variantName })
     });
   },
 

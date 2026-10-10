@@ -108,16 +108,130 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  // Déconnexion
-  const logoutBtn = document.getElementById('logoutBtn');
-  if (logoutBtn) {
-    logoutBtn.addEventListener('click', () => {
+  // Effets sonores dans la Navbar latérale
+  const sidebarSoundBtn = document.getElementById('sidebarSoundBtn');
+  const sidebarSoundIcon = document.getElementById('sidebarSoundIcon');
+  if (sidebarSoundBtn) {
+    const updateSidebarSound = () => {
+      const muted = window.sound.isMuted();
+      if (sidebarSoundIcon) sidebarSoundIcon.textContent = muted ? '🔇' : '🔊';
+      sidebarSoundBtn.innerHTML = `<span>${muted ? '🔇' : '🔊'}</span> Effets ${muted ? 'Coupés' : 'Activés'}`;
+    };
+    updateSidebarSound();
+    sidebarSoundBtn.addEventListener('click', () => {
+      window.sound.toggleMute();
+      updateSidebarSound();
+      if (soundBtn) soundBtn.textContent = window.sound.isMuted() ? '🔇' : '🔊';
+      window.UI.showToast(window.sound.isMuted() ? 'Effets sonores désactivés' : 'Effets sonores activés', 'info', 1500);
+    });
+  }
+
+  // Navigation dans la Navbar Verticale Fixe
+  document.querySelectorAll('.sidebar-link, .sidebar-sublink').forEach(link => {
+    link.addEventListener('click', (e) => {
+      // Toggle du sous-menu Jeux
+      if (link.id === 'sidebarGamesToggle') {
+        e.preventDefault();
+        const submenu = document.getElementById('sidebarGamesSubmenu');
+        const chevron = document.getElementById('sidebarGamesChevron');
+        if (submenu) {
+          const isClosed = submenu.style.display === 'none' || submenu.style.display === '';
+          submenu.style.display = isClosed ? 'flex' : 'none';
+          if (chevron) chevron.style.transform = isClosed ? 'rotate(90deg)' : 'rotate(0deg)';
+        }
+        if (window.Router) {
+          window.Router.navigate('/jeux');
+        } else {
+          window.UI.switchView('games');
+        }
+        return;
+      }
+
+      const view = link.dataset.view;
+      if (view) {
+        e.preventDefault();
+        if (window.Router && window.Router.viewToPath[view]) {
+          window.Router.navigate(window.Router.viewToPath[view]);
+        } else {
+          window.UI.switchView(view);
+          if (view === 'leaderboard') loadLeaderboard();
+          if (view === 'profile') loadProfile();
+          if (view === 'shop') loadShop();
+          if (view === 'admin' && window.AdminBDE) window.AdminBDE.switchTab('claims');
+        }
+
+        // Fermer le tiroir mobile après sélection
+        const sidebar = document.getElementById('appSidebar');
+        if (sidebar) sidebar.classList.remove('mobile-open');
+      }
+    });
+  });
+
+  // Toggle Menu Mobile
+  const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+  if (mobileMenuToggle) {
+    mobileMenuToggle.addEventListener('click', () => {
+      const sidebar = document.getElementById('appSidebar');
+      if (sidebar) sidebar.classList.toggle('mobile-open');
+    });
+  }
+
+  // Connexion rapide depuis la navbar latérale
+  const sidebarAuthBtn = document.getElementById('sidebarAuthBtn');
+  if (sidebarAuthBtn) {
+    sidebarAuthBtn.addEventListener('click', () => window.UI.openAuthModal('login'));
+  }
+
+  // Modale de Confirmation de Déconnexion
+  const logoutModal = document.getElementById('logoutConfirmModal');
+  const openLogoutModal = () => {
+    if (logoutModal) logoutModal.classList.add('active');
+  };
+  const closeLogoutModal = () => {
+    if (logoutModal) logoutModal.classList.remove('active');
+  };
+
+  const sidebarLogoutBtn = document.getElementById('sidebarLogoutBtn');
+  if (sidebarLogoutBtn) sidebarLogoutBtn.addEventListener('click', openLogoutModal);
+
+  const headerLogoutBtn = document.getElementById('logoutBtn');
+  if (headerLogoutBtn) headerLogoutBtn.addEventListener('click', openLogoutModal);
+
+  const cancelLogoutBtn = document.getElementById('cancelLogoutBtn');
+  if (cancelLogoutBtn) cancelLogoutBtn.addEventListener('click', closeLogoutModal);
+
+  const closeLogoutModalBtn = document.getElementById('closeLogoutModalBtn');
+  if (closeLogoutModalBtn) closeLogoutModalBtn.addEventListener('click', closeLogoutModal);
+
+  const confirmLogoutBtn = document.getElementById('confirmLogoutBtn');
+  if (confirmLogoutBtn) {
+    confirmLogoutBtn.addEventListener('click', () => {
+      closeLogoutModal();
       window.API.clearToken();
       window.State.setUser(null);
       window.UI.showToast('Déconnecté avec succès.', 'info');
-      window.UI.switchView('lobby');
+      if (window.Router) {
+        window.Router.navigate('/lobby');
+      } else {
+        window.UI.switchView('lobby');
+      }
+      window.UI.openAuthModal('login');
     });
   }
+
+  // Fermeture au clic en dehors et touche Échap
+  if (logoutModal) {
+    logoutModal.addEventListener('click', (e) => {
+      if (e.target === logoutModal) closeLogoutModal();
+    });
+  }
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      if (logoutModal && logoutModal.classList.contains('active')) {
+        closeLogoutModal();
+      }
+    }
+  });
 
   // Clic sur l'en-tête de solde pour ouvrir le profil
   const coinsBadge = document.getElementById('headerCoinsBadge');
@@ -458,90 +572,186 @@ async function loadProfile() {
   }
 }
 
+let currentShopCategory = 'all';
+let allShopProducts = [];
+
 async function loadShop() {
   const shopGrid = document.getElementById('shopItemsGrid');
   if (!shopGrid) return;
 
   try {
     const data = await window.API.getShopItems();
-    const products = data.products || [];
+    allShopProducts = data.products || [];
 
-    shopGrid.innerHTML = products.map(item => {
-      const isOut = item.stock <= 0;
-      const isLow = item.stock > 0 && item.stock <= 5;
-      let badgeHtml = '';
-
-      if (isOut) {
-        badgeHtml = '<span class="stock-badge out-of-stock">Rupture de Stock (0)</span>';
-      } else if (isLow) {
-        badgeHtml = `<span class="stock-badge low-stock">Derniers articles (${item.stock})</span>`;
-      } else {
-        badgeHtml = `<span class="stock-badge in-stock">En Stock (${item.stock} restants)</span>`;
-      }
-
-      return `
-        <div class="shop-item-card ${isOut ? 'is-empty' : ''}">
-          <div class="shop-item-icon">${item.icon}</div>
-          <div class="shop-item-title">${escapeHtml(item.name)}</div>
-          <div class="shop-item-desc">${escapeHtml(item.description)}</div>
-          
-          <div style="margin: 0.25rem 0;">
-            ${badgeHtml}
-          </div>
-
-          <div class="shop-item-price">${item.price.toLocaleString()} 🪙</div>
-
-          <button class="btn btn-gold btn-buy-shop" data-id="${item.id}" data-name="${escapeHtml(item.name)}" data-price="${item.price}" ${isOut ? 'disabled' : ''} style="width: 100%; font-size: 0.85rem;">
-            ${isOut ? '❌ Épuisé' : 'Échanger mes Coins ▶'}
-          </button>
-        </div>
-      `;
-    }).join('');
-
-    // Événements d'échange
-    shopGrid.querySelectorAll('.btn-buy-shop:not(:disabled)').forEach(btn => {
-      btn.addEventListener('click', async (e) => {
-        if (!window.State.isAuthenticated) {
-          window.UI.openAuthModal('login');
-          return;
-        }
-
-        const productId = e.currentTarget.dataset.id;
-        const productName = e.currentTarget.dataset.name;
-        const productPrice = parseInt(e.currentTarget.dataset.price);
-
-        if (window.State.user.coins < productPrice) {
-          window.UI.showToast(`Solde insuffisant ! Il te manque ${(productPrice - window.State.user.coins).toLocaleString()} jetons.`, 'error');
-          return;
-        }
-
-        if (!confirm(`Confirmer l'échange de ${productPrice.toLocaleString()} coins contre : "${productName}" physique au stand BDE ?`)) {
-          return;
-        }
-
-        try {
-          const res = await window.API.orderShopProduct(productId);
-          window.State.updateCoins(res.coins);
-          window.UI.showToast(res.message, 'success', 5000);
-          window.sound.playWin();
-          window.UI.triggerConfetti();
-
-          // Afficher la modale avec le Ticket de Retrait
-          showClaimTicketModal(res.order);
-
-          // Rafraîchir les stocks affichés
-          loadShop();
-        } catch (err) {
-          window.UI.showToast(err.message, 'error');
-        }
+    // Initialiser les écouteurs de filtres de catégorie
+    const filterContainer = document.getElementById('shopCategoryFilters');
+    if (filterContainer && !filterContainer.dataset.initialized) {
+      filterContainer.dataset.initialized = 'true';
+      filterContainer.querySelectorAll('.shop-filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          filterContainer.querySelectorAll('.shop-filter-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          currentShopCategory = btn.dataset.category || 'all';
+          renderShopProducts();
+        });
       });
-    });
+    }
 
-    // Charger également les commandes en cours de l'élève
+    renderShopProducts();
     loadShopMyOrders();
   } catch (err) {
     shopGrid.innerHTML = '<p style="color:var(--lose-red);">Erreur lors du chargement du catalogue BDE.</p>';
   }
+}
+
+function renderShopProducts() {
+  const shopGrid = document.getElementById('shopItemsGrid');
+  if (!shopGrid) return;
+
+  const filtered = allShopProducts.filter(item => {
+    if (currentShopCategory === 'all') return true;
+    return item.category === currentShopCategory;
+  });
+
+  if (filtered.length === 0) {
+    shopGrid.innerHTML = '<div style="grid-column: 1/-1; text-align:center; padding: 2.5rem; color: var(--text-muted);">Aucun produit disponible dans cette catégorie pour le moment.</div>';
+    return;
+  }
+
+  shopGrid.innerHTML = filtered.map(item => {
+    const isOut = item.stock <= 0;
+    const isLow = item.stock > 0 && item.stock <= 5;
+    let badgeHtml = '';
+
+    if (isOut) {
+      badgeHtml = '<span class="stock-badge out-of-stock">Rupture de Stock (0)</span>';
+    } else if (isLow) {
+      badgeHtml = `<span class="stock-badge low-stock">Derniers articles (${item.stock})</span>`;
+    } else {
+      badgeHtml = `<span class="stock-badge in-stock">En Stock (${item.stock} restants)</span>`;
+    }
+
+    const hasVariants = Array.isArray(item.variants) && item.variants.length > 0;
+    const initialPrice = hasVariants ? item.variants[0].price : item.price;
+    const initialEuros = (initialPrice / 1000).toFixed(2).replace('.', ',');
+
+    let variantsHtml = '';
+    if (hasVariants) {
+      variantsHtml = `
+        <div style="margin: 0.5rem 0 0.25rem; text-align: left; width: 100%;">
+          <label class="form-label" style="font-size: 0.72rem; margin-bottom: 0.2rem; color: var(--text-secondary);">
+            Variante / Taille :
+          </label>
+          <select class="form-input shop-variant-select" data-item-id="${item.id}" id="variant-select-${item.id}">
+            ${item.variants.map(v => {
+              const vEuros = (v.price / 1000).toFixed(2).replace('.', ',');
+              return `<option value="${escapeHtml(v.name)}" data-price="${v.price}">
+                ${escapeHtml(v.name)} — ${v.price.toLocaleString()} 🪙 (${vEuros} €)
+              </option>`;
+            }).join('')}
+          </select>
+        </div>
+      `;
+    }
+
+    return `
+      <div class="shop-item-card ${isOut ? 'is-empty' : ''}" id="card-product-${item.id}">
+        <div class="shop-item-icon">${item.icon}</div>
+        <div style="font-size:0.75rem; color:var(--gold-primary); font-weight:700; margin-bottom:0.2rem;">
+          ${escapeHtml(item.category)} • ${escapeHtml(item.unit || 'Pièce')}
+        </div>
+        <div class="shop-item-title">${escapeHtml(item.name)}</div>
+        <div class="shop-item-desc">${escapeHtml(item.description)}</div>
+        
+        ${variantsHtml}
+
+        <div style="margin: 0.35rem 0;">
+          ${badgeHtml}
+        </div>
+
+        <div class="shop-item-price" id="price-display-${item.id}">
+          ${initialPrice.toLocaleString()} 🪙 <span style="font-size:0.8rem; color:var(--text-muted); font-weight:normal;">(${initialEuros} €)</span>
+        </div>
+
+        <button class="btn btn-gold btn-buy-shop" 
+          id="btn-buy-${item.id}"
+          data-id="${item.id}" 
+          data-name="${escapeHtml(item.name)}" 
+          data-price="${initialPrice}"
+          data-variant="${hasVariants ? escapeHtml(item.variants[0].name) : ''}"
+          ${isOut ? 'disabled' : ''} 
+          style="width: 100%; font-size: 0.85rem;">
+          ${isOut ? '❌ Épuisé' : 'Échanger mes Coins ▶'}
+        </button>
+      </div>
+    `;
+  }).join('');
+
+  // Gestion des sélecteurs de variantes (changement dynamique du prix)
+  shopGrid.querySelectorAll('.shop-variant-select').forEach(select => {
+    select.addEventListener('change', (e) => {
+      const itemId = e.target.dataset.itemId;
+      const selectedOption = e.target.selectedOptions[0];
+      const newPrice = parseInt(selectedOption.dataset.price);
+      const newVariant = e.target.value;
+      const newEuros = (newPrice / 1000).toFixed(2).replace('.', ',');
+
+      const priceDisplay = document.getElementById(`price-display-${itemId}`);
+      if (priceDisplay) {
+        priceDisplay.innerHTML = `${newPrice.toLocaleString()} 🪙 <span style="font-size:0.8rem; color:var(--text-muted); font-weight:normal;">(${newEuros} €)</span>`;
+      }
+
+      const buyBtn = document.getElementById(`btn-buy-${itemId}`);
+      if (buyBtn) {
+        buyBtn.dataset.price = newPrice;
+        buyBtn.dataset.variant = newVariant;
+      }
+    });
+  });
+
+  // Événements d'échange avec support des variantes et confirmation
+  shopGrid.querySelectorAll('.btn-buy-shop:not(:disabled)').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      if (!window.State.isAuthenticated) {
+        window.UI.openAuthModal('login');
+        return;
+      }
+
+      const productId = e.currentTarget.dataset.id;
+      const productName = e.currentTarget.dataset.name;
+      const productPrice = parseInt(e.currentTarget.dataset.price);
+      const variantName = e.currentTarget.dataset.variant || null;
+
+      // Vérification côté client
+      if (window.State.user.coins < productPrice) {
+        window.UI.showToast(`Solde insuffisant ! Il te manque ${(productPrice - window.State.user.coins).toLocaleString()} coins pour cet échange.`, 'error');
+        return;
+      }
+
+      const displayName = variantName ? `${productName} (${variantName})` : productName;
+      const eurosDisplay = (productPrice / 1000).toFixed(2).replace('.', ',');
+
+      if (!confirm(`Confirmer l'échange de ${productPrice.toLocaleString()} coins (${eurosDisplay} €) contre : "${displayName}" physique au stand BDE ?`)) {
+        return;
+      }
+
+      try {
+        const res = await window.API.orderShopProduct(productId, variantName);
+        window.State.updateCoins(res.coins);
+        window.UI.showToast(res.message, 'success', 5000);
+        window.sound.playWin();
+        window.UI.triggerConfetti();
+
+        // Afficher la modale avec le Ticket de Retrait
+        showClaimTicketModal(res.order);
+
+        // Rafraîchir les stocks affichés
+        loadShop();
+      } catch (err) {
+        window.UI.showToast(err.message, 'error');
+      }
+    });
+  });
 }
 
 async function loadShopMyOrders() {

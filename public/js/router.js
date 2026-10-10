@@ -4,6 +4,7 @@ const Router = {
   routes: {
     '/': 'lobby',
     '/lobby': 'lobby',
+    '/jeux': 'games',
     '/classement': 'leaderboard',
     '/boutique': 'shop',
     '/profil': 'profile',
@@ -19,6 +20,7 @@ const Router = {
 
   viewToPath: {
     'lobby': '/lobby',
+    'games': '/jeux',
     'leaderboard': '/classement',
     'shop': '/boutique',
     'profile': '/profil',
@@ -153,6 +155,7 @@ const Router = {
   updateDocumentTitle(viewName) {
     const titles = {
       'lobby': 'Marsabet — Casino Virtuel BDE Epitech',
+      'games': 'Salle des Jeux — Marsabet Casino',
       'leaderboard': 'Classement des Joueurs — Marsabet',
       'shop': 'Boutique Produits BDE — Marsabet',
       'profile': 'Mon Profil & Statut VIP — Marsabet',

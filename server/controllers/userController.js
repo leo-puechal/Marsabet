@@ -8,6 +8,7 @@ exports.getLeaderboard = (req, res) => {
     const leaders = db.prepare(`
       SELECT id, username, coins, daily_streak, games_played, biggest_win, total_wagered, vip_rank, created_at
       FROM users
+      WHERE role NOT IN ('admin', 'bde')
       ORDER BY coins DESC, biggest_win DESC
       LIMIT ?
     `).all(limit);
@@ -24,15 +25,18 @@ exports.getLeaderboard = (req, res) => {
       };
     });
 
-    // Si l'utilisateur est connecté, récupérer son rang
+    // Si l'utilisateur est connecté, récupérer son rang (uniquement pour les élèves)
     let userRank = null;
     if (req.user) {
-      const rankRow = db.prepare(`
-        SELECT COUNT(*) + 1 as rank
-        FROM users
-        WHERE coins > (SELECT coins FROM users WHERE id = ?)
-      `).get(req.user.id);
-      userRank = rankRow ? rankRow.rank : null;
+      const currentUser = db.prepare('SELECT role, coins FROM users WHERE id = ?').get(req.user.id);
+      if (currentUser && currentUser.role !== 'admin' && currentUser.role !== 'bde') {
+        const rankRow = db.prepare(`
+          SELECT COUNT(*) + 1 as rank
+          FROM users
+          WHERE role NOT IN ('admin', 'bde') AND coins > ?
+        `).get(currentUser.coins);
+        userRank = rankRow ? rankRow.rank : null;
+      }
     }
 
     return res.json({
@@ -56,10 +60,11 @@ exports.getProfile = (req, res) => {
 
     const vipInfo = vipService.getVipInfo(user.total_wagered);
 
-    const rankRow = db.prepare(`
+    const isStaff = user.role === 'admin' || user.role === 'bde';
+    const rankRow = isStaff ? null : db.prepare(`
       SELECT COUNT(*) + 1 as rank
       FROM users
-      WHERE coins > ?
+      WHERE role NOT IN ('admin', 'bde') AND coins > ?
     `).get(user.coins);
 
     // 20 dernières parties

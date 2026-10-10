@@ -20,11 +20,26 @@ const State = {
 
   animateCoins(from, to) {
     const el = document.getElementById('userCoinsDisplay');
-    if (!el) return;
+    const landingEl = document.getElementById('landingCoinsDisplay');
+    const sidebarEl = document.getElementById('sidebarCoinsDisplay');
+    const mobileEl = document.getElementById('mobileCoinsDisplay');
+    const equivEl = document.getElementById('landingEquivalentDisplay');
+
+    const updateAll = (val) => {
+      const formatted = val.toLocaleString();
+      if (el) el.textContent = formatted;
+      if (landingEl) landingEl.textContent = formatted;
+      if (sidebarEl) sidebarEl.textContent = formatted;
+      if (mobileEl) mobileEl.textContent = formatted;
+      if (equivEl) {
+        const euros = (val / 1000).toFixed(2).replace('.', ',');
+        equivEl.textContent = `Taux BDE : ${formatted} coins = ${euros} €`;
+      }
+    };
 
     const diff = to - from;
     if (diff === 0) {
-      el.textContent = to.toLocaleString();
+      updateAll(to);
       return;
     }
 
@@ -34,12 +49,12 @@ const State = {
     function step(timestamp) {
       const progress = Math.min((timestamp - start) / duration, 1);
       const current = Math.floor(from + (diff * progress));
-      el.textContent = current.toLocaleString();
+      updateAll(current);
 
       if (progress < 1) {
         requestAnimationFrame(step);
       } else {
-        el.textContent = to.toLocaleString();
+        updateAll(to);
       }
     }
 
@@ -48,30 +63,69 @@ const State = {
 
   updateUI() {
     const coinsDisplay = document.getElementById('userCoinsDisplay');
+    const landingCoins = document.getElementById('landingCoinsDisplay');
+    const landingEquiv = document.getElementById('landingEquivalentDisplay');
+    const landingVip = document.getElementById('landingVipDisplay');
+    const sidebarCoins = document.getElementById('sidebarCoinsDisplay');
+    const mobileCoins = document.getElementById('mobileCoinsDisplay');
+
     const authBtn = document.getElementById('headerAuthBtn');
     const userMenu = document.getElementById('headerUserMenu');
     const headerUsername = document.getElementById('headerUsername');
     const adminNavLink = document.getElementById('navLinkAdmin');
 
+    const sidebarUserCard = document.getElementById('sidebarUserCard');
+    const sidebarGuestCard = document.getElementById('sidebarGuestCard');
+    const sidebarUserName = document.getElementById('sidebarUserName');
+    const sidebarUserVipBadge = document.getElementById('sidebarUserVipBadge');
+    const sidebarLogoutBtn = document.getElementById('sidebarLogoutBtn');
+    const sidebarAdminItem = document.getElementById('sidebarAdminItem');
+
     if (this.isAuthenticated && this.user) {
-      if (coinsDisplay) coinsDisplay.textContent = this.user.coins.toLocaleString();
+      const formattedCoins = this.user.coins.toLocaleString();
+      const euroVal = (this.user.coins / 1000).toFixed(2).replace('.', ',');
+
+      if (coinsDisplay) coinsDisplay.textContent = formattedCoins;
+      if (landingCoins) landingCoins.textContent = formattedCoins;
+      if (sidebarCoins) sidebarCoins.textContent = formattedCoins;
+      if (mobileCoins) mobileCoins.textContent = formattedCoins;
+      if (landingEquiv) landingEquiv.textContent = `Taux BDE : ${formattedCoins} coins = ${euroVal} €`;
+
       if (authBtn) authBtn.style.display = 'none';
       if (userMenu) userMenu.style.display = 'flex';
+      if (sidebarGuestCard) sidebarGuestCard.style.display = 'none';
+      if (sidebarUserCard) sidebarUserCard.style.display = 'flex';
+      if (sidebarLogoutBtn) sidebarLogoutBtn.style.display = 'flex';
+
+      const vip = this.user.vipInfo?.currentTier || { name: 'Bronze', icon: '🥉', badgeClass: 'vip-bronze' };
+      if (landingVip) landingVip.textContent = `${vip.icon} ${vip.name}`;
+
       if (headerUsername) {
         headerUsername.textContent = this.user.username;
-        if (this.user.role === 'admin') {
-          headerUsername.innerHTML = `${this.user.username} <span style="font-size:0.7rem; background:#EF4444; color:#FFF; padding:2px 6px; border-radius:99px; margin-left:4px;">ADMIN</span>`;
+        if (this.user.role === 'admin' || this.user.role === 'bde') {
+          headerUsername.innerHTML = `${this.user.username} <span style="font-size:0.7rem; background:#EF4444; color:#FFF; padding:2px 6px; border-radius:99px; margin-left:4px;">BDE</span>`;
         }
       }
+      if (sidebarUserName) {
+        sidebarUserName.textContent = this.user.username;
+        if (this.user.role === 'admin' || this.user.role === 'bde') {
+          sidebarUserName.innerHTML = `${this.user.username} <span style="font-size:0.65rem; background:#EF4444; color:#FFF; padding:1px 5px; border-radius:99px; margin-left:3px;">BDE</span>`;
+        }
+      }
+
       const vipBadge = document.getElementById('headerUserVipBadge');
       if (vipBadge) {
-        const vip = this.user.vipInfo?.currentTier || { name: 'Bronze', icon: '🥉', badgeClass: 'vip-bronze' };
         vipBadge.className = `vip-badge ${vip.badgeClass}`;
         vipBadge.textContent = `${vip.icon} ${vip.name.toUpperCase()}`;
       }
-      if (adminNavLink) {
-        adminNavLink.style.display = (this.user.role === 'admin') ? 'inline-flex' : 'none';
+      if (sidebarUserVipBadge) {
+        sidebarUserVipBadge.className = `vip-badge ${vip.badgeClass}`;
+        sidebarUserVipBadge.textContent = `${vip.icon} ${vip.name.toUpperCase()}`;
       }
+
+      const isAdmin = this.user.role === 'admin' || this.user.role === 'bde';
+      if (adminNavLink) adminNavLink.style.display = isAdmin ? 'inline-flex' : 'none';
+      if (sidebarAdminItem) sidebarAdminItem.style.display = isAdmin ? 'list-item' : 'none';
 
       // Actualiser le statut du bouton de bonus quotidien
       const dailyBtn = document.getElementById('claimDailyBtn');
@@ -91,8 +145,20 @@ const State = {
       this.updateStreakDots(this.user.daily_streak || 0);
     } else {
       if (coinsDisplay) coinsDisplay.textContent = '0';
+      if (landingCoins) landingCoins.textContent = '0';
+      if (sidebarCoins) sidebarCoins.textContent = '0';
+      if (mobileCoins) mobileCoins.textContent = '0';
+      if (landingEquiv) landingEquiv.textContent = 'Taux BDE : 1 000 coins = 1,00 €';
+      if (landingVip) landingVip.textContent = '🥉 Bronze';
+
       if (authBtn) authBtn.style.display = 'inline-flex';
       if (userMenu) userMenu.style.display = 'none';
+      if (sidebarGuestCard) sidebarGuestCard.style.display = 'block';
+      if (sidebarUserCard) sidebarUserCard.style.display = 'none';
+      if (sidebarLogoutBtn) sidebarLogoutBtn.style.display = 'none';
+      if (adminNavLink) adminNavLink.style.display = 'none';
+      if (sidebarAdminItem) sidebarAdminItem.style.display = 'none';
+
       this.updateStreakDots(0);
     }
   },

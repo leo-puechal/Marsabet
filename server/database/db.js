@@ -80,6 +80,29 @@ function initDb() {
     CREATE INDEX IF NOT EXISTS idx_orders_user ON shop_orders(user_id, status);
   `);
 
+  // Assainissement préalable : aucun solde existant ne doit être inférieur à 0
+  db.prepare("UPDATE users SET coins = 50000 WHERE username = 'bde_admin' AND coins < 0").run();
+  db.prepare("UPDATE users SET coins = 0 WHERE coins < 0").run();
+
+  // Déclencheurs stricts interdisant tout solde négatif (sécurité SQLite native)
+  db.exec(`
+    CREATE TRIGGER IF NOT EXISTS check_positive_coins_update
+    BEFORE UPDATE ON users
+    FOR EACH ROW
+    WHEN NEW.coins < 0
+    BEGIN
+      SELECT RAISE(ABORT, 'Solde insuffisant : les coins ne peuvent pas être négatifs.');
+    END;
+
+    CREATE TRIGGER IF NOT EXISTS check_positive_coins_insert
+    BEFORE INSERT ON users
+    FOR EACH ROW
+    WHEN NEW.coins < 0
+    BEGIN
+      SELECT RAISE(ABORT, 'Solde insuffisant : les coins ne peuvent pas être négatifs.');
+    END;
+  `);
+
   // Migration de la table users au cas où les nouvelles colonnes n'existent pas encore
   const userColumns = db.prepare("PRAGMA table_info(users)").all();
   const hasRole = userColumns.some(c => c.name === 'role');
@@ -99,44 +122,150 @@ function initDb() {
     db.exec("ALTER TABLE users ADD COLUMN vip_rank TEXT NOT NULL DEFAULT 'Bronze'");
   }
 
-  // Migration de shop_items pour ajouter stock, initial_stock, is_active, created_at si absents
+  // Migration de shop_items pour ajouter stock, initial_stock, is_active, created_at, variants, unit si absents
   const itemColumns = db.prepare("PRAGMA table_info(shop_items)").all();
   const hasStock = itemColumns.some(c => c.name === 'stock');
   if (!hasStock) {
-    db.exec("ALTER TABLE shop_items ADD COLUMN stock INTEGER NOT NULL DEFAULT 0");
-    db.exec("ALTER TABLE shop_items ADD COLUMN initial_stock INTEGER NOT NULL DEFAULT 0");
+    db.exec("ALTER TABLE shop_items ADD COLUMN stock INTEGER NOT NULL DEFAULT 50");
+    db.exec("ALTER TABLE shop_items ADD COLUMN initial_stock INTEGER NOT NULL DEFAULT 50");
     db.exec("ALTER TABLE shop_items ADD COLUMN is_active INTEGER NOT NULL DEFAULT 1");
   }
   const hasCreatedAt = itemColumns.some(c => c.name === 'created_at');
   if (!hasCreatedAt) {
     db.exec("ALTER TABLE shop_items ADD COLUMN created_at TEXT DEFAULT NULL");
   }
-
-  // Initialisation / Mise à jour des articles réels du BDE Marseille avec stocks et prix en coins réalistes
-  const currentCount = db.prepare("SELECT COUNT(*) as count FROM shop_items").get().count;
-  if (currentCount === 0 || !hasStock) {
-    const insertItem = db.prepare(`
-      INSERT OR REPLACE INTO shop_items (id, name, category, price, stock, initial_stock, icon, description, is_active)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
-    `);
-
-    const realBdeProducts = [
-      ['cafe_espresso', 'Café Espresso Frais (Stand BDE)', 'boisson', 1500, 100, 100, '☕', 'Café chaud en grain préparé sur place au local associatif.'],
-      ['coca_canette', 'Canette Coca-Cola / Cherry 33cl', 'boisson', 6000, 50, 50, '🥤', 'Canette fraîche servie bien fraîche au stand BDE.'],
-      ['monster_energy', 'Canette Monster Energy 500ml', 'boisson', 9500, 25, 25, '⚡', 'La recharge ultime pour les nuits de rush et hackathons.'],
-      ['barre_kinder', 'Barre Chocolatée Kinder Bueno', 'snack', 3000, 60, 60, '🍫', 'Snack chocolaté réconfortant entre deux créneaux de rush.'],
-      ['paquet_chips', 'Paquet de Chips Snack Lays 45g', 'snack', 3500, 40, 40, '🥔', 'Chips salées pour la pause goûter sur le campus.'],
-      ['pack_stickers', 'Pack de 5 Stickers Officiels Epitech Mars', 'goodie', 2500, 80, 80, '✨', 'Stickers vinyle haute résistance pour personnaliser ton laptop.'],
-      ['tote_bag_bde', 'Tote Bag Officiel BDE Epitech Marseille', 'goodie', 8000, 30, 30, '👜', 'Sac en toile épais brodé avec le logo du BDE Marseille.'],
-      ['mug_marsabet', 'Mug Céramique Marsabet VIP', 'goodie', 15000, 15, 15, '🏆', 'Mug collector réservé aux meilleurs joueurs du casino récréatif.'],
-      ['hoodie_epitech', 'Sweat à Capuche Officiel BDE (Taille au choix)', 'vetement', 35000, 8, 8, '👑', 'Le graal physique du BDE à retirer en main propre au local.']
-    ];
-
-    const insertMany = db.transaction((items) => {
-      for (const item of items) insertItem.run(...item);
-    });
-    insertMany(realBdeProducts);
+  const hasVariants = itemColumns.some(c => c.name === 'variants');
+  if (!hasVariants) {
+    db.exec("ALTER TABLE shop_items ADD COLUMN variants TEXT DEFAULT NULL");
   }
+  const hasUnit = itemColumns.some(c => c.name === 'unit');
+  if (!hasUnit) {
+    db.exec("ALTER TABLE shop_items ADD COLUMN unit TEXT NOT NULL DEFAULT 'Pièce'");
+  }
+
+  // Migration de shop_orders pour ajouter variant_name si absent
+  const orderColumns = db.prepare("PRAGMA table_info(shop_orders)").all();
+  const hasVariantName = orderColumns.some(c => c.name === 'variant_name');
+  if (!hasVariantName) {
+    db.exec("ALTER TABLE shop_orders ADD COLUMN variant_name TEXT DEFAULT NULL");
+  }
+
+  // Initialisation du catalogue officiel BDE (50 produits, 1 coin = 0.1 ct -> 1000 coins = 1.00 €)
+  const officialCatalog = [
+    // Sucreries
+    ['dragibus_40g', 'Bonbons Dragibus 40g', 'Sucreries', 1000, 50, 50, '🍬', 'Sachet de bonbons Dragibus Haribo 40g', null, 'Pièce'],
+    ['happy_life_40g', 'Bonbons Happy Life 40g', 'Sucreries', 1000, 50, 50, '🍬', 'Sachet Happy Life Haribo 40g', null, 'Pièce'],
+    ['bounty', 'Bounty', 'Sucreries', 1000, 50, 50, '🍫', 'Barre chocolatée Bounty à la noix de coco', null, 'Pièce'],
+    ['crunch', 'Crunch', 'Sucreries', 1000, 50, 50, '🍫', 'Barre Crunch chocolat au lait et riz soufflé', null, 'Pièce'],
+    ['kinder_bueno', 'Kinder Bueno', 'Sucreries', 1000, 50, 50, '🍫', 'Gaufrette croustillante enrobée de chocolat au lait', null, 'Pièce'],
+    ['kinder_bueno_white', 'Kinder Bueno White', 'Sucreries', 1000, 50, 50, '🍫', 'Gaufrette croustillante chocolat blanc', null, 'Pièce'],
+    ['kinder_country', 'Kinder Country', 'Sucreries', 1000, 50, 50, '🍫', 'Barre de céréales soufflées au chocolat au lait', null, 'Pièce'],
+    ['kinder_delice', 'Kinder Délice', 'Sucreries', 1000, 50, 50, '🍫', 'Génoise cacaotée avec cœur de lait', null, 'Pièce'],
+    ['kinder_delice_coco', 'Kinder Délice Coco', 'Sucreries', 1000, 50, 50, '🍫', 'Génoise cacaotée au cœur de coco', null, 'Pièce'],
+    ['kinder_maxi', 'Kinder Maxi', 'Sucreries', 1000, 50, 50, '🍫', 'Barre chocolatée Kinder Maxi', null, 'Pièce'],
+    ['kitkat', 'Kitkat', 'Sucreries', 1000, 50, 50, '🍫', 'Gaufrettes croustillantes enrobées de chocolat au lait', null, 'Pièce'],
+    ['kitkat_chunky', 'Kitkat Chunky', 'Sucreries', 1000, 50, 50, '🍫', 'Version Chunky ultra gourmande Kitkat', null, 'Pièce'],
+    ['lion', 'Lion', 'Sucreries', 1000, 50, 50, '🍫', 'Gaufrette, caramel et céréales enrobés de chocolat', null, 'Pièce'],
+    ['mars', 'Mars', 'Sucreries', 1000, 50, 50, '🍫', 'Barre de nougat tendre et caramel au chocolat au lait', null, 'Pièce'],
+    ['mms', 'M&M’s', 'Sucreries', 1000, 50, 50, '🍬', 'Sachet individuel de M&M’s cacahuètes', null, 'Pièce'],
+    ['pain_au_chocolat', 'Pain au chocolat', 'Sucreries', 500, 40, 40, '🥐', 'Viennoiserie fraîche pour la pause', null, 'Pièce'],
+    ['smarties', 'Smarties', 'Sucreries', 1000, 50, 50, '🍬', 'Boîte de Smarties chocolatés colorés', null, 'Pièce'],
+    ['snickers', 'Snickers', 'Sucreries', 1000, 50, 50, '🍫', 'Nougat, cacahuètes grillées et caramel au chocolat', null, 'Pièce'],
+    ['twix', 'Twix', 'Sucreries', 1000, 50, 50, '🍫', 'Biscuit croustillant et caramel enrobés de chocolat', null, 'Pièce'],
+
+    // Boissons Fraîches
+    ['cacolac', 'Cacolac', 'Boissons Fraîches', 1000, 40, 40, '🥛', 'Boisson lactée cacaotée servie fraîche', null, 'Pièce'],
+    ['capri_sun', 'Capri-Sun', 'Boissons Fraîches', 500, 60, 60, '🧃', 'Poche Capri-Sun multivitaminé 200ml', null, 'Pièce'],
+    ['coca', 'Coca', 'Boissons Fraîches', 1000, 60, 60, '🥤', 'Canette Coca-Cola 33cl fraîche', null, 'Pièce'],
+    ['coca_50cl', 'Coca 50cl', 'Boissons Fraîches', 1500, 40, 40, '🥤', 'Bouteille Coca-Cola 50cl fraîche', null, 'Pièce'],
+    ['coca_cherry', 'Coca Cherry', 'Boissons Fraîches', 1000, 40, 40, '🥤', 'Canette Coca-Cola Cherry 33cl fraîche', null, 'Pièce'],
+    ['coca_zero', 'Coca Zero', 'Boissons Fraîches', 1000, 40, 40, '🥤', 'Canette Coca-Cola Zero 33cl fraîche', null, 'Pièce'],
+    ['ice_tea_peche', 'Ice Tea Pêche', 'Boissons Fraîches', 1000, 50, 50, '🧋', 'Canette Lipton Ice Tea Pêche 33cl fraîche', null, 'Pièce'],
+    ['jus_de_banane', 'Jus de Banane', 'Boissons Fraîches', 1000, 30, 30, '🍌', 'Bouteille de jus de banane onctueux', null, 'Pièce'],
+    ['monster_mango_loco', 'Monster Mango Loco', 'Boissons Fraîches', 2000, 35, 35, '⚡', 'Canette Monster Energy Mango Loco 500ml', null, 'Pièce'],
+    ['oasis_pomme_cassis', 'Oasis Pomme Cassis Framboise', 'Boissons Fraîches', 1000, 40, 40, '🧃', 'Canette Oasis Pomme Cassis Framboise 33cl', null, 'Pièce'],
+    ['oasis_tropical', 'Oasis Tropical', 'Boissons Fraîches', 1000, 50, 50, '🧃', 'Canette Oasis Tropical 33cl fraîche', null, 'Pièce'],
+
+    // Chips
+    ['chips_barbecue', 'Chips Barbecue', 'Chips', 1000, 40, 40, '🥔', 'Paquet individuel de chips goût Barbecue', null, 'Pièce'],
+    ['chips_nature', 'Chips Nature', 'Chips', 1000, 40, 40, '🥔', 'Paquet individuel de chips goût Nature salé', null, 'Pièce'],
+    ['chips_poulet_roti', 'Chips Poulet Rôti', 'Chips', 1000, 40, 40, '🥔', 'Paquet individuel de chips au poulet rôti', null, 'Pièce'],
+    ['pringles_barbecue', 'Pringles Barbecue', 'Chips', 1200, 30, 30, '🥔', 'Tube Pringles saveur Barbecue', null, 'Pièce'],
+    ['pringles_original', 'Pringles Original', 'Chips', 1200, 30, 30, '🥔', 'Tube Pringles saveur Original', null, 'Pièce'],
+    ['pringles_sour_cream', 'Pringles Sour Cream and Onion 70g', 'Chips', 1500, 30, 30, '🥔', 'Tube Pringles Sour Cream and Onion 70g', null, 'Pièce'],
+
+    // Repas
+    ['crepes', 'Crêpes', 'Repas', 1000, 30, 30, '🥞', 'Crêpe sucrée préparée au stand BDE', null, 'Pièce'],
+    ['gaufres', 'Gaufres', 'Repas', 1000, 30, 30, '🧇', 'Gaufre moelleuse chaude', null, 'Pièce'],
+    [
+      'hot_dog_variantes',
+      'Hot-Dog',
+      'Repas',
+      2500,
+      35,
+      35,
+      '🌭',
+      'Hot-dog chaud préparé à la minute au stand BDE avec options de sauces et garnitures',
+      JSON.stringify([
+        { name: 'Hot-Dog Simple', price: 2500 },
+        { name: 'Hot-Dog Complet (Sauces + Oignons Frits)', price: 3000 },
+        { name: 'Hot-Dog Double Saucisse Gourmand', price: 3500 }
+      ]),
+      'Pièce'
+    ],
+    ['hot_dog_simple', 'Hot-dog (version simple)', 'Repas', 2500, 35, 35, '🌭', 'Hot-dog classique saucisse et pain moelleux', null, 'Pièce'],
+    [
+      'menu_hot_dog',
+      'Menu Hot-Dog',
+      'Repas',
+      3500,
+      25,
+      25,
+      '🌭',
+      'Menu complet repas BDE incluant boisson fraîche et accompagnement au choix',
+      JSON.stringify([
+        { name: 'Menu Classique (Hot-Dog + Boisson 33cl)', price: 3500 },
+        { name: 'Menu Complet (Hot-Dog + Boisson + Chips)', price: 4000 },
+        { name: 'Menu Maxi (Hot-Dog Double + Boisson + Chips + Snack)', price: 4500 }
+      ]),
+      'Pièce'
+    ],
+
+    // Red Bull
+    ['red_bull_classic', 'Red Bull', 'Red Bull', 1000, 45, 45, '⚡', 'Canette Red Bull Energy Drink 250ml', null, 'Pièce'],
+    ['red_bull_abricot_fraise', 'Redbull Abricot-Fraise', 'Red Bull', 1500, 30, 30, '⚡', 'Red Bull The Amber Edition Abricot-Fraise 250ml', null, 'Pièce'],
+    ['red_bull_coco_acai', 'Red Bull Coco Açaï', 'Red Bull', 1500, 30, 30, '⚡', 'Red Bull The White Edition Coco Açaï 250ml', null, 'Pièce'],
+    ['red_bull_juneberry', 'Red Bull Juneberry', 'Red Bull', 1500, 30, 30, '⚡', 'Red Bull The Sea Blue Edition Juneberry 250ml', null, 'Pièce'],
+    ['red_bull_mure_vanille', 'Redbull Mûre givrée & vanille', 'Red Bull', 1500, 30, 30, '⚡', 'Red Bull The Winter Edition Mûre givrée & vanille 250ml', null, 'Pièce'],
+    ['red_bull_myrtille', 'Redbull Myrtille', 'Red Bull', 1500, 30, 30, '⚡', 'Red Bull The Blue Edition Myrtille 250ml', null, 'Pièce'],
+    ['red_bull_peche_blanche', 'Redbull Pêche blanche', 'Red Bull', 1500, 30, 30, '⚡', 'Red Bull The Ruby Edition Pêche blanche 250ml', null, 'Pièce'],
+    ['red_bull_pomme_fuji', 'Red Bull Pomme Fuji & Gingembre', 'Red Bull', 1500, 30, 30, '⚡', 'Red Bull The Red Edition Pomme Fuji & Gingembre 250ml', null, 'Pièce'],
+    ['red_bull_zero', 'Redbull Zero', 'Red Bull', 1300, 35, 35, '⚡', 'Canette Red Bull Zero 250ml', null, 'Pièce']
+  ];
+
+  const insertItem = db.prepare(`
+    INSERT INTO shop_items (id, name, category, price, stock, initial_stock, icon, description, variants, unit, is_active)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+    ON CONFLICT(id) DO UPDATE SET
+      name = excluded.name,
+      category = excluded.category,
+      price = excluded.price,
+      icon = excluded.icon,
+      description = excluded.description,
+      variants = excluded.variants,
+      unit = excluded.unit,
+      is_active = 1
+  `);
+
+  const insertAll = db.transaction((items) => {
+    for (const item of items) insertItem.run(...item);
+  });
+  insertAll(officialCatalog);
+
+  // Désactiver les anciens articles de test pour n'avoir que le catalogue officiel
+  const officialIds = officialCatalog.map(item => item[0]);
+  const placeholders = officialIds.map(() => '?').join(',');
+  db.prepare(`UPDATE shop_items SET is_active = 0 WHERE id NOT IN (${placeholders})`).run(...officialIds);
 
   // Création du compte admin BDE prédéfini pour l'accès facile aux membres du bureau
   const adminExists = db.prepare("SELECT id FROM users WHERE username = 'bde_admin'").get();
