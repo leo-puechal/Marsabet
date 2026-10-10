@@ -26,12 +26,15 @@
 
 ## 🎲 Économie & Jeux Inclus
 
-### 💰 Économie Fictive
+### 💰 Économie Fictive & Boutique Physique BDE
 1. **Bonus de bienvenue** : 1 000 jetons offerts à chaque nouveau compte.
 2. **Bonus quotidien de connexion** : +100 à +250 jetons par jour avec multiplicateur de série (*streak* jusqu'à 7 jours).
 3. **Classement en direct (Leaderboard)** : Podium doré (1er, 2e, 3e) et classement des fortunes virtuelles de l'école.
-4. **Profil & Statistiques** : Historique détaillé des 25 dernières parties, total misé, plus gros gain et gains cumulés.
-5. **Boutique BDE** : Échange des jetons contre des boissons, cafés, snacks et goodies virtuels BDE Marseille.
+4. **Profil & Statistiques** : Historique détaillé des 25 dernières parties, total misé, plus gros gain et inventaire des commandes.
+5. **Boutique Physique BDE** : Échange des coins virtuels (gagnés uniquement en jouant gratuitement) contre de **vrais produits physiques** distribués par le BDE Marseille (canettes fraîches, barres chocolatées, snacks, stickers, hoodies).
+   - **Génération de Code Unique** : Chaque échange déduit les coins et génère un ticket avec un code unique sécurisé `MB-XXXX-XXXX`.
+   - **Gestion de Stock Limité** : Produits avec stocks réels décomptés en temps réel et avertissement *"Stock limité, disponible tant que les réserves du BDE le permettent"*.
+   - **Interface Admin BDE** : Scan/validation de code en 1 clic au stand, interdiction stricte de réutilisation (code à usage unique), gestion des stocks et catalogue. Compte administrateur par défaut : `bde_admin` / `epitech2026` (ou clé secrète `epitech2026`).
 
 ### 🎰 Les 6 Jeux de Casino
 1. **Machine à sous (Slots)** : 5 rouleaux, 8 symboles thématiques (Planète Mars Jackpot x100, Diamants, Couronnes, 777...), 10 lignes de paiement et arrêt échelonné des rouleaux.

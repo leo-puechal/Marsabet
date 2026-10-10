@@ -51,12 +51,21 @@ const State = {
     const authBtn = document.getElementById('headerAuthBtn');
     const userMenu = document.getElementById('headerUserMenu');
     const headerUsername = document.getElementById('headerUsername');
+    const adminNavLink = document.getElementById('navLinkAdmin');
 
     if (this.isAuthenticated && this.user) {
       if (coinsDisplay) coinsDisplay.textContent = this.user.coins.toLocaleString();
       if (authBtn) authBtn.style.display = 'none';
       if (userMenu) userMenu.style.display = 'flex';
-      if (headerUsername) headerUsername.textContent = this.user.username;
+      if (headerUsername) {
+        headerUsername.textContent = this.user.username;
+        if (this.user.role === 'admin') {
+          headerUsername.innerHTML = `${this.user.username} <span style="font-size:0.7rem; background:#EF4444; color:#FFF; padding:2px 6px; border-radius:99px; margin-left:4px;">ADMIN</span>`;
+        }
+      }
+      if (adminNavLink) {
+        adminNavLink.style.display = (this.user.role === 'admin') ? 'inline-flex' : 'none';
+      }
 
       // Actualiser le statut du bouton de bonus quotidien
       const dailyBtn = document.getElementById('claimDailyBtn');

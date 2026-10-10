@@ -24,6 +24,7 @@
   <link rel="stylesheet" href="/css/plinko.css">
   <link rel="stylesheet" href="/css/leaderboard.css">
   <link rel="stylesheet" href="/css/profile.css">
+  <link rel="stylesheet" href="/css/admin.css">
 </head>
 <body>
 
@@ -47,6 +48,7 @@
           <li><a class="nav-link" data-view="leaderboard"><span>🏆</span> Classement</a></li>
           <li><a class="nav-link" data-view="shop"><span>🛍️</span> Boutique BDE</a></li>
           <li><a class="nav-link" data-view="profile"><span>👤</span> Mon Profil</a></li>
+          <li><a class="nav-link" id="navLinkAdmin" data-view="admin" style="display:none; color:#C084FC; border-color:rgba(192,132,252,0.3);"><span>🛡️</span> Admin BDE</a></li>
         </ul>
       </nav>
 
@@ -808,10 +810,24 @@
           </table>
         </div>
 
-        <!-- Inventaire Boutique BDE -->
+        <!-- Commandes et Retraits au Stand BDE -->
         <div class="history-card">
-          <h3 class="panel-title" style="margin-bottom: 1rem;">🎒 Mon Inventaire BDE (Articles Échangés)</h3>
-          <div class="shop-grid" id="profileInventoryGrid"></div>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:0.5rem;">
+            <h3 class="panel-title" style="margin-bottom:0; border:none; padding:0;">🎒 Mes Produits BDE & Codes de Retrait</h3>
+            <button class="btn btn-outline" onclick="window.UI.switchView('shop')">Aller à la Boutique ▶</button>
+          </div>
+          <div class="shop-grid" id="profileOrdersList"></div>
+        </div>
+
+        <!-- Zone d'accès rapide Admin pour les membres du bureau -->
+        <div style="background:rgba(88,28,135,0.2); border:1px solid rgba(168,85,247,0.3); border-radius:var(--radius-md); padding:1.25rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+          <div>
+            <div style="font-weight:700; color:#C084FC; font-size:1rem;">🛡️ Espace Membre du Bureau BDE</div>
+            <div style="font-size:0.85rem; color:var(--text-secondary);">Accède aux outils de validation de codes de retrait et gestion des stocks.</div>
+          </div>
+          <button class="btn btn-outline" id="becomeAdminBtn" style="border-color:#A855F7; color:#E9D5FF;">
+            🔑 Activer Accès Admin BDE
+          </button>
         </div>
       </div>
     </section>
@@ -821,14 +837,153 @@
       <div class="profile-container">
         <div class="section-header">
           <div>
-            <h2 class="section-title">🛍️ Boutique Fictive du BDE Epitech Marseille</h2>
+            <h2 class="section-title">🛍️ Boutique Officielle BDE Epitech Marseille</h2>
             <p class="section-subtitle">
-              Convertis tes jetons gagnés au casino en récompenses et privilèges virtuels pour le fun !
+              Échange tes coins gagnés au casino contre de <strong>vrais produits physiques</strong> à retirer au stand du BDE !
             </p>
           </div>
         </div>
 
+        <!-- Mention Légale & Information Stock Limité -->
+        <div class="shop-notice-banner">
+          <div class="notice-badge-icon">🥤</div>
+          <div class="notice-text">
+            <h3>Distribution Physique au Stand BDE</h3>
+            <p>
+              ⚠️ <strong>Stock limité, disponible tant que les réserves du BDE le permettent.</strong><br>
+              Les jetons sont <strong>100% gratuits</strong> et gagnés uniquement en jouant aux jeux virtuels.
+              Chaque échange génère un <strong>code de retrait unique</strong> à présenter aux permanences du BDE pour récupérer ton produit en main propre.
+            </p>
+          </div>
+        </div>
+
+        <!-- Grille des Produits Physiques -->
         <div class="shop-grid" id="shopItemsGrid"></div>
+
+        <!-- Section "Mes Retraits Actifs" pour l'élève -->
+        <div class="history-card" style="margin-top:2rem;">
+          <h3 class="panel-title" style="margin-bottom:1rem;">🎟️ Mes Codes de Retrait au Stand BDE</h3>
+          <div class="shop-grid" id="shopMyOrdersList"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== VUE ADMIN BDE ==================== -->
+    <section id="view-admin" class="section-view">
+      <div class="admin-container">
+        <div class="admin-header-card">
+          <div>
+            <div style="display:inline-flex; align-items:center; gap:0.5rem; background:rgba(168,85,247,0.25); border:1px solid #A855F7; border-radius:var(--radius-full); padding:0.25rem 0.8rem; font-size:0.75rem; font-weight:700; color:#E9D5FF; margin-bottom:0.5rem;">
+              🛡️ ESPACE MEMBRE DU BUREAU BDE
+            </div>
+            <h2 style="font-family:var(--font-display); font-size:1.8rem; color:#FFF; margin-bottom:0.25rem;">
+              Gestion des Retraits & Stocks
+            </h2>
+            <p style="color:var(--text-secondary); font-size:0.9rem;">
+              Valide les codes présentés par les élèves au stand et gère le stock des produits physiques en temps réel.
+            </p>
+          </div>
+
+          <div style="display:flex; gap:0.75rem;">
+            <button class="btn btn-outline btn-back-lobby">◀ Retour au Casino</button>
+          </div>
+        </div>
+
+        <!-- Navigation par Onglets Admin -->
+        <div class="admin-tabs-nav">
+          <button class="admin-tab-btn active" data-tab="claims">🔍 Scanner / Valider un Code</button>
+          <button class="admin-tab-btn" data-tab="products">📦 Gestion des Stocks & Produits</button>
+          <button class="admin-tab-btn" data-tab="orders">📜 Historique de Tous les Échanges</button>
+        </div>
+
+        <!-- Onglet 1 : Validation de Code de Retrait -->
+        <div id="adminTabClaims">
+          <div class="scanner-box">
+            <h3 style="font-family:var(--font-display); font-size:1.4rem; color:var(--gold-light); margin-bottom:0.5rem;">
+              Validation de Retrait au Stand
+            </h3>
+            <p style="color:var(--text-secondary); font-size:0.9rem; margin-bottom:1.25rem;">
+              Entre ou scanne le code unique présenté par l'élève (ex: <code>MB-A7X9-2K4P</code>) :
+            </p>
+
+            <input type="text" id="adminClaimInput" class="scanner-input" placeholder="MB-XXXX-XXXX" maxlength="14" autocomplete="off" autofocus>
+
+            <div style="display:flex; gap:1rem; justify-content:center; margin-top:0.5rem;">
+              <button class="btn btn-outline" id="adminCheckClaimBtn" style="padding:0.8rem 1.5rem;">
+                🔎 Vérifier sans valider
+              </button>
+              <button class="btn btn-gold" id="adminValidateClaimBtn" style="padding:0.8rem 1.75rem; font-size:1.05rem;">
+                ✅ Valider le Retrait & Donner le Produit
+              </button>
+            </div>
+
+            <!-- Résultat de vérification / validation dynamique -->
+            <div id="claimValidationResult" class="claim-validation-result"></div>
+          </div>
+        </div>
+
+        <!-- Onglet 2 : Gestion des Stocks & Produits -->
+        <div id="adminTabProducts" style="display:none;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:1rem;">
+            <div>
+              <h3 style="font-family:var(--font-display); font-size:1.3rem; color:#FFF;">Catalogue des Produits Physiques BDE</h3>
+              <p style="font-size:0.85rem; color:var(--text-muted);">Ajuste les stocks disponibles ou modifie les prix en coins.</p>
+            </div>
+            <button class="btn btn-gold" id="adminAddProductBtn">➕ Ajouter un Nouveau Produit</button>
+          </div>
+
+          <div class="admin-table-container">
+            <table class="leader-table">
+              <thead>
+                <tr>
+                  <th>Icône</th>
+                  <th>Produit</th>
+                  <th>Prix en Coins</th>
+                  <th>État du Stock</th>
+                  <th>Ajustement Rapide</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="adminProductsList"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Onglet 3 : Historique Global des Commandes -->
+        <div id="adminTabOrders" style="display:none;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:1rem;">
+            <div>
+              <h3 style="font-family:var(--font-display); font-size:1.3rem; color:#FFF;">Suivi Anti-Fraude & Historique des Élèves</h3>
+              <p style="font-size:0.85rem; color:var(--text-muted);">Consulte l'historique complet pour vérifier les retraits et éviter les abus.</p>
+            </div>
+
+            <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+              <select id="adminOrdersStatusFilter" style="background:#0a1f44; color:#FFF; border:1px solid var(--gold-primary); border-radius:6px; padding:0.4rem 0.8rem; font-size:0.85rem;">
+                <option value="all">Tous les statuts</option>
+                <option value="pending">⏳ En attente de retrait</option>
+                <option value="collected">✅ Déjà retirés</option>
+              </select>
+              <input type="text" id="adminOrdersSearchInput" class="form-input" placeholder="Rechercher élève ou code..." style="width:220px; padding:0.4rem 0.8rem; font-size:0.85rem;">
+            </div>
+          </div>
+
+          <div class="admin-table-container">
+            <table class="leader-table">
+              <thead>
+                <tr>
+                  <th>Code Unique</th>
+                  <th>Élève</th>
+                  <th>Produit</th>
+                  <th>Coins Déduits</th>
+                  <th>Statut</th>
+                  <th>Horodatage</th>
+                </tr>
+              </thead>
+              <tbody id="adminOrdersList"></tbody>
+            </table>
+          </div>
+        </div>
+
       </div>
     </section>
 
@@ -850,8 +1005,8 @@
           <div class="legal-text">
             <h4>Avertissement Jeu Récréatif & Fictif</h4>
             <p>
-              Ce site est un simulateur purement ludique et éducatif. <strong>Aucun argent réel n'est engagé ni retirable.</strong>
-              Tous les jetons sont 100% virtuels et gratuits.
+              Ce site est un simulateur purement ludique et éducatif. <strong>Aucun argent réel n'est engagé, convertible ou retirable.</strong>
+              Tous les jetons sont 100% virtuels et gratuits. Les produits physiques BDE sont offerts aux étudiants selon les stocks disponibles.
             </p>
           </div>
         </div>
@@ -862,11 +1017,94 @@
         <div style="display:flex; gap:1.5rem;">
           <span>Serveur Node.js / Express</span>
           <span>Base de données SQLite Persistante</span>
-          <span>Sécurité Côté Serveur</span>
+          <span>Codes de Retrait BDE Sécurisés</span>
         </div>
       </div>
     </div>
   </footer>
+
+  <!-- Modale Ticket de Retrait (Code Unique Élève) -->
+  <div class="modal-overlay" id="claimTicketModal">
+    <div class="modal-content" style="max-width:480px;">
+      <button class="modal-close" id="closeTicketModal">&times;</button>
+      <div class="claim-ticket">
+        <div class="claim-ticket-header">🎟️ TICKET DE RETRAIT OFFICIEL BDE</div>
+        <div style="font-size:3rem; margin:0.5rem 0;">🎉</div>
+        <div class="claim-ticket-product" id="ticketModalProduct">Canette Coca-Cola</div>
+        <div style="font-size:0.85rem; color:var(--text-muted); margin-bottom:0.5rem;">
+          Payé : <strong id="ticketModalCoins" style="color:var(--gold-light);">6 000 🪙</strong>
+        </div>
+
+        <div style="font-size:0.8rem; color:var(--gold-light); text-transform:uppercase; letter-spacing:1px; margin-top:0.5rem;">
+          Ton Code Unique à présenter au Stand BDE :
+        </div>
+        <div class="claim-ticket-code" id="ticketModalCode">MB-XXXX-XXXX</div>
+
+        <div class="claim-ticket-instructions">
+          📍 Présente ce code sur ton smartphone lors des permanences au local BDE.<br>
+          ⚠️ Ce code est à usage unique et sera marqué "Retiré" dès validation par un membre du BDE.
+        </div>
+
+        <button class="btn btn-gold" style="margin-top:1.25rem; width:100%;" onclick="document.getElementById('claimTicketModal').classList.remove('active'); window.UI.switchView('shop');">
+          Compris, voir mes commandes ▶
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modale Admin : Ajout / Modification Produit -->
+  <div class="modal-overlay" id="adminProductModal">
+    <div class="modal-content" style="max-width:460px;">
+      <button class="modal-close" id="closeAdminProductModal">&times;</button>
+      <h3 id="adminProductModalTitle" style="font-family:var(--font-display); font-size:1.3rem; color:var(--gold-light); margin-bottom:1.25rem;">
+        ➕ Ajouter un Produit BDE
+      </h3>
+
+      <form id="formAdminProduct">
+        <input type="hidden" id="adminProdId">
+        <div class="form-group">
+          <label class="form-label" for="adminProdName">Nom du Produit Réel</label>
+          <input type="text" id="adminProdName" class="form-input" placeholder="ex: Canette Fanta Citron 33cl" required>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;">
+          <div class="form-group">
+            <label class="form-label" for="adminProdCategory">Catégorie</label>
+            <select id="adminProdCategory" class="form-input">
+              <option value="boisson">Boisson</option>
+              <option value="snack">Snack</option>
+              <option value="goodie">Goodie</option>
+              <option value="vetement">Vêtement</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="adminProdIcon">Icône (Emoji)</label>
+            <input type="text" id="adminProdIcon" class="form-input" placeholder="ex: 🥤" value="🥤" required>
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;">
+          <div class="form-group">
+            <label class="form-label" for="adminProdPrice">Prix en Coins</label>
+            <input type="number" id="adminProdPrice" class="form-input" placeholder="6000" min="100" step="100" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="adminProdStock">Stock Disponible</label>
+            <input type="number" id="adminProdStock" class="form-input" placeholder="50" min="0" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="adminProdDesc">Description / Consignes</label>
+          <input type="text" id="adminProdDesc" class="form-input" placeholder="ex: Fraîche, à récupérer au frigo BDE">
+        </div>
+
+        <button type="submit" class="btn btn-gold" style="width:100%; padding:0.8rem; margin-top:0.5rem;">
+          💾 Enregistrer le Produit
+        </button>
+      </form>
+    </div>
+  </div>
 
   <!-- Modale Connexion / Inscription -->
   <div class="modal-overlay" id="authModal">
@@ -924,6 +1162,7 @@
   <script src="/js/games/dice.js"></script>
   <script src="/js/games/wheel.js"></script>
   <script src="/js/games/plinko.js"></script>
+  <script src="/js/admin.js"></script>
   <script src="/js/app.js"></script>
 </body>
 </html>

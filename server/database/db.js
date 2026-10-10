@@ -1,5 +1,6 @@
 const Database = require('better-sqlite3');
 const path = require('path');
+const bcrypt = require('bcryptjs');
 const config = require('../config/config');
 
 const db = new Database(config.dbPath);
@@ -15,6 +16,7 @@ function initDb() {
       username TEXT UNIQUE NOT NULL COLLATE NOCASE,
       password_hash TEXT NOT NULL,
       coins INTEGER NOT NULL DEFAULT 1000,
+      role TEXT NOT NULL DEFAULT 'student',
       daily_streak INTEGER NOT NULL DEFAULT 0,
       last_daily_claim TEXT DEFAULT NULL,
       total_wagered INTEGER NOT NULL DEFAULT 0,
@@ -51,39 +53,90 @@ function initDb() {
       name TEXT NOT NULL,
       category TEXT NOT NULL,
       price INTEGER NOT NULL,
+      stock INTEGER NOT NULL DEFAULT 0,
+      initial_stock INTEGER NOT NULL DEFAULT 0,
       icon TEXT NOT NULL,
-      description TEXT NOT NULL
+      description TEXT NOT NULL,
+      is_active INTEGER NOT NULL DEFAULT 1,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 
-    CREATE TABLE IF NOT EXISTS shop_purchases (
+    CREATE TABLE IF NOT EXISTS shop_orders (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
+      claim_code TEXT UNIQUE NOT NULL,
       user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
       item_id TEXT NOT NULL REFERENCES shop_items(id),
+      item_name TEXT NOT NULL,
+      coins_paid INTEGER NOT NULL,
+      status TEXT NOT NULL DEFAULT 'pending',
+      collected_at DATETIME DEFAULT NULL,
+      collected_by INTEGER DEFAULT NULL REFERENCES users(id),
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 
     CREATE INDEX IF NOT EXISTS idx_history_user ON game_history(user_id, created_at DESC);
     CREATE INDEX IF NOT EXISTS idx_users_coins ON users(coins DESC);
+    CREATE INDEX IF NOT EXISTS idx_orders_code ON shop_orders(claim_code);
+    CREATE INDEX IF NOT EXISTS idx_orders_user ON shop_orders(user_id, status);
   `);
 
-  // Initialisation des articles de la boutique fictive BDE
-  const countItems = db.prepare('SELECT COUNT(*) as count FROM shop_items').get().count;
-  if (countItems === 0) {
-    const insertItem = db.prepare('INSERT INTO shop_items (id, name, category, price, icon, description) VALUES (?, ?, ?, ?, ?, ?)');
-    const defaultItems = [
-      ['cafe_bde', 'Café / Espresso Virtuel', 'boisson', 150, '☕', 'Le carburant officiel des projets Epitech.'],
-      ['canette_soda', 'Soda Frais du BDE', 'boisson', 250, '🥤', 'Idéal pour tenir pendant un rush de code.'],
-      ['snack_choco', 'Barre Chocolatée BDE', 'snack', 300, '🍫', 'Une douceur bien méritée après une victoire aux slots.'],
-      ['sticker_pack', 'Pack Stickers Epitech Mars', 'goodie', 500, '✨', 'Pour pimper ton laptop avec fierté marseillaise.'],
-      ['mug_marsabet', 'Mug Officiel Marsabet VIP', 'goodie', 1500, '🏆', 'Pour boire ton café comme un high roller.'],
-      ['tshirt_bde', 'T-Shirt BDE Marseille Élite', 'vetement', 3500, '👕', 'Édition limitée aux grands gagnants du casino.'],
-      ['sweat_marsabet', 'Hoodie Marsabet High Roller', 'vetement', 8000, '👑', 'Le graal absolu pour flexer dans les couloirs du campus.']
+  // Migration de la table users au cas où la colonne role n'existe pas encore
+  const userColumns = db.prepare("PRAGMA table_info(users)").all();
+  const hasRole = userColumns.some(c => c.name === 'role');
+  if (!hasRole) {
+    db.exec("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'student'");
+  }
+
+  // Migration de shop_items pour ajouter stock, initial_stock, is_active, created_at si absents
+  const itemColumns = db.prepare("PRAGMA table_info(shop_items)").all();
+  const hasStock = itemColumns.some(c => c.name === 'stock');
+  if (!hasStock) {
+    db.exec("ALTER TABLE shop_items ADD COLUMN stock INTEGER NOT NULL DEFAULT 0");
+    db.exec("ALTER TABLE shop_items ADD COLUMN initial_stock INTEGER NOT NULL DEFAULT 0");
+    db.exec("ALTER TABLE shop_items ADD COLUMN is_active INTEGER NOT NULL DEFAULT 1");
+  }
+  const hasCreatedAt = itemColumns.some(c => c.name === 'created_at');
+  if (!hasCreatedAt) {
+    db.exec("ALTER TABLE shop_items ADD COLUMN created_at TEXT DEFAULT NULL");
+  }
+
+  // Initialisation / Mise à jour des articles réels du BDE Marseille avec stocks et prix en coins réalistes
+  const currentCount = db.prepare("SELECT COUNT(*) as count FROM shop_items").get().count;
+  if (currentCount === 0 || !hasStock) {
+    const insertItem = db.prepare(`
+      INSERT OR REPLACE INTO shop_items (id, name, category, price, stock, initial_stock, icon, description, is_active)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
+    `);
+
+    const realBdeProducts = [
+      ['cafe_espresso', 'Café Espresso Frais (Stand BDE)', 'boisson', 1500, 100, 100, '☕', 'Café chaud en grain préparé sur place au local associatif.'],
+      ['coca_canette', 'Canette Coca-Cola / Cherry 33cl', 'boisson', 6000, 50, 50, '🥤', 'Canette fraîche servie bien fraîche au stand BDE.'],
+      ['monster_energy', 'Canette Monster Energy 500ml', 'boisson', 9500, 25, 25, '⚡', 'La recharge ultime pour les nuits de rush et hackathons.'],
+      ['barre_kinder', 'Barre Chocolatée Kinder Bueno', 'snack', 3000, 60, 60, '🍫', 'Snack chocolaté réconfortant entre deux créneaux de rush.'],
+      ['paquet_chips', 'Paquet de Chips Snack Lays 45g', 'snack', 3500, 40, 40, '🥔', 'Chips salées pour la pause goûter sur le campus.'],
+      ['pack_stickers', 'Pack de 5 Stickers Officiels Epitech Mars', 'goodie', 2500, 80, 80, '✨', 'Stickers vinyle haute résistance pour personnaliser ton laptop.'],
+      ['tote_bag_bde', 'Tote Bag Officiel BDE Epitech Marseille', 'goodie', 8000, 30, 30, '👜', 'Sac en toile épais brodé avec le logo du BDE Marseille.'],
+      ['mug_marsabet', 'Mug Céramique Marsabet VIP', 'goodie', 15000, 15, 15, '🏆', 'Mug collector réservé aux meilleurs joueurs du casino récréatif.'],
+      ['hoodie_epitech', 'Sweat à Capuche Officiel BDE (Taille au choix)', 'vetement', 35000, 8, 8, '👑', 'Le graal physique du BDE à retirer en main propre au local.']
     ];
 
     const insertMany = db.transaction((items) => {
       for (const item of items) insertItem.run(...item);
     });
-    insertMany(defaultItems);
+    insertMany(realBdeProducts);
+  }
+
+  // Création du compte admin BDE prédéfini pour l'accès facile aux membres du bureau
+  const adminExists = db.prepare("SELECT id FROM users WHERE username = 'bde_admin'").get();
+  if (!adminExists) {
+    const salt = bcrypt.genSaltSync(10);
+    const hash = bcrypt.hashSync('epitech2026', salt);
+    db.prepare(`
+      INSERT INTO users (username, password_hash, coins, role)
+      VALUES ('bde_admin', ?, 50000, 'admin')
+    `).run(hash);
+  } else {
+    db.prepare("UPDATE users SET role = 'admin' WHERE username = 'bde_admin'").run();
   }
 }
 

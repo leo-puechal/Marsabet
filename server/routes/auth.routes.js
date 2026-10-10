@@ -7,5 +7,6 @@ router.post('/register', authController.register);
 router.post('/login', authController.login);
 router.get('/me', authMiddleware, authController.getMe);
 router.post('/daily-bonus', authMiddleware, authController.claimDailyBonus);
+router.post('/become-admin', authMiddleware, authController.becomeAdmin);
 
 module.exports = router;

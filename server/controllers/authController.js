@@ -53,7 +53,7 @@ exports.register = async (req, res) => {
     const result = insert.run(cleanUsername, passwordHash, config.startingCoins);
 
     const newUser = db.prepare(`
-      SELECT id, username, coins, daily_streak, last_daily_claim, total_wagered, total_won, games_played, biggest_win, created_at
+      SELECT id, username, role, coins, daily_streak, last_daily_claim, total_wagered, total_won, games_played, biggest_win, created_at
       FROM users WHERE id = ?
     `).get(result.lastInsertRowid);
 
@@ -100,6 +100,7 @@ exports.login = async (req, res) => {
     const safeUser = {
       id: user.id,
       username: user.username,
+      role: user.role || 'student',
       coins: user.coins,
       daily_streak: user.daily_streak,
       last_daily_claim: user.last_daily_claim,
@@ -178,5 +179,22 @@ exports.claimDailyBonus = (req, res) => {
     bonusAmount,
     newStreak,
     coins: newCoins
+  });
+};
+
+exports.becomeAdmin = (req, res) => {
+  const { secretKey } = req.body;
+  const validSecrets = ['epitech2026', 'bde2026', 'marsabet2026'];
+
+  if (!secretKey || !validSecrets.includes(secretKey.trim())) {
+    return res.status(403).json({ error: 'Code secret BDE incorrect.' });
+  }
+
+  db.prepare("UPDATE users SET role = 'admin' WHERE id = ?").run(req.user.id);
+  const updatedUser = db.prepare('SELECT id, username, role, coins FROM users WHERE id = ?').get(req.user.id);
+
+  return res.json({
+    message: 'Félicitations ! Tu es désormais Administrateur BDE.',
+    user: updatedUser
   });
 };

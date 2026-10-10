@@ -25,6 +25,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (view === 'leaderboard') loadLeaderboard();
         if (view === 'profile') loadProfile();
         if (view === 'shop') loadShop();
+        if (view === 'admin') {
+          if (window.AdminBDE) window.AdminBDE.switchTab('claims');
+        }
       }
     });
   });
@@ -152,13 +155,42 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  // Initialisation des jeux
+  // Initialisation des jeux & Admin
   window.SlotsGame.init();
   window.BlackjackGame.init();
   window.RouletteGame.init();
   window.DiceGame.init();
   window.WheelGame.init();
   window.PlinkoGame.init();
+  if (window.AdminBDE) window.AdminBDE.init();
+
+  // Fermeture modale Ticket
+  const closeTicketBtn = document.getElementById('closeTicketModal');
+  if (closeTicketBtn) {
+    closeTicketBtn.addEventListener('click', () => {
+      const modal = document.getElementById('claimTicketModal');
+      if (modal) modal.classList.remove('active');
+    });
+  }
+
+  // Devenir Admin avec code secret
+  const becomeAdminBtn = document.getElementById('becomeAdminBtn');
+  if (becomeAdminBtn) {
+    becomeAdminBtn.addEventListener('click', async () => {
+      const secret = prompt('Entre le mot de passe secret BDE (ex: epitech2026) :');
+      if (!secret) return;
+      try {
+        const res = await window.API.becomeAdmin(secret);
+        window.State.user.role = 'admin';
+        window.State.updateUI();
+        window.UI.showToast(res.message, 'success');
+        window.UI.switchView('admin');
+        window.AdminBDE.switchTab('claims');
+      } catch (err) {
+        window.UI.showToast(err.message, 'error');
+      }
+    });
+  }
 
   // Vérification de la session utilisateur persistante
   await checkSession();
@@ -307,20 +339,35 @@ async function loadProfile() {
       }
     }
 
-    // Inventaire
-    const invGrid = document.getElementById('profileInventoryGrid');
-    if (invGrid) {
-      if (data.inventory.length === 0) {
-        invGrid.innerHTML = '<p style="color: var(--text-muted); grid-column: 1/-1;">Aucun article virtuel échangé pour l’instant. Visite la boutique BDE !</p>';
+    // Commandes physiques et codes de retrait
+    const ordersListEl = document.getElementById('profileOrdersList');
+    if (ordersListEl) {
+      if (!data.orders || data.orders.length === 0) {
+        ordersListEl.innerHTML = '<p style="color: var(--text-muted); padding:1rem;">Aucun produit BDE échangé pour l’instant. Visite la boutique !</p>';
       } else {
-        invGrid.innerHTML = data.inventory.map(item => `
-          <div class="shop-item-card">
-            <div class="shop-item-icon">${item.icon}</div>
-            <div class="shop-item-title">${escapeHtml(item.name)}</div>
-            <div class="shop-item-desc">${escapeHtml(item.description)}</div>
-            <div style="font-size:0.75rem; color:var(--text-muted);">Acheté le ${formatDate(item.created_at)}</div>
-          </div>
-        `).join('');
+        ordersListEl.innerHTML = data.orders.map(o => {
+          const isCollected = o.status === 'collected';
+          return `
+            <div class="shop-item-card" style="text-align:left; align-items:flex-start;">
+              <div style="display:flex; justify-content:space-between; width:100%; align-items:center;">
+                <span style="font-size:1.8rem;">${o.icon || '🎁'}</span>
+                <span class="order-status ${isCollected ? 'collected' : 'pending'}">
+                  ${isCollected ? '✅ Retiré au stand' : '⏳ En attente de retrait'}
+                </span>
+              </div>
+              <div class="shop-item-title" style="margin-top:0.4rem;">${escapeHtml(o.item_name)}</div>
+              <div style="width:100%; margin:0.5rem 0;">
+                <div style="font-size:0.75rem; color:var(--text-muted); text-transform:uppercase;">Code à présenter au stand BDE :</div>
+                <code style="font-family:var(--font-mono); font-size:1.2rem; font-weight:800; color:var(--gold-light); letter-spacing:1.5px; background:rgba(0,0,0,0.4); padding:4px 8px; border-radius:4px; display:inline-block; border:1px solid var(--gold-primary);">
+                  ${o.claim_code}
+                </code>
+              </div>
+              <div style="font-size:0.75rem; color:var(--text-muted);">
+                ${isCollected ? 'Retiré le ' + formatDate(o.collected_at) : 'Commandé le ' + formatDate(o.created_at)}
+              </div>
+            </div>
+          `;
+        }).join('');
       }
     }
   } catch (err) {
@@ -334,40 +381,143 @@ async function loadShop() {
 
   try {
     const data = await window.API.getShopItems();
-    shopGrid.innerHTML = data.items.map(item => `
-      <div class="shop-item-card">
-        <div class="shop-item-icon">${item.icon}</div>
-        <div class="shop-item-title">${escapeHtml(item.name)}</div>
-        <div class="shop-item-desc">${escapeHtml(item.description)}</div>
-        <div class="shop-item-price">${item.price.toLocaleString()} 🪙</div>
-        <button class="btn btn-gold btn-buy-shop" data-id="${item.id}" style="width: 100%; font-size: 0.85rem;">
-          Échanger mes jetons
-        </button>
-      </div>
-    `).join('');
+    const products = data.products || [];
 
-    // Événements d'achat
-    shopGrid.querySelectorAll('.btn-buy-shop').forEach(btn => {
+    shopGrid.innerHTML = products.map(item => {
+      const isOut = item.stock <= 0;
+      const isLow = item.stock > 0 && item.stock <= 5;
+      let badgeHtml = '';
+
+      if (isOut) {
+        badgeHtml = '<span class="stock-badge out-of-stock">Rupture de Stock (0)</span>';
+      } else if (isLow) {
+        badgeHtml = `<span class="stock-badge low-stock">Derniers articles (${item.stock})</span>`;
+      } else {
+        badgeHtml = `<span class="stock-badge in-stock">En Stock (${item.stock} restants)</span>`;
+      }
+
+      return `
+        <div class="shop-item-card ${isOut ? 'is-empty' : ''}">
+          <div class="shop-item-icon">${item.icon}</div>
+          <div class="shop-item-title">${escapeHtml(item.name)}</div>
+          <div class="shop-item-desc">${escapeHtml(item.description)}</div>
+          
+          <div style="margin: 0.25rem 0;">
+            ${badgeHtml}
+          </div>
+
+          <div class="shop-item-price">${item.price.toLocaleString()} 🪙</div>
+
+          <button class="btn btn-gold btn-buy-shop" data-id="${item.id}" data-name="${escapeHtml(item.name)}" data-price="${item.price}" ${isOut ? 'disabled' : ''} style="width: 100%; font-size: 0.85rem;">
+            ${isOut ? '❌ Épuisé' : 'Échanger mes Coins ▶'}
+          </button>
+        </div>
+      `;
+    }).join('');
+
+    // Événements d'échange
+    shopGrid.querySelectorAll('.btn-buy-shop:not(:disabled)').forEach(btn => {
       btn.addEventListener('click', async (e) => {
         if (!window.State.isAuthenticated) {
           window.UI.openAuthModal('login');
           return;
         }
-        const itemId = e.currentTarget.dataset.id;
+
+        const productId = e.currentTarget.dataset.id;
+        const productName = e.currentTarget.dataset.name;
+        const productPrice = parseInt(e.currentTarget.dataset.price);
+
+        if (window.State.user.coins < productPrice) {
+          window.UI.showToast(`Solde insuffisant ! Il te manque ${(productPrice - window.State.user.coins).toLocaleString()} jetons.`, 'error');
+          return;
+        }
+
+        if (!confirm(`Confirmer l'échange de ${productPrice.toLocaleString()} coins contre : "${productName}" physique au stand BDE ?`)) {
+          return;
+        }
+
         try {
-          const res = await window.API.buyShopItem(itemId);
+          const res = await window.API.orderShopProduct(productId);
           window.State.updateCoins(res.coins);
-          window.UI.showToast(res.message, 'success');
+          window.UI.showToast(res.message, 'success', 5000);
           window.sound.playWin();
           window.UI.triggerConfetti();
+
+          // Afficher la modale avec le Ticket de Retrait
+          showClaimTicketModal(res.order);
+
+          // Rafraîchir les stocks affichés
+          loadShop();
         } catch (err) {
           window.UI.showToast(err.message, 'error');
         }
       });
     });
+
+    // Charger également les commandes en cours de l'élève
+    loadShopMyOrders();
   } catch (err) {
-    shopGrid.innerHTML = '<p style="color:var(--lose-red);">Erreur catalogue.</p>';
+    shopGrid.innerHTML = '<p style="color:var(--lose-red);">Erreur lors du chargement du catalogue BDE.</p>';
   }
+}
+
+async function loadShopMyOrders() {
+  const container = document.getElementById('shopMyOrdersList');
+  if (!container) return;
+
+  if (!window.State.isAuthenticated) {
+    container.innerHTML = '<p style="color:var(--text-muted); padding:1rem;">Connecte-toi pour voir tes codes de retrait actifs.</p>';
+    return;
+  }
+
+  try {
+    const data = await window.API.getMyOrders();
+    const orders = data.orders || [];
+
+    if (orders.length === 0) {
+      container.innerHTML = '<p style="color:var(--text-muted); padding:1rem;">Tu n’as aucun code de retrait pour le moment.</p>';
+      return;
+    }
+
+    container.innerHTML = orders.map(o => {
+      const isCollected = o.status === 'collected';
+      return `
+        <div style="background:rgba(4,12,28,0.7); border:1px solid ${isCollected ? 'rgba(16,185,129,0.3)' : 'var(--gold-primary)'}; border-radius:var(--radius-md); padding:1rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+          <div style="display:flex; align-items:center; gap:0.75rem;">
+            <span style="font-size:2rem;">${o.icon || '🎁'}</span>
+            <div>
+              <div style="font-weight:700; color:#FFF;">${escapeHtml(o.item_name)}</div>
+              <div style="font-size:0.75rem; color:var(--text-muted);">Commandé le ${formatDate(o.created_at)}</div>
+            </div>
+          </div>
+          <div style="text-align:right;">
+            <code style="font-family:var(--font-mono); font-size:1.15rem; font-weight:800; color:var(--gold-light); letter-spacing:1px; background:rgba(0,0,0,0.5); padding:4px 8px; border-radius:4px; border:1px solid rgba(212,175,55,0.4);">
+              ${o.claim_code}
+            </code>
+            <div style="margin-top:0.35rem;">
+              <span class="order-status ${isCollected ? 'collected' : 'pending'}">
+                ${isCollected ? '✅ Retiré au stand' : '⏳ En attente de retrait'}
+              </span>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  } catch (e) {}
+}
+
+function showClaimTicketModal(order) {
+  const modal = document.getElementById('claimTicketModal');
+  const codeEl = document.getElementById('ticketModalCode');
+  const prodEl = document.getElementById('ticketModalProduct');
+  const coinsEl = document.getElementById('ticketModalCoins');
+
+  if (!modal) return;
+  if (codeEl) codeEl.textContent = order.claimCode;
+  if (prodEl) prodEl.textContent = `${order.icon || '🎁'} ${order.itemName}`;
+  if (coinsEl) coinsEl.textContent = `${order.coinsPaid.toLocaleString()} 🪙`;
+
+  modal.classList.add('active');
 }
 
 function gameLabel(type) {

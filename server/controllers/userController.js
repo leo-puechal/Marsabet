@@ -64,13 +64,14 @@ exports.getProfile = (req, res) => {
       GROUP BY game_type
     `).all(userId);
 
-    // Inventaire boutique BDE
-    const inventory = db.prepare(`
-      SELECT p.id as purchase_id, p.created_at, i.id, i.name, i.category, i.price, i.icon, i.description
-      FROM shop_purchases p
-      JOIN shop_items i ON p.item_id = i.id
-      WHERE p.user_id = ?
-      ORDER BY p.created_at DESC
+    // Commandes et codes de retrait de la boutique BDE
+    const orders = db.prepare(`
+      SELECT o.id, o.claim_code, o.item_name, o.coins_paid, o.status, o.collected_at, o.created_at,
+             i.icon, i.category
+      FROM shop_orders o
+      LEFT JOIN shop_items i ON o.item_id = i.id
+      WHERE o.user_id = ?
+      ORDER BY o.created_at DESC
     `).all(userId);
 
     return res.json({
@@ -83,7 +84,7 @@ exports.getProfile = (req, res) => {
         details: h.details ? JSON.parse(h.details) : null
       })),
       statsByGame,
-      inventory
+      orders
     });
   } catch (err) {
     console.error('Erreur profil:', err);

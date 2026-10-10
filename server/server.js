@@ -8,6 +8,7 @@ const authRoutes = require('./routes/auth.routes');
 const userRoutes = require('./routes/user.routes');
 const leaderboardRoutes = require('./routes/leaderboard.routes');
 const gamesRoutes = require('./routes/games.routes');
+const adminRoutes = require('./routes/admin.routes');
 
 const app = express();
 
@@ -24,6 +25,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/leaderboard', leaderboardRoutes);
 app.use('/api/games', gamesRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Infos globales du casino Marsabet
 app.get('/api/stats', (req, res) => {

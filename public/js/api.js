@@ -86,10 +86,63 @@ const API = {
     return this.request('/user/shop');
   },
 
-  async buyShopItem(itemId) {
-    return this.request('/user/shop/buy', {
+  async orderShopProduct(productId) {
+    return this.request('/user/shop/order', {
       method: 'POST',
-      body: JSON.stringify({ itemId })
+      body: JSON.stringify({ productId })
+    });
+  },
+
+  async getMyOrders() {
+    return this.request('/user/shop/my-orders');
+  },
+
+  async becomeAdmin(secretKey) {
+    return this.request('/auth/become-admin', {
+      method: 'POST',
+      body: JSON.stringify({ secretKey })
+    });
+  },
+
+  // Admin BDE Endpoints
+  async adminCheckCode(code) {
+    return this.request(`/admin/claims/check?code=${encodeURIComponent(code)}`);
+  },
+
+  async adminValidateCode(code) {
+    return this.request('/admin/claims/validate', {
+      method: 'POST',
+      body: JSON.stringify({ code })
+    });
+  },
+
+  async adminGetAllOrders(status = 'all', search = '') {
+    let url = `/admin/orders?status=${encodeURIComponent(status)}`;
+    if (search) url += `&search=${encodeURIComponent(search)}`;
+    return this.request(url);
+  },
+
+  async adminGetProducts() {
+    return this.request('/admin/products');
+  },
+
+  async adminCreateProduct(data) {
+    return this.request('/admin/products', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  },
+
+  async adminUpdateProduct(id, data) {
+    return this.request(`/admin/products/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    });
+  },
+
+  async adminDeleteProduct(id) {
+    return this.request(`/admin/products/${id}`, {
+      method: 'DELETE'
     });
   },
 
