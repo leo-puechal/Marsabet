@@ -8,6 +8,9 @@
     "dev": "node --watch server/server.js",
     "reset-db": "node server/database/resetDb.js"
   },
+  "engines": {
+    "node": "20.x"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/leo-puechal/Marsabet.git"
