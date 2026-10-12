@@ -1900,6 +1900,7 @@
             <!-- Navigation par Onglets Admin -->
             <div class="admin-tabs-nav">
               <button class="admin-tab-btn active" data-tab="orders">📦 Demandes de Livraison Directe</button>
+              <button class="admin-tab-btn" data-tab="users">👥 Utilisateurs & Soldes</button>
               <button class="admin-tab-btn" data-tab="promos">🎟️ Codes Promo BDE</button>
               <button class="admin-tab-btn" data-tab="wheels">🎡 Récompenses des Roues</button>
             </div>
@@ -1944,6 +1945,79 @@
                     </tr>
                   </thead>
                   <tbody id="adminOrdersList"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Onglet 2 : Gestion des Utilisateurs & Comptes (Admin BDE) -->
+            <div id="adminTabUsers" style="display:none;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem; flex-wrap:wrap; gap:1rem;">
+                <div>
+                  <h3 style="font-family:var(--font-display); font-size:1.3rem; color:var(--gold-light); margin-bottom:0.25rem;">
+                    👥 Gestion des Utilisateurs & Soldes
+                  </h3>
+                  <p style="color:var(--text-secondary); font-size:0.85rem; margin:0;">
+                    Consulte tous les comptes élèves, ajuste leurs soldes de pièces en direct, change leurs rôles ou supprime des comptes.
+                  </p>
+                </div>
+                <div style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center;">
+                  <button class="btn btn-outline" id="adminRefreshUsersBtn" style="padding:0.45rem 0.9rem; font-size:0.85rem;">
+                    🔄 Actualiser
+                  </button>
+                </div>
+              </div>
+
+              <!-- Métriques rapides des utilisateurs -->
+              <div class="rewards-summary-bar" style="margin-bottom:1.5rem;">
+                <div class="summary-metric">
+                  <span class="metric-val" id="adminTotalUsersCount">0</span>
+                  <span class="metric-lbl">Comptes Inscrits</span>
+                </div>
+                <div class="summary-metric">
+                  <span class="metric-val" id="adminTotalCoinsInCirculation">0 🪙</span>
+                  <span class="metric-lbl">Coins en Circulation</span>
+                </div>
+                <div class="summary-metric">
+                  <span class="metric-val" id="adminTotalGamesCount">0</span>
+                  <span class="metric-lbl">Parties Jouées</span>
+                </div>
+              </div>
+
+              <!-- Filtres et Recherche -->
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:0.75rem;">
+                <div style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center; flex:1; max-width:700px;">
+                  <input type="text" id="adminUsersSearchInput" class="form-input" placeholder="🔍 Rechercher un pseudo..." style="min-width:200px; flex:1; padding:0.45rem 0.8rem; font-size:0.85rem;">
+                  <select id="adminUsersRoleFilter" style="background:#0a1f44; color:#FFF; border:1px solid var(--gold-primary); border-radius:6px; padding:0.45rem 0.8rem; font-size:0.85rem;">
+                    <option value="all">Tous les rôles</option>
+                    <option value="student">Élèves uniquement</option>
+                    <option value="admin">Administrateurs BDE</option>
+                  </select>
+                  <select id="adminUsersSortSelect" style="background:#0a1f44; color:#FFF; border:1px solid var(--gold-primary); border-radius:6px; padding:0.45rem 0.8rem; font-size:0.85rem;">
+                    <option value="coins:desc">💰 Plus riches en premier</option>
+                    <option value="coins:asc">🪙 Moins riches en premier</option>
+                    <option value="created_at:desc">📅 Inscriptions récentes</option>
+                    <option value="username:asc">🔤 Alphabétique (A-Z)</option>
+                    <option value="games_played:desc">🎮 Plus actifs en parties</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Tableau des Utilisateurs -->
+              <div class="admin-table-container">
+                <table class="admin-table">
+                  <thead>
+                    <tr>
+                      <th style="min-width:180px;">Utilisateur</th>
+                      <th>Rôle</th>
+                      <th>Solde actuel</th>
+                      <th>Activité & Stats</th>
+                      <th>Inscrit le</th>
+                      <th style="text-align:right; min-width:190px;">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="adminUsersList">
+                    <tr><td colspan="6" style="text-align:center; padding:2rem; color:var(--text-muted);">Chargement des utilisateurs...</td></tr>
+                  </tbody>
                 </table>
               </div>
             </div>
@@ -2322,6 +2396,65 @@
         <button type="submit" class="btn btn-gold" style="width:100%; padding:0.8rem; margin-top:0.75rem;">
           ✨ Créer et Activer le Code Promo
         </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modale Admin : Modification de Solde Utilisateur -->
+  <div class="modal-overlay" id="adminUserCoinsModal">
+    <div class="modal-content" style="max-width:440px;">
+      <button class="modal-close" id="closeAdminUserCoinsModal">&times;</button>
+      <h3 style="font-family:var(--font-display); font-size:1.3rem; color:var(--gold-light); margin-bottom:1.25rem;">
+        🪙 Modifier le Solde de Pièces
+      </h3>
+      <form id="formAdminUserCoins">
+        <input type="hidden" id="adminUserCoinsUserId">
+
+        <div style="background:rgba(255,255,255,0.05); border:1px solid rgba(212,175,55,0.25); border-radius:8px; padding:0.9rem; margin-bottom:1.1rem; display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <div style="font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px;">Élève</div>
+            <div id="adminUserCoinsUsername" style="font-size:1.1rem; font-weight:700; color:#FFF;">-</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px;">Solde Actuel</div>
+            <div id="adminUserCoinsCurrent" style="font-size:1.15rem; font-weight:800; color:var(--gold-primary);">- 🪙</div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Mode d'opération</label>
+          <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:0.5rem; margin-top:0.25rem;">
+            <button type="button" class="btn btn-mult active admin-coin-mode-btn" data-mode="set" id="modeBtnSet" style="padding:0.5rem; font-size:0.85rem; font-weight:700;">
+              📌 Définir
+            </button>
+            <button type="button" class="btn btn-mult admin-coin-mode-btn" data-mode="add" id="modeBtnAdd" style="padding:0.5rem; font-size:0.85rem; font-weight:700;">
+              ➕ Ajouter
+            </button>
+            <button type="button" class="btn btn-mult admin-coin-mode-btn" data-mode="subtract" id="modeBtnSubtract" style="padding:0.5rem; font-size:0.85rem; font-weight:700;">
+              ➖ Retirer
+            </button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="adminUserCoinsAmount" id="adminUserCoinsAmountLabel">Nouveau montant exact</label>
+          <div style="position:relative;">
+            <input type="number" id="adminUserCoinsAmount" class="form-input" min="0" step="10" placeholder="Ex: 5000" required style="width:100%; padding-right:2.5rem; font-size:1.1rem; font-weight:700;">
+            <span style="position:absolute; right:12px; top:50%; transform:translateY(-50%); font-size:1.2rem; pointer-events:none;">🪙</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="adminUserCoinsReason">Motif ou remarque (optionnel)</label>
+          <input type="text" id="adminUserCoinsReason" class="form-input" placeholder="Ex: Récompense événement, ajustement stand...">
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:0.75rem; margin-top:1.25rem;">
+          <button type="button" class="btn btn-outline" id="btnCancelUserCoinsModal" style="padding:0.6rem 1.1rem;">Annuler</button>
+          <button type="submit" class="btn btn-gold" id="btnSubmitUserCoinsModal" style="padding:0.6rem 1.3rem;">
+            💾 Enregistrer le Solde
+          </button>
+        </div>
       </form>
     </div>
   </div>

@@ -89,9 +89,56 @@ const AdminBDE = {
       saveWheelBtn.addEventListener('click', () => this.saveWheelSegments());
     }
 
-    const testSpinBtn = document.getElementById('adminTestSpinBtn');
-    if (testSpinBtn) {
-      testSpinBtn.addEventListener('click', () => this.testSpinPreview());
+    // Gestion des Utilisateurs & Soldes
+    const usersSearch = document.getElementById('adminUsersSearchInput');
+    const usersRoleFilter = document.getElementById('adminUsersRoleFilter');
+    const usersSortSelect = document.getElementById('adminUsersSortSelect');
+    const usersRefreshBtn = document.getElementById('adminRefreshUsersBtn');
+
+    if (usersSearch) {
+      usersSearch.addEventListener('input', () => {
+        clearTimeout(this.usersSearchTimeout);
+        this.usersSearchTimeout = setTimeout(() => this.loadUsers(), 300);
+      });
+    }
+
+    if (usersRoleFilter) {
+      usersRoleFilter.addEventListener('change', () => this.loadUsers());
+    }
+
+    if (usersSortSelect) {
+      usersSortSelect.addEventListener('change', () => this.loadUsers());
+    }
+
+    if (usersRefreshBtn) {
+      usersRefreshBtn.addEventListener('click', () => this.loadUsers());
+    }
+
+    // Modal Modification Solde Utilisateur
+    const closeCoinsModalBtn = document.getElementById('closeAdminUserCoinsModal');
+    const cancelCoinsModalBtn = document.getElementById('btnCancelUserCoinsModal');
+    const formUserCoins = document.getElementById('formAdminUserCoins');
+
+    if (closeCoinsModalBtn) {
+      closeCoinsModalBtn.addEventListener('click', () => this.closeUserCoinsModal());
+    }
+    if (cancelCoinsModalBtn) {
+      cancelCoinsModalBtn.addEventListener('click', () => this.closeUserCoinsModal());
+    }
+
+    // Boutons de mode d'ajustement solde (Définir / Ajouter / Retirer)
+    document.querySelectorAll('.admin-coin-mode-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const mode = e.currentTarget.dataset.mode;
+        this.setUserCoinsMode(mode);
+      });
+    });
+
+    if (formUserCoins) {
+      formUserCoins.addEventListener('submit', (e) => {
+        e.preventDefault();
+        this.submitUserCoins();
+      });
     }
   },
 
@@ -102,16 +149,296 @@ const AdminBDE = {
     });
 
     const areaOrders = document.getElementById('adminTabOrders');
+    const areaUsers = document.getElementById('adminTabUsers');
     const areaPromos = document.getElementById('adminTabPromos');
     const areaWheels = document.getElementById('adminTabWheels');
 
     if (areaOrders) areaOrders.style.display = (tab === 'orders') ? 'block' : 'none';
+    if (areaUsers) areaUsers.style.display = (tab === 'users') ? 'block' : 'none';
     if (areaPromos) areaPromos.style.display = (tab === 'promos') ? 'block' : 'none';
     if (areaWheels) areaWheels.style.display = (tab === 'wheels') ? 'block' : 'none';
 
     if (tab === 'orders') this.loadOrders();
+    if (tab === 'users') this.loadUsers();
     if (tab === 'promos') this.loadPromoCodes();
     if (tab === 'wheels') this.loadWheels();
+  },
+
+  // ==========================================
+  // GESTION DES UTILISATEURS (ADMIN BDE)
+  // ==========================================
+  currentCoinsMode: 'set',
+  usersListCache: [],
+
+  setUserCoinsMode(mode) {
+    this.currentCoinsMode = mode;
+    document.querySelectorAll('.admin-coin-mode-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.mode === mode);
+    });
+
+    const label = document.getElementById('adminUserCoinsAmountLabel');
+    const input = document.getElementById('adminUserCoinsAmount');
+    if (label) {
+      if (mode === 'set') {
+        label.textContent = 'Nouveau montant exact :';
+        if (input) input.placeholder = 'Ex: 5000';
+      } else if (mode === 'add') {
+        label.textContent = 'Montant de pièces à ajouter (+) :';
+        if (input) input.placeholder = 'Ex: 1000';
+      } else if (mode === 'subtract') {
+        label.textContent = 'Montant de pièces à déduire (-) :';
+        if (input) input.placeholder = 'Ex: 500';
+      }
+    }
+  },
+
+  openUserCoinsModal(user) {
+    const modal = document.getElementById('adminUserCoinsModal');
+    if (!modal) return;
+
+    const idInput = document.getElementById('adminUserCoinsUserId');
+    const nameEl = document.getElementById('adminUserCoinsUsername');
+    const currEl = document.getElementById('adminUserCoinsCurrent');
+    const amountInput = document.getElementById('adminUserCoinsAmount');
+    const reasonInput = document.getElementById('adminUserCoinsReason');
+
+    if (idInput) idInput.value = user.id;
+    if (nameEl) nameEl.textContent = user.username;
+    if (currEl) currEl.textContent = `${Number(user.coins).toLocaleString('fr-FR')} 🪙`;
+    if (amountInput) amountInput.value = user.coins;
+    if (reasonInput) reasonInput.value = '';
+
+    this.setUserCoinsMode('set');
+    modal.classList.add('active');
+  },
+
+  closeUserCoinsModal() {
+    const modal = document.getElementById('adminUserCoinsModal');
+    if (modal) modal.classList.remove('active');
+  },
+
+  async submitUserCoins() {
+    const idInput = document.getElementById('adminUserCoinsUserId');
+    const amountInput = document.getElementById('adminUserCoinsAmount');
+    const reasonInput = document.getElementById('adminUserCoinsReason');
+    const submitBtn = document.getElementById('btnSubmitUserCoinsModal');
+
+    if (!idInput || !idInput.value || !amountInput) return;
+
+    const userId = idInput.value;
+    const coins = parseInt(amountInput.value, 10);
+    const mode = this.currentCoinsMode || 'set';
+    const reason = reasonInput ? reasonInput.value.trim() : '';
+
+    if (isNaN(coins) || coins < 0) {
+      window.UI.showToast('Veuillez entrer un montant de pièces valide.', 'warning');
+      return;
+    }
+
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<span class="spinner-small"></span> Enregistrement...';
+    }
+
+    try {
+      const res = await window.API.adminUpdateUserCoins(userId, { coins, mode, reason });
+      window.UI.showToast(res.message || 'Solde modifié avec succès !', 'success', 4000);
+      if (window.sound && typeof window.sound.playWin === 'function') {
+        window.sound.playWin();
+      }
+
+      this.closeUserCoinsModal();
+      this.loadUsers();
+
+      // Si l'admin a modifié son propre solde, actualiser le state local
+      if (window.State && window.State.user && String(window.State.user.id) === String(userId)) {
+        if (typeof window.State.updateCoins === 'function') {
+          window.State.updateCoins(res.user.coins);
+        }
+      }
+    } catch (err) {
+      console.error('Erreur updateUserCoins:', err);
+      window.UI.showToast(err.message || 'Erreur lors de la modification du solde.', 'error');
+    } finally {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '💾 Enregistrer le Solde';
+      }
+    }
+  },
+
+  async confirmToggleUserRole(userId, username, currentRole) {
+    if (username === 'bde_admin') {
+      window.UI.showToast('Le compte maître "bde_admin" ne peut pas être modifié.', 'warning');
+      return;
+    }
+
+    const currentAdminId = window.State && window.State.user ? window.State.user.id : null;
+    if (String(currentAdminId) === String(userId) && currentRole === 'admin') {
+      window.UI.showToast('Tu ne peux pas révoquer tes propres privilèges administrateur.', 'warning');
+      return;
+    }
+
+    const newRole = currentRole === 'admin' ? 'student' : 'admin';
+    const newRoleLabel = newRole === 'admin' ? 'Administrateur BDE' : 'Élève';
+
+    const confirmed = window.confirm(`Veux-tu vraiment changer le rôle de "${username}" en "${newRoleLabel}" ?`);
+    if (!confirmed) return;
+
+    try {
+      const res = await window.API.adminUpdateUserRole(userId, newRole);
+      window.UI.showToast(res.message || 'Rôle mis à jour !', 'success');
+      this.loadUsers();
+    } catch (err) {
+      console.error('Erreur updateUserRole:', err);
+      window.UI.showToast(err.message || 'Erreur lors du changement de rôle.', 'error');
+    }
+  },
+
+  async confirmDeleteUser(userId, username) {
+    if (username === 'bde_admin') {
+      window.UI.showToast('Le compte maître "bde_admin" ne peut pas être supprimé.', 'warning');
+      return;
+    }
+
+    const currentAdminId = window.State && window.State.user ? window.State.user.id : null;
+    if (String(currentAdminId) === String(userId)) {
+      window.UI.showToast('Tu ne peux pas supprimer ton propre compte administrateur.', 'warning');
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `⚠️ ATTENTION : Es-tu sûr de vouloir supprimer définitivement le compte de "${username}" ?\n\nToutes ses parties, ses pièces, ses commandes et ses statistiques seront irréversiblement effacées.`
+    );
+    if (!confirmed) return;
+
+    try {
+      const res = await window.API.adminDeleteUser(userId);
+      window.UI.showToast(res.message || 'Compte supprimé avec succès.', 'success', 4000);
+      this.loadUsers();
+    } catch (err) {
+      console.error('Erreur deleteUser:', err);
+      window.UI.showToast(err.message || 'Erreur lors de la suppression de l\'utilisateur.', 'error');
+    }
+  },
+
+  async loadUsers() {
+    const listEl = document.getElementById('adminUsersList');
+    if (!listEl) return;
+
+    const searchInput = document.getElementById('adminUsersSearchInput');
+    const roleFilter = document.getElementById('adminUsersRoleFilter');
+    const sortSelect = document.getElementById('adminUsersSortSelect');
+
+    const search = searchInput ? searchInput.value.trim() : '';
+    const role = roleFilter ? roleFilter.value : 'all';
+    
+    let sortBy = 'coins';
+    let sortOrder = 'desc';
+    if (sortSelect && sortSelect.value) {
+      const parts = sortSelect.value.split(':');
+      sortBy = parts[0] || 'coins';
+      sortOrder = parts[1] || 'desc';
+    }
+
+    listEl.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:2rem; color:var(--text-muted);"><span class="spinner-small" style="display:inline-block; margin-right:8px;"></span> Chargement des utilisateurs...</td></tr>';
+
+    try {
+      const res = await window.API.adminGetUsers({ search, role, sortBy, sortOrder });
+      const users = res.users || [];
+      const stats = res.stats || {};
+      this.usersListCache = users;
+
+      // Mettre à jour les compteurs métriques
+      const countEl = document.getElementById('adminTotalUsersCount');
+      const coinsEl = document.getElementById('adminTotalCoinsInCirculation');
+      const gamesEl = document.getElementById('adminTotalGamesCount');
+
+      if (countEl) countEl.textContent = (stats.totalUsers || users.length).toLocaleString('fr-FR');
+      if (coinsEl) coinsEl.textContent = `${(stats.totalCoins || 0).toLocaleString('fr-FR')} 🪙`;
+      if (gamesEl) gamesEl.textContent = (stats.totalGamesPlayed || 0).toLocaleString('fr-FR');
+
+      if (users.length === 0) {
+        listEl.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:2.5rem; color:var(--text-muted); font-size:0.95rem;">Aucun utilisateur trouvé correspondant à ces critères.</td></tr>';
+        return;
+      }
+
+      const currentAdminId = window.State && window.State.user ? window.State.user.id : null;
+
+      listEl.innerHTML = users.map(u => {
+        const isAdmin = u.role === 'admin';
+        const isMaster = u.username === 'bde_admin';
+        const isSelf = String(currentAdminId) === String(u.id);
+
+        const roleBadge = isAdmin
+          ? `<span class="admin-role-badge role-admin">🛡️ Admin BDE</span>`
+          : `<span class="admin-role-badge role-student">🎓 Élève</span>`;
+
+        const createdAtStr = u.created_at ? new Date(u.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A';
+        const gamesCount = u.games_played || 0;
+        const totalWagered = (u.total_wagered || 0).toLocaleString('fr-FR');
+        const biggestWin = (u.biggest_win || 0).toLocaleString('fr-FR');
+
+        // Avatar icon
+        const avatarIcon = isAdmin ? '🛡️' : '👤';
+
+        return `
+          <tr>
+            <td>
+              <div class="admin-user-cell">
+                <div class="admin-user-avatar">${avatarIcon}</div>
+                <div>
+                  <div style="font-weight:700; color:#FFF; font-size:0.95rem; display:flex; align-items:center; gap:6px;">
+                    ${escapeHtml(u.username)}
+                    ${isSelf ? '<span style="font-size:0.7rem; background:rgba(212,175,55,0.25); color:var(--gold-light); padding:1px 6px; border-radius:4px;">(Toi)</span>' : ''}
+                    ${isMaster ? '<span style="font-size:0.7rem; background:rgba(168,85,247,0.25); color:#E9D5FF; padding:1px 6px; border-radius:4px;">Maître</span>' : ''}
+                  </div>
+                  <div style="font-size:0.75rem; color:var(--text-muted); font-family:var(--font-mono);">ID #${u.id}</div>
+                </div>
+              </div>
+            </td>
+            <td>${roleBadge}</td>
+            <td>
+              <span style="font-weight:800; color:var(--gold-primary); font-size:1.05rem;">
+                ${Number(u.coins).toLocaleString('fr-FR')} 🪙
+              </span>
+            </td>
+            <td>
+              <div style="font-size:0.8rem; color:var(--text-secondary);">
+                🎮 <strong style="color:#FFF;">${gamesCount}</strong> parties
+              </div>
+              <div style="font-size:0.75rem; color:var(--text-muted);">
+                Misé: ${totalWagered} 🪙 · Max: ${biggestWin} 🪙
+              </div>
+            </td>
+            <td>
+              <span style="font-size:0.82rem; color:var(--text-secondary);">${createdAtStr}</span>
+            </td>
+            <td style="text-align:right;">
+              <div style="display:inline-flex; gap:0.4rem; justify-content:flex-end; flex-wrap:wrap;">
+                <button class="admin-btn-action admin-btn-coins" onclick="AdminBDE.openUserCoinsModal(${JSON.stringify(u).replace(/"/g, '&quot;')})" title="Modifier le solde de pièces">
+                  🪙 Solde
+                </button>
+                ${!isMaster && !isSelf ? `
+                  <button class="admin-btn-action admin-btn-role" onclick="AdminBDE.confirmToggleUserRole(${u.id}, '${escapeHtml(u.username)}', '${u.role}')" title="${isAdmin ? 'Rétrograder en élève' : 'Promouvoir en Admin BDE'}">
+                    ${isAdmin ? '🎓 Rétrograder' : '🛡️ Promouvoir'}
+                  </button>
+                  <button class="admin-btn-action admin-btn-delete" onclick="AdminBDE.confirmDeleteUser(${u.id}, '${escapeHtml(u.username)}')" title="Supprimer définitivement le compte">
+                    🗑️ Suppr.
+                  </button>
+                ` : `
+                  <span style="font-size:0.75rem; color:var(--text-muted); padding:4px 6px;">Protégé</span>
+                `}
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+    } catch (err) {
+      console.error('Erreur chargement utilisateurs admin:', err);
+      listEl.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:2rem; color:#EF4444;">Erreur lors du chargement des utilisateurs : ${escapeHtml(err.message || 'problème de connexion')}</td></tr>`;
+    }
   },
 
   async markDelivered(deliveryId) {

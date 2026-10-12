@@ -24,4 +24,10 @@ router.delete('/promo-codes/:id', adminController.deletePromoCode);
 router.get('/wheels', adminController.getWheelsAdmin);
 router.put('/wheels/:id/segments', adminController.updateWheelSegments);
 
+// Gestion des utilisateurs (comptes, solde, rôles, suppression)
+router.get('/users', adminController.getAllUsers);
+router.patch('/users/:id/coins', adminController.updateUserCoins);
+router.patch('/users/:id/role', adminController.updateUserRole);
+router.delete('/users/:id', adminController.deleteUser);
+
 module.exports = router;

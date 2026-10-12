@@ -221,3 +221,214 @@ exports.updateWheelSegments = (req, res) => {
   }
 };
 
+// ========================================================
+// GESTION DES UTILISATEURS (ADMIN BDE)
+// ========================================================
+
+// Récupérer la liste des utilisateurs avec filtres, recherche et statistiques
+exports.getAllUsers = (req, res) => {
+  try {
+    const { search, role, sortBy = 'coins', sortOrder = 'desc' } = req.query;
+
+    let query = `
+      SELECT id, username, coins, role, daily_streak, last_daily_claim,
+             total_wagered, total_won, games_played, biggest_win, created_at
+      FROM users
+      WHERE 1=1
+    `;
+    const params = [];
+
+    if (role && role !== 'all') {
+      query += ' AND role = ?';
+      params.push(role);
+    }
+
+    if (search && search.trim()) {
+      query += ' AND username LIKE ?';
+      params.push(`%${search.trim()}%`);
+    }
+
+    const allowedSort = ['coins', 'username', 'created_at', 'total_wagered', 'games_played', 'biggest_win'];
+    const col = allowedSort.includes(sortBy) ? sortBy : 'coins';
+    const ord = (sortOrder && sortOrder.toLowerCase() === 'asc') ? 'ASC' : 'DESC';
+
+    query += ` ORDER BY ${col} ${ord} LIMIT 250`;
+
+    const users = db.prepare(query).all(...params);
+
+    const stats = db.prepare(`
+      SELECT 
+        COUNT(*) as totalUsers,
+        COALESCE(SUM(coins), 0) as totalCoins,
+        COALESCE(SUM(games_played), 0) as totalGamesPlayed
+      FROM users
+    `).get();
+
+    return res.json({
+      users,
+      stats: {
+        totalUsers: stats.totalUsers || 0,
+        totalCoins: stats.totalCoins || 0,
+        totalGamesPlayed: stats.totalGamesPlayed || 0
+      }
+    });
+  } catch (err) {
+    console.error('Erreur getAllUsers admin:', err);
+    return res.status(500).json({ error: 'Impossible de récupérer la liste des utilisateurs.' });
+  }
+};
+
+// Modifier le solde de pièces d'un utilisateur (définir, ajouter ou déduire)
+exports.updateUserCoins = (req, res) => {
+  try {
+    const { id } = req.params;
+    const { coins, mode = 'set', reason = 'Modification administrateur BDE' } = req.body;
+
+    const targetUser = db.prepare('SELECT id, username, coins, role FROM users WHERE id = ?').get(id);
+    if (!targetUser) {
+      return res.status(404).json({ error: 'Utilisateur introuvable.' });
+    }
+
+    let parsedAmount = Number(coins);
+    if (!Number.isInteger(parsedAmount)) {
+      return res.status(400).json({ error: 'Le montant de pièces doit être un nombre entier.' });
+    }
+
+    let newBalance = targetUser.coins;
+    if (mode === 'set') {
+      if (parsedAmount < 0) return res.status(400).json({ error: 'Le solde ne peut pas être négatif.' });
+      newBalance = parsedAmount;
+    } else if (mode === 'add') {
+      if (parsedAmount <= 0) return res.status(400).json({ error: 'Le montant à ajouter doit être supérieur à 0.' });
+      newBalance = targetUser.coins + parsedAmount;
+    } else if (mode === 'subtract') {
+      if (parsedAmount <= 0) return res.status(400).json({ error: 'Le montant à déduire doit être supérieur à 0.' });
+      if (targetUser.coins < parsedAmount) return res.status(400).json({ error: 'Le solde de l\'élève est insuffisant pour cette déduction.' });
+      newBalance = targetUser.coins - parsedAmount;
+    } else {
+      return res.status(400).json({ error: 'Mode d\'ajustement invalide (set, add, subtract).' });
+    }
+
+    db.prepare('UPDATE users SET coins = ? WHERE id = ?').run(newBalance, id);
+
+    // Enregistrer transaction dans les logs d'audit si applicable
+    try {
+      db.prepare(`
+        INSERT INTO transactions (user_id, amount, type, description)
+        VALUES (?, ?, 'admin_adjustment', ?)
+      `).run(id, newBalance - targetUser.coins, reason);
+    } catch (e) {}
+
+    // Notifier l'utilisateur en temps réel via WebSocket s'il est connecté
+    try {
+      socketService.notifyUserBalance(id, newBalance);
+      socketService.notifyLeaderboardUpdated();
+    } catch (sockErr) {}
+
+    return res.json({
+      success: true,
+      message: `Solde de "${targetUser.username}" mis à jour : ${newBalance.toLocaleString('fr-FR')} 🪙`,
+      user: {
+        id: targetUser.id,
+        username: targetUser.username,
+        coins: newBalance,
+        role: targetUser.role
+      }
+    });
+  } catch (err) {
+    console.error('Erreur updateUserCoins admin:', err);
+    return res.status(500).json({ error: 'Erreur lors de la modification du solde.' });
+  }
+};
+
+// Modifier le rôle d'un utilisateur (élève ou admin)
+exports.updateUserRole = (req, res) => {
+  try {
+    const { id } = req.params;
+    const { role } = req.body;
+    const adminId = req.user.id;
+
+    if (!['student', 'admin'].includes(role)) {
+      return res.status(400).json({ error: 'Rôle invalide (doit être "student" ou "admin").' });
+    }
+
+    const targetUser = db.prepare('SELECT id, username, role FROM users WHERE id = ?').get(id);
+    if (!targetUser) {
+      return res.status(404).json({ error: 'Utilisateur introuvable.' });
+    }
+
+    if (targetUser.username === 'bde_admin' && role !== 'admin') {
+      return res.status(403).json({ error: 'Impossible de rétrograder le compte maître bde_admin.' });
+    }
+
+    if (Number(id) === Number(adminId) && role !== 'admin') {
+      return res.status(403).json({ error: 'Tu ne peux pas révoquer tes propres privilèges administrateur.' });
+    }
+
+    db.prepare('UPDATE users SET role = ? WHERE id = ?').run(role, id);
+
+    try {
+      socketService.notifyLeaderboardUpdated();
+    } catch (sockErr) {}
+
+    return res.json({
+      success: true,
+      message: `Rôle de "${targetUser.username}" changé en "${role === 'admin' ? 'Administrateur BDE' : 'Élève'}".`,
+      user: { ...targetUser, role }
+    });
+  } catch (err) {
+    console.error('Erreur updateUserRole admin:', err);
+    return res.status(500).json({ error: 'Erreur lors du changement de rôle.' });
+  }
+};
+
+// Supprimer un utilisateur et toutes ses données associées
+exports.deleteUser = (req, res) => {
+  try {
+    const { id } = req.params;
+    const adminId = req.user.id;
+
+    const targetUser = db.prepare('SELECT id, username, role FROM users WHERE id = ?').get(id);
+    if (!targetUser) {
+      return res.status(404).json({ error: 'Utilisateur introuvable.' });
+    }
+
+    if (targetUser.username === 'bde_admin') {
+      return res.status(403).json({ error: 'Impossible de supprimer le compte maître bde_admin.' });
+    }
+
+    if (Number(id) === Number(adminId)) {
+      return res.status(403).json({ error: 'Tu ne peux pas supprimer ton propre compte administrateur.' });
+    }
+
+    db.transaction(() => {
+      const deleteSafe = (table) => {
+        try { db.prepare(`DELETE FROM ${table} WHERE user_id = ?`).run(id); } catch (e) {}
+      };
+      deleteSafe('game_history');
+      deleteSafe('blackjack_sessions');
+      deleteSafe('slot_sessions');
+      deleteSafe('crash_sessions');
+      deleteSafe('user_wheel_cooldowns');
+      deleteSafe('user_wheel_daily_spins');
+      deleteSafe('code_utilisations');
+      deleteSafe('delivery_orders');
+      deleteSafe('shop_orders');
+      deleteSafe('transactions');
+      db.prepare('DELETE FROM users WHERE id = ?').run(id);
+    })();
+
+    try {
+      socketService.notifyLeaderboardUpdated();
+    } catch (sockErr) {}
+
+    return res.json({
+      success: true,
+      message: `Compte de "${targetUser.username}" supprimé avec succès.`
+    });
+  } catch (err) {
+    console.error('Erreur deleteUser admin:', err);
+    return res.status(500).json({ error: 'Erreur lors de la suppression de l\'utilisateur.' });
+  }
+};
+

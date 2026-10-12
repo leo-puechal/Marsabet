@@ -144,6 +144,32 @@ const API = {
     });
   },
 
+  // Users Admin Endpoints (Gestion des comptes, soldes, rôles et suppression)
+  async adminGetUsers(params = {}) {
+    const q = new URLSearchParams(params).toString();
+    return this.request(`/admin/users${q ? '?' + q : ''}`);
+  },
+
+  async adminUpdateUserCoins(userId, data) {
+    return this.request(`/admin/users/${encodeURIComponent(userId)}/coins`, {
+      method: 'PATCH',
+      body: JSON.stringify(data)
+    });
+  },
+
+  async adminUpdateUserRole(userId, role) {
+    return this.request(`/admin/users/${encodeURIComponent(userId)}/role`, {
+      method: 'PATCH',
+      body: JSON.stringify({ role })
+    });
+  },
+
+  async adminDeleteUser(userId) {
+    return this.request(`/admin/users/${encodeURIComponent(userId)}`, {
+      method: 'DELETE'
+    });
+  },
+
   // Promo Codes Admin & User Endpoints
   async redeemPromoCode(code) {
     return this.request('/users/redeem-code', {
