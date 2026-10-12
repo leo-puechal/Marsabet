@@ -193,22 +193,22 @@ html, body {
     padding: 1rem 0.85rem !important;
   }
 
-  /* Grille des Jeux dans le Lobby */
+  /* Grille des Jeux dans le Lobby : 2 colonnes d'affiches sur mobile */
   .games-grid {
-    grid-template-columns: 1fr !important;
-    gap: 1rem !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.75rem !important;
   }
 
   /* Grille des Roues */
   .wheels-grid {
     grid-template-columns: 1fr !important;
-    gap: 1.25rem !important;
+    gap: 1rem !important;
   }
 
-  /* Grille Boutique : 1 colonne sur mobile pour cartes bien aérées */
+  /* Grille Boutique : 1 colonne sur mobile */
   .shop-grid {
     grid-template-columns: 1fr !important;
-    gap: 1.25rem !important;
+    gap: 1rem !important;
   }
 
   .shop-categories-nav {
@@ -250,26 +250,29 @@ html, body {
 
   /* Bannières et titres */
   .landing-hero h1 {
-    font-size: 1.9rem !important;
+    font-size: 1.6rem !important;
     line-height: 1.2 !important;
   }
 
   .landing-hero p {
-    font-size: 0.92rem !important;
+    font-size: 0.9rem !important;
   }
 
   .section-title {
-    font-size: 1.35rem !important;
+    font-size: 1.2rem !important;
   }
 }
 
-/* Tablette : 2 colonnes maximum */
+/* Tablette : 3 colonnes d'affiches */
 @media (min-width: 769px) and (max-width: 1024px) {
-  .games-grid,
+  .games-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 0.85rem !important;
+  }
   .wheels-grid,
   .shop-grid {
     grid-template-columns: repeat(2, 1fr) !important;
-    gap: 1.25rem !important;
+    gap: 1rem !important;
   }
 }
 

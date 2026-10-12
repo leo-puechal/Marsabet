@@ -1,47 +1,85 @@
 :root {
-  /* Palette Casino Navy & Gold */
-  --bg-primary: #060e1e;
-  --bg-secondary: #0A1F44;
-  --bg-card: #0e2754;
-  --bg-card-hover: #13326b;
-  --bg-surface: rgba(10, 31, 68, 0.75);
-  --bg-glass: rgba(14, 39, 84, 0.65);
-  --bg-glass-border: rgba(212, 175, 55, 0.25);
-  
-  /* Or et accents */
-  --gold-primary: #D4AF37;
-  --gold-light: #FDE047;
-  --gold-dark: #AA820A;
-  --gold-gradient: linear-gradient(135deg, #FFE27A 0%, #D4AF37 50%, #997505 100%);
-  --gold-glow: 0 0 20px rgba(212, 175, 55, 0.35);
+  /* ==========================================================================
+     Marsabet — Design System "Stake / Rollbit" (Dark Slate & Neon Emerald)
+     ========================================================================== */
+
+  /* Surfaces Stake (Ardoise sombre ultra-lisible, zéro fatigue visuelle) */
+  --bg-primary: #1a2c38;        /* Fond principal de l'application */
+  --bg-secondary: #0f212e;      /* Fond creux (Sidebar, Scènes de jeu, Inputs) */
+  --bg-card: #213743;           /* Cartes, Panneaux de contrôle, Header */
+  --bg-card-hover: #2f4553;     /* Survol des cartes et boutons secondaires */
+  --bg-surface: #213743;
+  --bg-glass: #213743;
+  --bg-glass-elevated: #2f4553;
+  --bg-glass-border: #2f4553;   /* Bordures mates 1px sobres (fini l'or partout) */
+  --bg-glass-border-subtle: rgba(255, 255, 255, 0.07);
+
+  /* Calques de profondeur */
+  --surface-0: #0f212e;
+  --surface-1: #1a2c38;
+  --surface-2: #213743;
+  --surface-3: #2f4553;
+
+  /* Vert Stake (Action Primaire) & Accents */
+  --stake-green: #00e701;
+  --stake-green-hover: #1fff20;
+  --stake-green-dark: #00b801;
+  --stake-blue: #1475e1;
+  --stake-blue-hover: #2b88f0;
+
+  /* Rétro-compatibilité des variables --gold-* vers un style moderne sobre */
+  --gold-primary: #2f4553;
+  --gold-light: #ffffff;
+  --gold-lighter: #f8fafc;
+  --gold-dark: #1a2c38;
+  --gold-accent: #f59e0b;
+  --gold-gradient: linear-gradient(180deg, #00e701 0%, #00c701 100%);
+  --gold-gradient-radiant: linear-gradient(180deg, #00e701 0%, #00c701 100%);
+  --gold-glow: 0 4px 14px rgba(0, 231, 1, 0.25);
+  --gold-glow-lg: 0 8px 25px rgba(0, 231, 1, 0.35);
+  --gold-glow-sm: 0 2px 8px rgba(0, 0, 0, 0.25);
 
   /* Couleurs de statut */
-  --win-green: #10B981;
-  --win-glow: 0 0 15px rgba(16, 185, 129, 0.4);
-  --lose-red: #EF4444;
-  --info-blue: #38BDF8;
+  --win-green: #00e701;
+  --win-light: #1fff20;
+  --win-glow: 0 0 20px rgba(0, 231, 1, 0.35);
+  --lose-red: #ed4163;
+  --lose-light: #ff5c7c;
+  --lose-glow: 0 0 20px rgba(237, 65, 99, 0.35);
+  --info-blue: #1475e1;
+  --info-glow: 0 0 20px rgba(20, 117, 225, 0.35);
 
-  /* Typographie */
-  --text-primary: #FFFFFF;
-  --text-secondary: #CBD5E1;
-  --text-muted: #94A3B8;
-  --text-gold: #F3E5AB;
+  /* Typographie 100% Sans-Serif Moderne (Zéro police romaine Cinzel) */
+  --text-primary: #ffffff;
+  --text-secondary: #b1bad3;    /* Gris-bleu clair typique de Stake */
+  --text-muted: #7f8ea3;
+  --text-gold: #ffffff;
 
-  --font-display: 'Cinzel', 'Outfit', serif;
-  --font-body: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, sans-serif;
+  --font-body: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 
-  /* Rayons et ombres */
-  --radius-sm: 8px;
-  --radius-md: 14px;
-  --radius-lg: 20px;
-  --radius-xl: 28px;
+  /* Rayons sobres et nets */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 12px;
   --radius-full: 9999px;
 
-  --shadow-subtle: 0 4px 15px rgba(0, 0, 0, 0.3);
-  --shadow-card: 0 10px 30px rgba(2, 6, 23, 0.6);
-  --shadow-gold: 0 8px 25px rgba(212, 175, 55, 0.25);
+  /* Ombres nettes sans halo jaune */
+  --shadow-subtle: 0 2px 6px rgba(0, 0, 0, 0.22);
+  --shadow-card: 0 4px 12px rgba(0, 0, 0, 0.28);
+  --shadow-card-elevated: 0 10px 25px rgba(0, 0, 0, 0.4);
+  --shadow-gold: 0 4px 14px rgba(0, 231, 1, 0.2);
 
-  --transition-smooth: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-bounce: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  /* Layout */
+  --sidebar-width: 240px;
+  --header-height: 64px;
+  --max-content-width: 1360px;
+
+  /* Transitions rapides et réactives */
+  --transition-fast: all 0.12s ease;
+  --transition-smooth: all 0.18s ease;
+  --transition-bounce: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
 }

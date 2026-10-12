@@ -1,23 +1,33 @@
-/* European Roulette */
+/* ==========================================================================
+   Marsabet — Stake Originals European Roulette
+   ========================================================================== */
+
 .roulette-wrapper {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 1.5rem;
   width: 100%;
+  position: relative;
+  z-index: 2;
 }
 
 .roulette-wheel-container {
   position: relative;
-  width: 280px;
-  height: 280px;
+  width: 260px;
+  height: 260px;
+  padding: 8px;
+  border-radius: 50%;
+  background: #213743;
+  border: 2px solid #2f4553;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
 }
 
 #rouletteCanvas {
   width: 100%;
   height: 100%;
   border-radius: 50%;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), 0 0 25px rgba(212, 175, 55, 0.4);
+  display: block;
 }
 
 .roulette-center-hub {
@@ -25,130 +35,145 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 60px;
-  height: 60px;
-  background: radial-gradient(circle, #FFE27A 0%, #D4AF37 60%, #583F02 100%);
+  width: 56px;
+  height: 56px;
+  background: #2f4553;
   border-radius: 50%;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.6);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 1.2rem;
-  border: 2px solid #FFF;
+  border: 2px solid #557086;
 }
 
-/* Betting Table Grid */
+/* Stake Matte Slate Betting Board */
 .roulette-board {
-  background: #064E3B; /* Vert feutre traditionnel */
-  border: 4px solid var(--gold-primary);
-  border-radius: var(--radius-md);
+  background: #1a2c38;
+  border: 1px solid #2f4553;
+  border-radius: 10px;
   padding: 1rem;
-  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.6);
   width: 100%;
-  max-width: 680px;
+  max-width: 720px;
   user-select: none;
+  position: relative;
 }
 
 .board-top-row {
   display: flex;
-  margin-bottom: 4px;
+  margin-bottom: 5px;
 }
 
 .board-cell-zero {
   flex: 1;
-  background: #047857;
-  color: #FFF;
-  font-family: var(--font-display);
+  background: #00e701;
+  color: #05080a;
+  font-family: var(--font-mono);
   font-weight: 800;
-  padding: 0.6rem;
+  font-size: 1rem;
+  padding: 0.55rem;
   text-align: center;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 4px;
+  border: none;
+  border-radius: 6px;
   cursor: pointer;
-  transition: var(--transition-smooth);
+  transition: var(--transition-fast);
 }
 
-.board-cell-zero:hover { background: #059669; }
+.board-cell-zero:hover {
+  background: #1fff20;
+}
 
 .board-grid-numbers {
   display: grid;
   grid-template-columns: repeat(12, 1fr);
-  grid-template-rows: repeat(3, 40px);
-  gap: 3px;
-  margin-bottom: 4px;
+  grid-template-rows: repeat(3, 42px);
+  gap: 4px;
+  margin-bottom: 5px;
 }
 
 .num-cell {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: var(--font-display);
-  font-weight: 700;
+  font-family: var(--font-mono);
+  font-weight: 800;
   font-size: 0.9rem;
-  color: #FFF;
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  border-radius: 3px;
+  color: #ffffff;
+  border: none;
+  border-radius: 5px;
   cursor: pointer;
   position: relative;
-  transition: transform 0.1s ease;
+  transition: transform 0.12s ease, filter 0.12s ease;
 }
 
 .num-cell:hover {
-  transform: scale(1.08);
-  z-index: 2;
-  border-color: var(--gold-light);
+  transform: scale(1.06);
+  z-index: 5;
+  filter: brightness(1.15);
 }
 
-.num-cell.red { background: #DC2626; }
-.num-cell.black { background: #111827; }
+.num-cell.red {
+  background: #fe2247;
+}
 
-/* Dozens & Columns & Outside bets */
+.num-cell.black {
+  background: #2f4553;
+}
+
 .board-outside-row {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 4px;
-  margin-bottom: 4px;
+  gap: 5px;
+  margin-bottom: 5px;
 }
 
 .board-even-row {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
-  gap: 4px;
+  gap: 5px;
 }
 
 .outside-btn {
-  background: rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  color: #FFF;
-  padding: 0.5rem 0.2rem;
+  background: #213743;
+  border: 1px solid #2f4553;
+  color: #ffffff;
+  padding: 0.55rem 0.3rem;
   font-family: var(--font-display);
-  font-size: 0.75rem;
+  font-size: 0.78rem;
   font-weight: 700;
   text-align: center;
-  border-radius: 3px;
+  border-radius: 5px;
   cursor: pointer;
   position: relative;
-  transition: var(--transition-smooth);
+  transition: var(--transition-fast);
 }
 
 .outside-btn:hover {
-  background: rgba(212, 175, 55, 0.25);
-  border-color: var(--gold-primary);
+  background: #2f4553;
 }
 
-.outside-btn.red-opt { background: rgba(220, 38, 38, 0.6); }
-.outside-btn.black-opt { background: rgba(17, 24, 39, 0.8); }
+.outside-btn.red-opt {
+  background: #fe2247;
+  border-color: #fe2247;
+}
+
+.outside-btn.black-opt {
+  background: #2f4553;
+  border-color: #3d5564;
+}
 
 .chip-placed-badge {
   position: absolute;
   top: -6px;
   right: -6px;
-  background: var(--gold-gradient);
-  color: #000;
+  background: #00e701;
+  color: #05080a;
+  font-family: var(--font-mono);
   font-size: 0.65rem;
   font-weight: 800;
-  padding: 2px 5px;
-  border-radius: var(--radius-full);
-  box-shadow: 0 2px 5px rgba(0,0,0,0.5);
-  border: 1px solid #FFF;
+  padding: 2px 6px;
+  border-radius: 999px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+  border: 1.5px solid #0f212e;
+  z-index: 6;
 }

@@ -1,116 +1,127 @@
-/* Dice Game Design */
+/* ==========================================================================
+   Marsabet — Stake Originals Dice & Craps Arena
+   ========================================================================== */
+
 .dice-arena {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 2rem;
   width: 100%;
+  position: relative;
+  z-index: 2;
 }
 
 .dice-mode-selector {
   display: flex;
-  gap: 0.5rem;
-  background: rgba(4, 12, 28, 0.7);
-  padding: 0.35rem;
-  border-radius: var(--radius-full);
-  border: 1px solid rgba(212, 175, 55, 0.2);
+  gap: 0.35rem;
+  background: #1a2c38;
+  padding: 0.3rem;
+  border-radius: 999px;
+  border: 1px solid #2f4553;
 }
 
 .dice-mode-tab {
   padding: 0.5rem 1.25rem;
-  border-radius: var(--radius-full);
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--text-muted);
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #b1bad3;
   cursor: pointer;
-  transition: var(--transition-smooth);
+  transition: var(--transition-fast);
+}
+
+.dice-mode-tab:hover {
+  color: #ffffff;
 }
 
 .dice-mode-tab.active {
-  background: var(--gold-gradient);
-  color: #000;
-  font-weight: 700;
+  background: #2f4553;
+  color: #ffffff;
 }
 
-/* 3D Dice Display */
 .dice-box {
   display: flex;
   gap: 2rem;
-  perspective: 600px;
+  perspective: 800px;
   min-height: 140px;
   align-items: center;
   justify-content: center;
 }
 
 .die-cube {
-  width: 90px;
-  height: 90px;
-  background: #FFF;
+  width: 96px;
+  height: 96px;
+  background: #ffffff;
+  border: 2px solid #cbd5e1;
   border-radius: 16px;
-  box-shadow: 0 12px 25px rgba(0, 0, 0, 0.5), inset 0 0 8px rgba(0,0,0,0.15);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 3.5rem;
-  color: #0F172A;
-  transition: transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  font-size: 3.75rem;
+  color: #0f212e;
+  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .die-cube.rolling {
-  animation: rollAnim 0.6s infinite ease-in-out;
+  animation: rollAnim 0.5s infinite ease-in-out;
 }
 
 @keyframes rollAnim {
-  0% { transform: rotate(0deg) scale(0.9); }
-  50% { transform: rotate(180deg) scale(1.1); }
-  100% { transform: rotate(360deg) scale(0.9); }
+  0% { transform: rotateX(0deg) rotateY(0deg) scale(0.94); }
+  50% { transform: rotateX(180deg) rotateY(90deg) scale(1.08); }
+  100% { transform: rotateX(360deg) rotateY(180deg) scale(0.94); }
 }
 
-/* Craps Bet Options */
 .dice-bets-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 0.75rem;
   width: 100%;
-  max-width: 500px;
+  max-width: 540px;
 }
 
 .dice-bet-btn {
-  background: rgba(14, 39, 84, 0.6);
-  border: 1px solid rgba(212, 175, 55, 0.25);
-  border-radius: var(--radius-sm);
-  padding: 0.8rem 0.5rem;
+  background: #213743;
+  border: 1px solid #2f4553;
+  border-radius: 8px;
+  padding: 0.85rem 0.65rem;
   text-align: center;
   cursor: pointer;
-  transition: var(--transition-smooth);
+  transition: var(--transition-fast);
 }
 
-.dice-bet-btn:hover,
+.dice-bet-btn:hover {
+  background: #2f4553;
+}
+
 .dice-bet-btn.active {
-  border-color: var(--gold-light);
-  background: rgba(212, 175, 55, 0.15);
+  border-color: #00e701;
+  background: rgba(0, 231, 1, 0.12);
 }
 
 .dice-bet-name {
-  font-size: 0.85rem;
+  font-family: var(--font-display);
+  font-size: 0.88rem;
   font-weight: 700;
-  color: #FFF;
+  color: #ffffff;
   margin-bottom: 0.2rem;
 }
 
 .dice-bet-mult {
-  font-size: 0.75rem;
-  color: var(--gold-light);
-  font-weight: 600;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: #00e701;
+  font-weight: 800;
 }
 
-/* Over Under Slider */
 .over-under-container {
   width: 100%;
-  max-width: 500px;
-  background: rgba(6, 18, 40, 0.6);
-  border: 1px solid rgba(212, 175, 55, 0.25);
-  border-radius: var(--radius-md);
+  max-width: 540px;
+  background: #213743;
+  border: 1px solid #2f4553;
+  border-radius: 10px;
   padding: 1.5rem;
   display: flex;
   flex-direction: column;
@@ -118,11 +129,11 @@
 }
 
 .dice-roll-result {
-  font-family: var(--font-display);
+  font-family: var(--font-mono);
   font-size: 3rem;
   font-weight: 800;
   text-align: center;
-  color: var(--gold-light);
+  color: #ffffff;
 }
 
 .slider-group {
@@ -133,7 +144,8 @@
 
 .dice-slider {
   width: 100%;
-  accent-color: var(--gold-primary);
-  height: 8px;
-  border-radius: 4px;
+  accent-color: #00e701;
+  height: 10px;
+  border-radius: 5px;
+  cursor: pointer;
 }

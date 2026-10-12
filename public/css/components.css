@@ -1,0 +1,142 @@
+/* ==========================================================================
+   Marsabet — Stake / Rollbit UI Components & Global Reset
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. Boutons Style Stake (Vert Émeraude #00e701 & Ardoise #2f4553)
+   -------------------------------------------------------------------------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.7rem 1.25rem;
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 700;
+  border-radius: var(--radius-sm);
+  border: none;
+  cursor: pointer;
+  user-select: none;
+  transition: var(--transition-fast);
+  text-decoration: none;
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
+/* Bouton d'Action Principal (Vert Stake #00e701) */
+.btn-gold {
+  background: #00e701 !important;
+  color: #05080a !important;
+  font-weight: 800 !important;
+  border: none !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25) !important;
+  text-shadow: none !important;
+}
+
+.btn-gold::after {
+  display: none !important;
+}
+
+.btn-gold:hover:not(:disabled) {
+  background: #1fff20 !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 231, 1, 0.3) !important;
+}
+
+.btn-gold:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.btn-gold:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Bouton Secondaire Ardoise (#2f4553) */
+.btn-outline {
+  background: #2f4553 !important;
+  color: #ffffff !important;
+  border: 1px solid #3d5564 !important;
+  font-weight: 600 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.btn-outline:hover:not(:disabled) {
+  background: #3d5564 !important;
+  border-color: #557086 !important;
+  color: #ffffff !important;
+  transform: translateY(-1px);
+}
+
+/* --------------------------------------------------------------------------
+   2. Jetons de Mise Rapides (Style Moderne Épuré)
+   -------------------------------------------------------------------------- */
+.casino-chip,
+.quick-chip {
+  height: 40px;
+  min-width: 48px;
+  padding: 0 0.65rem;
+  border-radius: var(--radius-sm) !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: #ffffff !important;
+  background: #2f4553 !important;
+  border: 1px solid #3d5564 !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+  cursor: pointer;
+  user-select: none;
+  transition: var(--transition-fast);
+  aspect-ratio: auto !important;
+  width: 100% !important;
+}
+
+.casino-chip::before,
+.casino-chip::after,
+.quick-chip::before {
+  display: none !important;
+}
+
+.casino-chip:hover,
+.quick-chip:hover {
+  background: #3d5564 !important;
+  border-color: #557086 !important;
+  transform: translateY(-1px) !important;
+}
+
+.casino-chip.active,
+.quick-chip.active {
+  background: #1475e1 !important;
+  border-color: #3b82f6 !important;
+  color: #ffffff !important;
+  transform: none !important;
+}
+
+/* --------------------------------------------------------------------------
+   3. Badges VIP Sobres
+   -------------------------------------------------------------------------- */
+.vip-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 0.7rem;
+  letter-spacing: 0.4px;
+  padding: 0.2rem 0.55rem;
+  border-radius: var(--radius-xs);
+  text-transform: uppercase;
+  background: #2f4553;
+  color: #b1bad3;
+  border: 1px solid #3d5564;
+}
+
+.vip-badge.vip-bronze { color: #e2a76f; background: rgba(205, 127, 50, 0.15); border-color: rgba(205, 127, 50, 0.3); }
+.vip-badge.vip-silver { color: #e2e8f0; background: rgba(226, 232, 240, 0.15); border-color: rgba(226, 232, 240, 0.3); }
+.vip-badge.vip-gold { color: #fbbf24; background: rgba(245, 158, 11, 0.15); border-color: rgba(245, 158, 11, 0.3); }
+.vip-badge.vip-platinum { color: #38bdf8; background: rgba(56, 189, 248, 0.15); border-color: rgba(56, 189, 248, 0.3); }
+.vip-badge.vip-diamond { color: #c084fc; background: rgba(192, 132, 252, 0.15); border-color: rgba(192, 132, 252, 0.3); }

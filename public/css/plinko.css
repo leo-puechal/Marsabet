@@ -1,4 +1,7 @@
-/* Plinko Board */
+/* ==========================================================================
+   Marsabet — Stake Originals Plinko Board
+   ========================================================================== */
+
 .plinko-wrapper {
   display: flex;
   flex-direction: column;
@@ -10,197 +13,181 @@
   max-width: 480px;
   width: 100%;
   height: 480px;
-  border-radius: var(--radius-lg);
-  background: radial-gradient(circle at 50% 20%, #0d285a 0%, #040e21 100%);
-  border: 2px solid var(--gold-primary);
-  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.7);
+  border-radius: 10px;
+  background: #0f212e;
+  border: 1px solid #213743;
 }
 
 .plinko-controls-bar {
   display: flex;
-  gap: 0.5rem;
-  margin-top: 1rem;
+  gap: 0.45rem;
+  margin-top: 0.85rem;
 }
 
 .risk-btn {
-  padding: 0.4rem 1rem;
-  border-radius: var(--radius-full);
-  font-size: 0.8rem;
+  padding: 0.45rem 1rem;
+  border-radius: 6px;
+  font-size: 0.78rem;
   font-weight: 700;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--text-secondary);
+  border: 1px solid #2f4553;
+  background: #213743;
+  color: #b1bad3;
   cursor: pointer;
-  transition: var(--transition-smooth);
+  transition: var(--transition-fast);
+}
+
+.risk-btn:hover {
+  color: #ffffff;
+  background: #2f4553;
 }
 
 .risk-btn.active {
-  background: var(--gold-gradient);
-  color: #000;
-  border-color: #FFF;
+  background: #2f4553;
+  color: #ffffff;
+  border-color: #00e701;
 }
 
-/* Sélecteur de nombre de billes */
 .plinko-ball-selector {
   display: flex;
-  gap: 0.4rem;
-  margin-bottom: 0.75rem;
+  gap: 0.35rem;
+  margin-bottom: 0.65rem;
 }
 
 .ball-count-btn {
   flex: 1;
-  padding: 0.5rem 0.2rem;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: var(--radius-md);
-  color: #FFF;
+  padding: 0.45rem 0.2rem;
+  background: #0f212e;
+  border: 1px solid #2f4553;
+  border-radius: 6px;
+  color: #b1bad3;
+  font-family: var(--font-mono);
   font-weight: 700;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   cursor: pointer;
-  transition: var(--transition-smooth);
+  transition: var(--transition-fast);
   text-align: center;
 }
 
 .ball-count-btn:hover {
-  background: rgba(212, 175, 55, 0.15);
-  border-color: var(--gold-primary);
-  transform: translateY(-2px);
+  background: #2f4553;
+  color: #ffffff;
 }
 
 .ball-count-btn.active {
-  background: var(--gold-gradient);
-  color: #0A1F44;
-  border-color: #FFF;
-  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.35);
+  background: #2f4553;
+  color: #ffffff;
+  border-color: #00e701;
 }
 
-/* Récapitulatif du coût total */
 .plinko-cost-summary {
-  background: rgba(10, 31, 68, 0.6);
-  border: 1px solid rgba(212, 175, 55, 0.3);
-  border-radius: var(--radius-md);
-  padding: 0.75rem;
-  margin-bottom: 0.75rem;
+  background: #0f212e;
+  border: 1px solid #2f4553;
+  border-radius: 6px;
+  padding: 0.65rem 0.75rem;
+  margin-bottom: 0.65rem;
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 0.3rem;
 }
 
 .cost-line {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 0.85rem;
-  color: var(--text-secondary);
+  font-size: 0.8rem;
+  color: #b1bad3;
 }
 
 .cost-line.total {
-  border-top: 1px dashed rgba(255, 255, 255, 0.15);
-  padding-top: 0.4rem;
-  margin-top: 0.2rem;
-  font-size: 0.95rem;
+  border-top: 1px solid #2f4553;
+  padding-top: 0.35rem;
+  margin-top: 0.15rem;
+  font-size: 0.88rem;
   font-weight: 700;
-  color: #FFF;
+  color: #ffffff;
 }
 
 .cost-total-value {
-  color: var(--gold-primary);
+  color: #00e701;
+  font-family: var(--font-mono);
   font-weight: 800;
-  font-size: 1.05rem;
 }
 
-/* Résultat détaillé par bille */
 .plinko-breakdown-box {
   margin-top: 1rem;
   width: 100%;
   max-width: 480px;
-  background: rgba(6, 18, 42, 0.85);
-  border: 1px solid rgba(212, 175, 55, 0.3);
-  border-radius: var(--radius-lg);
+  background: #213743;
+  border: 1px solid #2f4553;
+  border-radius: 8px;
   padding: 0.85rem 1rem;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-  animation: fadeIn 0.3s ease;
 }
 
 .breakdown-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.6rem;
+  margin-bottom: 0.55rem;
   padding-bottom: 0.4rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid #2f4553;
 }
 
 .breakdown-title {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   font-weight: 700;
-  color: var(--gold-primary);
+  color: #ffffff;
 }
 
 .breakdown-badge {
-  font-size: 0.8rem;
+  font-size: 0.75rem;
+  font-family: var(--font-mono);
   font-weight: 800;
-  padding: 0.2rem 0.6rem;
-  border-radius: var(--radius-full);
+  padding: 0.18rem 0.55rem;
+  border-radius: 4px;
 }
 
 .breakdown-badge.win {
-  background: rgba(16, 185, 129, 0.2);
-  color: #34D399;
-  border: 1px solid #10B981;
+  background: rgba(0, 231, 1, 0.14);
+  color: #00e701;
 }
 
 .breakdown-badge.lose {
-  background: rgba(239, 68, 68, 0.2);
-  color: #F87171;
-  border: 1px solid #EF4444;
+  background: rgba(237, 65, 99, 0.14);
+  color: #ff4d4d;
 }
 
 .plinko-ball-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(125px, 1fr));
   gap: 0.4rem;
-  max-height: 160px;
+  max-height: 150px;
   overflow-y: auto;
 }
 
 .plinko-ball-pill {
   display: flex;
   flex-direction: column;
-  padding: 0.4rem 0.6rem;
-  border-radius: var(--radius-sm);
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  font-size: 0.78rem;
-  transition: transform 0.2s ease;
-}
-
-.plinko-ball-pill:hover {
-  transform: translateY(-1px);
+  padding: 0.38rem 0.55rem;
+  border-radius: 6px;
+  background: #0f212e;
+  border: 1px solid #2f4553;
+  font-size: 0.75rem;
 }
 
 .plinko-ball-pill .pill-top {
   display: flex;
   justify-content: space-between;
   font-weight: 700;
-  color: var(--text-muted);
+  color: #b1bad3;
 }
 
 .plinko-ball-pill .pill-payout {
+  font-family: var(--font-mono);
   font-weight: 800;
-  font-size: 0.88rem;
-  margin-top: 0.2rem;
+  font-size: 0.82rem;
+  margin-top: 0.15rem;
 }
 
-.plinko-ball-pill.win .pill-payout {
-  color: #34D399;
-}
-
-.plinko-ball-pill.neutral .pill-payout {
-  color: var(--gold-primary);
-}
-
-.plinko-ball-pill.lose .pill-payout {
-  color: #F87171;
-}
-
+.plinko-ball-pill.win .pill-payout { color: #00e701; }
+.plinko-ball-pill.neutral .pill-payout { color: #f59e0b; }
+.plinko-ball-pill.lose .pill-payout { color: #ff4d4d; }

@@ -8,34 +8,35 @@
   <meta name="description"
     content="Marsabet : Casino virtuel récréatif étudiant à monnaie 100% fictive. Jouez aux machines à sous, blackjack, roulette, dés, roue de la fortune et plinko.">
 
-  <!-- Polices Google Fonts : Cinzel & Outfit -->
+  <!-- Polices Google Fonts : Outfit & JetBrains Mono (100% Sans-Serif & Monospace) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
-    href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap"
     rel="stylesheet">
 
-  <!-- CSS Modulaire -->
-  <link rel="stylesheet" href="/css/variables.css">
-  <link rel="stylesheet" href="/css/main.css">
-  <link rel="stylesheet" href="/css/lobby.css">
-  <link rel="stylesheet" href="/css/games.css">
-  <link rel="stylesheet" href="/css/slots.css">
-  <link rel="stylesheet" href="/css/blackjack.css">
-  <link rel="stylesheet" href="/css/roulette.css">
-  <link rel="stylesheet" href="/css/dice.css">
-  <link rel="stylesheet" href="/css/slider.css">
-  <link rel="stylesheet" href="/css/crash.css">
-  <link rel="stylesheet" href="/css/wheel.css">
-  <link rel="stylesheet" href="/css/plinko.css">
-  <link rel="stylesheet" href="/css/leaderboard.css">
-  <link rel="stylesheet" href="/css/profile.css">
-  <link rel="stylesheet" href="/css/admin.css">
-  <link rel="stylesheet" href="/css/vip.css">
-  <link rel="stylesheet" href="/css/free-wheel.css">
-  <link rel="stylesheet" href="/css/wheels.css">
-  <link rel="stylesheet" href="/css/sidebar.css">
-  <link rel="stylesheet" href="/css/mobile-responsive.css">
+  <!-- CSS Modulaire (Stake / Rollbit Dark Slate Redesign) -->
+  <link rel="stylesheet" href="/css/variables.css?v=stake2">
+  <link rel="stylesheet" href="/css/components.css?v=stake2">
+  <link rel="stylesheet" href="/css/main.css?v=stake2">
+  <link rel="stylesheet" href="/css/lobby.css?v=stake2">
+  <link rel="stylesheet" href="/css/games.css?v=stake2">
+  <link rel="stylesheet" href="/css/slots.css?v=stake2">
+  <link rel="stylesheet" href="/css/blackjack.css?v=stake2">
+  <link rel="stylesheet" href="/css/roulette.css?v=stake2">
+  <link rel="stylesheet" href="/css/dice.css?v=stake2">
+  <link rel="stylesheet" href="/css/slider.css?v=stake2">
+  <link rel="stylesheet" href="/css/crash.css?v=stake2">
+  <link rel="stylesheet" href="/css/wheel.css?v=stake2">
+  <link rel="stylesheet" href="/css/plinko.css?v=stake2">
+  <link rel="stylesheet" href="/css/leaderboard.css?v=stake2">
+  <link rel="stylesheet" href="/css/profile.css?v=stake2">
+  <link rel="stylesheet" href="/css/admin.css?v=stake2">
+  <link rel="stylesheet" href="/css/vip.css?v=stake2">
+  <link rel="stylesheet" href="/css/free-wheel.css?v=stake2">
+  <link rel="stylesheet" href="/css/wheels.css?v=stake2">
+  <link rel="stylesheet" href="/css/sidebar.css?v=stake2">
+  <link rel="stylesheet" href="/css/mobile-responsive.css?v=stake2">
 </head>
 
 <body>
@@ -165,31 +166,41 @@
         </div>
       </div>
 
-      <!-- Barre d'état supérieure Desktop -->
+      <!-- Barre d'état supérieure Desktop (Style Stake) -->
       <header class="header" style="position:relative; z-index:50;">
-        <div class="header-container" style="justify-content: flex-end;">
+        <div class="header-container">
           <div class="header-actions">
-            <!-- Son Toggle -->
-            <button id="soundToggleBtn" class="btn-sound" title="Activer / Couper le son">🔊</button>
-
-            <!-- Solde de Jetons Virtuels -->
-            <div class="coins-badge" id="headerCoinsBadge" title="Ton solde de jetons virtuels">
-              <span class="coins-icon">🪙</span>
-              <span class="coins-amount" id="userCoinsDisplay">1 000</span>
-              <span class="coins-currency">Coins</span>
+            <!-- Espaceur gauche pour centrer le Wallet -->
+            <div style="width:120px; display:flex; align-items:center;">
+              <span style="font-size:0.78rem; font-weight:700; color:#7f8ea3; text-transform:uppercase; letter-spacing:0.5px;">Casino BDE</span>
             </div>
 
-            <!-- Bouton Connexion / Profil -->
-            <button class="btn btn-gold" id="headerAuthBtn">Se Connecter</button>
+            <!-- Portefeuille Central Style Stake -->
+            <div style="display:flex; align-items:center; margin:0 auto;">
+              <div class="coins-badge" id="headerCoinsBadge" title="Ton solde de jetons virtuels" style="border-radius:6px 0 0 6px; border-right:none; margin:0;">
+                <span class="coins-amount" id="userCoinsDisplay">1 000</span>
+                <span class="coins-icon">🪙</span>
+              </div>
+              <button class="btn" onclick="window.Router ? window.Router.navigate('/roues') : window.UI.switchView('wheels')" style="background:#1475e1; color:#fff; border-radius:0 6px 6px 0; height:40px; padding:0 0.9rem; font-size:0.82rem; font-weight:700;">
+                Boutique / Roues
+              </button>
+            </div>
 
-            <div class="user-profile-btn" id="headerUserMenu" style="display: none;"
-              onclick="window.Router ? window.Router.navigate('/profil') : window.UI.switchView('profile');">
-              <div class="user-avatar" id="headerUserAvatar">👤</div>
-              <span id="headerUsername" style="font-weight: 600; font-size: 0.9rem;">Joueur</span>
-              <span id="headerUserVipBadge" class="vip-badge vip-bronze">🥉 BRONZE</span>
-              <button id="logoutBtn"
-                style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:1rem; margin-left:4px;"
-                title="Déconnexion">🚪</button>
+            <!-- Contrôles Utilisateur à droite -->
+            <div style="display:flex; align-items:center; gap:0.6rem;">
+              <button id="soundToggleBtn" class="btn-sound" title="Activer / Couper le son">🔊</button>
+
+              <button class="btn btn-gold" id="headerAuthBtn">Se Connecter</button>
+
+              <div class="user-profile-btn" id="headerUserMenu" style="display: none;"
+                onclick="window.Router ? window.Router.navigate('/profil') : window.UI.switchView('profile');">
+                <div class="user-avatar" id="headerUserAvatar">👤</div>
+                <span id="headerUsername" style="font-weight: 700; font-size: 0.88rem;">Joueur</span>
+                <span id="headerUserVipBadge" class="vip-badge vip-bronze">🥉 BRONZE</span>
+                <button id="logoutBtn"
+                  style="background:none; border:none; color:#7f8ea3; cursor:pointer; font-size:0.95rem; margin-left:4px;"
+                  title="Déconnexion">🚪</button>
+              </div>
             </div>
           </div>
         </div>
@@ -198,104 +209,45 @@
       <!-- Contenu des Vues -->
       <main class="main-content">
 
-        <!-- ==================== VUE LOBBY (LANDING PAGE ÉPURÉE SANS JEUX DIRECTS) ==================== -->
+        <!-- ==================== VUE LOBBY (STYLE STAKE / ROLLBIT) ==================== -->
         <section id="view-lobby" class="section-view active">
-          <!-- Bannière Hero Landing Page -->
-          <div class="hero-banner">
-            <div class="hero-text">
-              <div class="hero-badge">✨ Casino Récréatif Étudiant • Monnaie 100% Gratuite</div>
-              <h1 class="hero-title">Le Casino Virtuel Officiel <span>Marsabet</span></h1>
-              <p class="hero-description">
-                Plateforme de divertissement conçue exclusivement pour les étudiants d’Epitech Marseille. Joue sans
-                risque financier grâce à des <strong>jetons 100% fictifs</strong> (aucun paiement réel). Remporte des
-                coins aux jeux et tente de remporter de vraies canettes, chocolats et recharges Red Bull grâce aux <strong>Roues de la Fortune BDE</strong> !
-              </p>
-              <div style="display:flex; gap:1rem; flex-wrap:wrap; margin-top:1.5rem;">
-                <button class="btn btn-gold"
-                  onclick="window.Router ? window.Router.navigate('/jeux') : window.UI.switchView('games')"
-                  style="font-size:1.05rem; padding:0.85rem 1.75rem;">
-                  🎮 Accéder à la Salle des Jeux ▶
-                </button>
-                <button class="btn btn-outline"
-                  onclick="window.Router ? window.Router.navigate('/roues') : window.UI.switchView('wheel-list')">
-                  🎡 Roues de la Fortune BDE
-                </button>
-                <button class="btn btn-outline"
-                  onclick="window.Router ? window.Router.navigate('/classement') : window.UI.switchView('leaderboard')">
-                  🏆 Podium des Joueurs
-                </button>
-              </div>
-            </div>
+          <!-- Spans cachés pour compatibilité state.js sans afficher de doublons -->
+          <div id="landingUserSummaryCard" style="display:none;">
+            <span id="landingCoinsDisplay">1 000</span>
+            <span id="landingEquivalentDisplay"></span>
+            <span id="landingVipDisplay">Bronze</span>
+          </div>
 
-            <!-- Widget Portefeuille & Solde de l'élève -->
-            <div class="daily-bonus-card" id="landingUserSummaryCard"
-              style="display:flex; flex-direction:column; justify-content:space-between;">
+          <!-- Bannières Promo Horizontales Style Stake -->
+          <div class="stake-promo-grid">
+            <!-- Promo 1 : Casino & Roues BDE -->
+            <div class="stake-promo-card promo-primary">
               <div>
-                <div class="daily-bonus-title" style="margin-bottom:0.75rem;">🪙 Mon Portefeuille Étudiant</div>
-                <div
-                  style="background:rgba(0,0,0,0.35); padding:1rem; border-radius:var(--radius-sm); border:1px solid rgba(212,175,55,0.3); margin-bottom:1rem; text-align:center;">
-                  <div style="font-size:0.8rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px;">
-                    Solde Disponible</div>
-                  <div
-                    style="font-family:var(--font-display); font-size:2.2rem; font-weight:800; color:var(--gold-light); margin:0.25rem 0;">
-                    <span id="landingCoinsDisplay">1 000</span> <span style="font-size:1.4rem;">🪙</span>
-                  </div>
-                  <div style="font-size:0.82rem; color:var(--gold-primary);" id="landingEquivalentDisplay">🪙 Monnaie
-                    virtuelle 100% gratuite</div>
-                </div>
-                <div
-                  style="display:flex; justify-content:space-between; align-items:center; font-size:0.85rem; color:var(--text-secondary); margin-bottom:0.5rem;">
-                  <span>Statut VIP actuel :</span>
-                  <strong id="landingVipDisplay" style="color:var(--gold-light);">🥉 Bronze</strong>
-                </div>
-              </div>
-              <button class="btn btn-gold"
-                onclick="window.Router ? window.Router.navigate('/profil') : window.UI.switchView('profile')"
-                style="width:100%; margin-top:0.5rem;">
-                👤 Consulter Mon Profil
-              </button>
-            </div>
-          </div>
-
-          <!-- Ticker défilant des derniers gains -->
-          <div class="recent-ticker-container">
-            <div class="ticker-label">⚡ Derniers Gros Gains :</div>
-            <div class="ticker-scroll" id="recentWinsTicker">
-              <div class="ticker-item"><span class="ticker-player">MarsPlayer</span> <span class="ticker-game">🎰
-                  Machine à sous</span> <span class="ticker-win">+1,200 🪙</span></div>
-              <div class="ticker-item"><span class="ticker-player">EpiGambler</span> <span class="ticker-game">🃏
-                  Blackjack</span> <span class="ticker-win">+500 🪙</span></div>
-              <div class="ticker-item"><span class="ticker-player">AlexBDE</span> <span class="ticker-game">🎡
-                  Roulette</span> <span class="ticker-win">+1,800 🪙</span></div>
-            </div>
-          </div>
-
-          <!-- Raccourcis vers Bonus Quotidien & Échanges BDE -->
-          <div style="margin: 2.5rem 0 1.25rem;">
-            <h2 class="section-title">🎁 Tes Raccourcis & Bonus du Jour</h2>
-            <p class="section-subtitle">Recharge tes jetons quotidiennement et échange-les contre de vrais produits.</p>
-          </div>
-
-          <div
-            style="display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:1.5rem; margin-bottom:2.5rem;">
-            <!-- Raccourci 1 : Bonus Quotidien de Connexion -->
-            <div class="card"
-              style="display:flex; flex-direction:column; justify-content:space-between; border-color:rgba(212,175,55,0.35);">
-              <div>
-                <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:1rem;">
-                  <div
-                    style="font-size:2rem; width:48px; height:48px; border-radius:12px; background:rgba(212,175,55,0.15); display:flex; align-items:center; justify-content:center; border:1px solid var(--gold-primary);">
-                    🎁</div>
-                  <div>
-                    <h3 style="font-size:1.15rem; color:#FFF; margin:0;">Bonus Quotidien de Connexion</h3>
-                    <span style="font-size:0.78rem; color:var(--gold-primary);">Streak consécutif</span>
-                  </div>
-                </div>
-                <p style="color:var(--text-secondary); font-size:0.88rem; line-height:1.5; margin-bottom:1rem;">
-                  Connecte-toi chaque jour pour réclamer entre +100 et +250 coins gratuits selon ta série de jours
-                  consécutifs.
+                <span class="promo-tag">Exclusivité BDE Epitech</span>
+                <h2 class="promo-title">Casino 100% Gratuit & Lots Réels</h2>
+                <p class="promo-desc">
+                  Joue aux 7 jeux originaux sans aucun argent réel et tente de remporter des canettes, snacks et Red Bull sur les Roues BDE.
                 </p>
-                <div class="streak-indicator" style="justify-content:center; margin-bottom:1rem;">
+              </div>
+              <div class="promo-actions">
+                <button class="btn btn-gold" onclick="window.Router ? window.Router.navigate('/roues') : window.UI.switchView('wheels')">
+                  🎡 Roues BDE
+                </button>
+                <button class="btn btn-outline" onclick="window.Router ? window.Router.navigate('/classement') : window.UI.switchView('leaderboard')">
+                  🏆 Classement
+                </button>
+              </div>
+            </div>
+
+            <!-- Promo 2 : Bonus Quotidien & Roue Gratuite -->
+            <div class="stake-promo-card promo-bonus">
+              <div>
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                  <span class="promo-tag" style="background:rgba(0,231,1,0.18); color:#00e701;">Bonus Quotidien</span>
+                  <span id="lobbyFreeWheelCountdown" style="font-size:0.75rem; font-weight:700; color:#00e701;">🎁 Tour gratuit dispo</span>
+                </div>
+                <h2 class="promo-title">Recharge Gratuite & Streak 7 Jours</h2>
+                <div class="streak-indicator">
                   <div class="streak-dot" title="Jour 1">1</div>
                   <div class="streak-dot" title="Jour 2">2</div>
                   <div class="streak-dot" title="Jour 3">3</div>
@@ -305,250 +257,168 @@
                   <div class="streak-dot" title="Jour 7">7</div>
                 </div>
               </div>
-              <button class="btn btn-gold" id="claimDailyBtn" style="width:100%;">
-                🎁 Réclamer mon Bonus !
-              </button>
-            </div>
-
-            <!-- Raccourci 2 : Roue Quotidienne Gratuite -->
-            <div class="card"
-              style="display:flex; flex-direction:column; justify-content:space-between; border-color:rgba(16,185,129,0.35);">
-              <div>
-                <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:1rem;">
-                  <div
-                    style="font-size:2rem; width:48px; height:48px; border-radius:12px; background:rgba(16,185,129,0.15); display:flex; align-items:center; justify-content:center; border:1px solid #10B981;">
-                    🎡</div>
-                  <div>
-                    <h3 style="font-size:1.15rem; color:#34D399; margin:0;">Roue Quotidienne Gratuite</h3>
-                    <span style="font-size:0.78rem; color:#6EE7B7;">1 spin gratuit toutes les 24h</span>
-                  </div>
-                </div>
-                <p style="color:var(--text-secondary); font-size:0.88rem; line-height:1.5; margin-bottom:1rem;">
-                  Tourne la grande roue sans miser le moindre jeton pour gagner jusqu'à 1 000 coins gratuits et booster
-                  ton streak !
-                </p>
-                <div
-                  style="background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.3); border-radius:var(--radius-sm); padding:0.75rem; text-align:center; margin-bottom:1rem;">
-                  <span id="lobbyFreeWheelCountdown" style="color:#34D399; font-weight:700; font-size:0.95rem;">🎁 Prêt
-                    à tourner !</span>
-                </div>
+              <div class="promo-actions">
+                <button class="btn btn-gold" id="claimDailyBtn">
+                  🎁 Réclamer Bonus
+                </button>
+                <button class="btn btn-outline" onclick="window.Router ? window.Router.navigate('/roues/quotidienne') : window.UI.switchView('wheel-arena')">
+                  🎡 Roue Gratuite 24h
+                </button>
               </div>
-              <button class="btn btn-gold"
-                onclick="window.Router ? window.Router.navigate('/roues/quotidienne') : window.UI.switchView('wheel-arena')"
-                style="background:linear-gradient(135deg, #10B981 0%, #059669 100%); border-color:#34D399; color:#FFF; width:100%;">
-                ✨ Tourner la Roue Gratuite ▶
-              </button>
-            </div>
-
-            <!-- Raccourci 3 : Roues de la Fortune BDE -->
-            <div class="card"
-              style="display:flex; flex-direction:column; justify-content:space-between; border-color:rgba(56,189,248,0.35);">
-              <div>
-                <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:1rem;">
-                  <div
-                    style="font-size:2rem; width:48px; height:48px; border-radius:12px; background:rgba(56,189,248,0.15); display:flex; align-items:center; justify-content:center; border:1px solid #38BDF8;">
-                    🎡</div>
-                  <div>
-                    <h3 style="font-size:1.15rem; color:#38BDF8; margin:0;">Roues de la Fortune BDE</h3>
-                    <span style="font-size:0.78rem; color:#7DD3FC;">Canettes & Chocolats réels à gagner</span>
-                  </div>
-                </div>
-                <p style="color:var(--text-secondary); font-size:0.88rem; line-height:1.5; margin-bottom:1rem;">
-                  Lance la roue quotidienne gratuite ou tente ta chance sur les roues payantes pour remporter des canettes, chocolats et Red Bull réels livrés en salle !
-                </p>
-                <div
-                  style="background:rgba(56,189,248,0.1); border:1px solid rgba(56,189,248,0.3); border-radius:var(--radius-sm); padding:0.75rem; text-align:center; margin-bottom:1rem; font-size:0.85rem; color:#BAE6FD;">
-                  Récompenses réelles livrées en direct par le BDE
-                </div>
-              </div>
-              <button class="btn btn-outline"
-                onclick="window.Router ? window.Router.navigate('/roues') : window.UI.switchView('wheel-list')"
-                style="border-color:#38BDF8; color:#38BDF8; width:100%;">
-                🎡 Tourner les Roues ▶
-              </button>
             </div>
           </div>
 
-          <!-- Bannière Accès Direct Salle de Jeux -->
-          <div
-            style="background:linear-gradient(135deg, rgba(14,39,84,0.75) 0%, rgba(6,18,40,0.92) 100%); border:1.5px solid var(--gold-primary); border-radius:var(--radius-lg); padding:2rem; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:1.5rem; box-shadow:var(--gold-glow); margin-bottom:3rem;">
-            <div>
-              <h2
-                style="font-family:var(--font-display); font-size:1.6rem; color:var(--gold-light); margin-bottom:0.5rem;">
-                Prêt pour une partie ?
-              </h2>
-              <p style="color:var(--text-secondary); max-width:650px; font-size:0.95rem; margin:0; line-height:1.5;">
-                Retrouve nos 6 jeux de casino équilibrés avec tirages aléatoires certifiés côté serveur : Machine à sous
-                cosmique, Blackjack authentique, Roulette européenne, Dés Over/Under, Roue de la fortune et Plinko.
-              </p>
+          <!-- Grille Directe des Jeux Originaux dès le Lobby -->
+          <div class="section-header">
+            <h2 class="section-title">🔥 Marsabet Originals</h2>
+          </div>
+
+          <div class="games-grid">
+            <div class="game-card" data-game="crash">
+              <div class="game-card-top"><span class="game-badge">96.0% RTP</span></div>
+              <div class="game-poster-center">🚀</div>
+              <div class="game-poster-bottom">
+                <div class="game-poster-title">CRASH</div>
+                <div class="game-poster-sub">Marsabet Originals</div>
+              </div>
             </div>
-            <button class="btn btn-gold"
-              onclick="window.Router ? window.Router.navigate('/jeux') : window.UI.switchView('games')"
-              style="font-size:1.1rem; padding:0.95rem 2.2rem;">
-              🎰 Entrer dans la Salle des Jeux ▶
-            </button>
+
+            <div class="game-card" data-game="plinko">
+              <div class="game-card-top"><span class="game-badge">MAX 50x</span></div>
+              <div class="game-poster-center">💧</div>
+              <div class="game-poster-bottom">
+                <div class="game-poster-title">PLINKO</div>
+                <div class="game-poster-sub">Marsabet Originals</div>
+              </div>
+            </div>
+
+            <div class="game-card" data-game="blackjack">
+              <div class="game-card-top"><span class="game-badge">99.4% RTP</span></div>
+              <div class="game-poster-center">🃏</div>
+              <div class="game-poster-bottom">
+                <div class="game-poster-title">BLACKJACK</div>
+                <div class="game-poster-sub">Marsabet Originals</div>
+              </div>
+            </div>
+
+            <div class="game-card" data-game="slots">
+              <div class="game-card-top"><span class="game-badge">JACKPOT</span></div>
+              <div class="game-poster-center">🎰</div>
+              <div class="game-poster-bottom">
+                <div class="game-poster-title">SLOTS</div>
+                <div class="game-poster-sub">Marsabet Originals</div>
+              </div>
+            </div>
+
+            <div class="game-card" data-game="roulette">
+              <div class="game-card-top"><span class="game-badge">97.3% RTP</span></div>
+              <div class="game-poster-center">🎡</div>
+              <div class="game-poster-bottom">
+                <div class="game-poster-title">ROULETTE</div>
+                <div class="game-poster-sub">Marsabet Originals</div>
+              </div>
+            </div>
+
+            <div class="game-card" data-game="slider">
+              <div class="game-card-top"><span class="game-badge">97.0% RTP</span></div>
+              <div class="game-poster-center">🎯</div>
+              <div class="game-poster-bottom">
+                <div class="game-poster-title">SLIDER</div>
+                <div class="game-poster-sub">Marsabet Originals</div>
+              </div>
+            </div>
+
+            <div class="game-card" data-game="dice">
+              <div class="game-card-top"><span class="game-badge">96.5% RTP</span></div>
+              <div class="game-poster-center">🎲</div>
+              <div class="game-poster-bottom">
+                <div class="game-poster-title">CRAPS</div>
+                <div class="game-poster-sub">Marsabet Originals</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Ticker défilant des derniers gains -->
+          <div class="recent-ticker-container">
+            <div class="ticker-label">⚡ Gains en direct</div>
+            <div class="ticker-scroll" id="recentWinsTicker">
+              <div class="ticker-item"><span class="ticker-player">MarsPlayer</span> <span class="ticker-game">Slots</span> <span class="ticker-win">+1,200 🪙</span></div>
+              <div class="ticker-item"><span class="ticker-player">EpiGambler</span> <span class="ticker-game">Blackjack</span> <span class="ticker-win">+500 🪙</span></div>
+              <div class="ticker-item"><span class="ticker-player">AlexBDE</span> <span class="ticker-game">Roulette</span> <span class="ticker-win">+1,800 🪙</span></div>
+            </div>
           </div>
         </section>
 
-        <!-- ==================== VUE JEUX (SALLE DÉDIÉE CONTENANT LES JEUX) ==================== -->
+        <!-- ==================== VUE JEUX (/jeux) ==================== -->
         <section id="view-games" class="section-view">
           <div class="section-header">
             <div>
-              <h2 class="section-title">🎰 Jeux Disponibles sur Marsabet</h2>
-              <p class="section-subtitle">Chaque jeu est certifié équitable avec calcul sécurisé et vérification
-                anti-coins-négatifs côté serveur.</p>
+              <h2 class="section-title">🎰 Tous les Jeux Marsabet Originals</h2>
+              <p class="section-subtitle">Tirages certifiés côté serveur • Monnaie 100% gratuite</p>
             </div>
           </div>
 
           <div class="games-grid" id="casinoGamesGrid">
-            <!-- Jeu 1 : Slots -->
-            <div class="game-card" data-game="slots">
-              <div>
-                <div class="game-card-top">
-                  <div class="game-icon-box">🎰</div>
-                  <div class="game-badges">
-                    <span class="game-badge hot">🔥 Populaire</span>
-                    <span class="game-badge rtp">RTP 96.5%</span>
-                  </div>
-                </div>
-                <div class="game-card-body">
-                  <h3>Machine à sous</h3>
-                  <p>5 rouleaux scintillants, 8 symboles cosmiques et 10 lignes de paiement. Aligne les Planètes Mars
-                    pour remporter le Jackpot x100 !</p>
-                </div>
-              </div>
-              <div class="game-card-footer">
-                <span class="game-min-bet">Mise min : <strong>10 🪙</strong></span>
-                <button class="btn btn-gold btn-play">Jouer ▶</button>
-              </div>
-            </div>
-
-            <!-- Jeu 2 : Blackjack -->
-            <div class="game-card" data-game="blackjack">
-              <div>
-                <div class="game-card-top">
-                  <div class="game-icon-box">🃏</div>
-                  <div class="game-badges">
-                    <span class="game-badge rtp">RTP 99.4%</span>
-                  </div>
-                </div>
-                <div class="game-card-body">
-                  <h3>Blackjack</h3>
-                  <p>Défie le croupier de la maison. Tire, reste ou double ta mise. Blackjack naturel payé 3:2 avec
-                    règles de table officielles.</p>
-                </div>
-              </div>
-              <div class="game-card-footer">
-                <span class="game-min-bet">Mise min : <strong>25 🪙</strong></span>
-                <button class="btn btn-gold btn-play">Jouer ▶</button>
-              </div>
-            </div>
-
-            <!-- Jeu 3 : Roulette -->
-            <div class="game-card" data-game="roulette">
-              <div>
-                <div class="game-card-top">
-                  <div class="game-icon-box">🔴</div>
-                  <div class="game-badges">
-                    <span class="game-badge rtp">RTP 97.3%</span>
-                  </div>
-                </div>
-                <div class="game-card-body">
-                  <h3>Roulette Européenne</h3>
-                  <p>Roue animée à 37 cases avec le fameux zéro vert. Parie sur tes numéros fétiches, le rouge/noir ou
-                    les douzaines.</p>
-                </div>
-              </div>
-              <div class="game-card-footer">
-                <span class="game-min-bet">Mise min : <strong>10 🪙</strong></span>
-                <button class="btn btn-gold btn-play">Jouer ▶</button>
-              </div>
-            </div>
-
-            <!-- Jeu 4 : Dés (Dice) -->
-            <div class="game-card" data-game="dice">
-              <div>
-                <div class="game-card-top">
-                  <div class="game-icon-box">🎲</div>
-                  <div class="game-badges">
-                    <span class="game-badge rtp">RTP 96.5%</span>
-                  </div>
-                </div>
-                <div class="game-card-body">
-                  <h3>Jeu de Dés (Craps)</h3>
-                  <p>Deux dés 3D physiques lancés sur le tapis avec 5 types de paris : 7 Chanceux, Craps, Doubles et
-                    Tranches Bas/Haut.</p>
-                </div>
-              </div>
-              <div class="game-card-footer">
-                <span class="game-min-bet">Mise min : <strong>10 🪙</strong></span>
-                <button class="btn btn-gold btn-play">Jouer ▶</button>
-              </div>
-            </div>
-
-            <!-- Jeu 5 : Slider Over/Under -->
-            <div class="game-card" data-game="slider">
-              <div>
-                <div class="game-card-top">
-                  <div class="game-icon-box">🎯</div>
-                  <div class="game-badges">
-                    <span class="game-badge hot">Nouveau</span>
-                    <span class="game-badge rtp">RTP 97.0%</span>
-                  </div>
-                </div>
-                <div class="game-card-body">
-                  <h3>Slider Cosmique</h3>
-                  <p>Curseur interactif Over / Under. Définis ta zone de gain et ajuste dynamiquement ta probabilité et
-                    ton multiplicateur jusqu'à ×97 !</p>
-                </div>
-              </div>
-              <div class="game-card-footer">
-                <span class="game-min-bet">Mise min : <strong>5 🪙</strong></span>
-                <button class="btn btn-gold btn-play">Jouer ▶</button>
-              </div>
-            </div>
-
-            <!-- Jeu 6 : Crash Galactique -->
             <div class="game-card" data-game="crash">
-              <div>
-                <div class="game-card-top">
-                  <div class="game-icon-box">🚀</div>
-                  <div class="game-badges">
-                    <span class="game-badge hot">🔥 Tendance</span>
-                    <span class="game-badge rtp">RTP 96.0%</span>
-                  </div>
-                </div>
-                <div class="game-card-body">
-                  <h3>Crash Galactique</h3>
-                  <p>La fusée s'élance et le multiplicateur grimpe en continu. Encaisse tes gains au bon moment avant
-                    que l'explosion ne survienne !</p>
-                </div>
-              </div>
-              <div class="game-card-footer">
-                <span class="game-min-bet">Mise min : <strong>5 🪙</strong></span>
-                <button class="btn btn-gold btn-play">Jouer ▶</button>
+              <div class="game-card-top"><span class="game-badge">96.0% RTP</span></div>
+              <div class="game-poster-center">🚀</div>
+              <div class="game-poster-bottom">
+                <div class="game-poster-title">CRASH</div>
+                <div class="game-poster-sub">Marsabet Originals</div>
               </div>
             </div>
 
-            <!-- Jeu 7 : Plinko -->
             <div class="game-card" data-game="plinko">
-              <div>
-                <div class="game-card-top">
-                  <div class="game-icon-box">💧</div>
-                  <div class="game-badges">
-                    <span class="game-badge hot">Jusqu'à 50x</span>
-                    <span class="game-badge rtp">RTP 96.5%</span>
-                  </div>
-                </div>
-                <div class="game-card-body">
-                  <h3>Plinko Cosmique</h3>
-                  <p>Lâche la bille dorée à travers une pyramide de clous physiques et regarde-la dévier vers les
-                    multiplicateurs extrêmes !</p>
-                </div>
+              <div class="game-card-top"><span class="game-badge">MAX 50x</span></div>
+              <div class="game-poster-center">💧</div>
+              <div class="game-poster-bottom">
+                <div class="game-poster-title">PLINKO</div>
+                <div class="game-poster-sub">Marsabet Originals</div>
               </div>
-              <div class="game-card-footer">
-                <span class="game-min-bet">Mise min : <strong>10 🪙</strong></span>
-                <button class="btn btn-gold btn-play">Jouer ▶</button>
+            </div>
+
+            <div class="game-card" data-game="blackjack">
+              <div class="game-card-top"><span class="game-badge">99.4% RTP</span></div>
+              <div class="game-poster-center">🃏</div>
+              <div class="game-poster-bottom">
+                <div class="game-poster-title">BLACKJACK</div>
+                <div class="game-poster-sub">Marsabet Originals</div>
+              </div>
+            </div>
+
+            <div class="game-card" data-game="slots">
+              <div class="game-card-top"><span class="game-badge">JACKPOT</span></div>
+              <div class="game-poster-center">🎰</div>
+              <div class="game-poster-bottom">
+                <div class="game-poster-title">SLOTS</div>
+                <div class="game-poster-sub">Marsabet Originals</div>
+              </div>
+            </div>
+
+            <div class="game-card" data-game="roulette">
+              <div class="game-card-top"><span class="game-badge">97.3% RTP</span></div>
+              <div class="game-poster-center">🎡</div>
+              <div class="game-poster-bottom">
+                <div class="game-poster-title">ROULETTE</div>
+                <div class="game-poster-sub">Marsabet Originals</div>
+              </div>
+            </div>
+
+            <div class="game-card" data-game="slider">
+              <div class="game-card-top"><span class="game-badge">97.0% RTP</span></div>
+              <div class="game-poster-center">🎯</div>
+              <div class="game-poster-bottom">
+                <div class="game-poster-title">SLIDER</div>
+                <div class="game-poster-sub">Marsabet Originals</div>
+              </div>
+            </div>
+
+            <div class="game-card" data-game="dice">
+              <div class="game-card-top"><span class="game-badge">96.5% RTP</span></div>
+              <div class="game-poster-center">🎲</div>
+              <div class="game-poster-bottom">
+                <div class="game-poster-title">CRAPS</div>
+                <div class="game-poster-sub">Marsabet Originals</div>
               </div>
             </div>
           </div>

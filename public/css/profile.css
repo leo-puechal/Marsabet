@@ -1,21 +1,23 @@
-/* Profile & History */
+/* ==========================================================================
+   Marsabet — Stake Dark Slate Profile, Stats & BDE Shop
+   ========================================================================== */
+
 .profile-container {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 1.75rem;
 }
 
 .profile-header-card {
-  background: linear-gradient(135deg, rgba(14, 39, 84, 0.8) 0%, rgba(6, 18, 40, 0.95) 100%);
-  border: 1.5px solid var(--gold-primary);
-  border-radius: var(--radius-xl);
-  padding: 2rem;
+  background: #213743;
+  border: 1px solid #2f4553;
+  border-radius: 10px;
+  padding: 1.75rem 2rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
   gap: 1.5rem;
-  box-shadow: var(--shadow-card);
 }
 
 .profile-user-info {
@@ -25,34 +27,35 @@
 }
 
 .profile-big-avatar {
-  width: 80px;
-  height: 80px;
+  width: 72px;
+  height: 72px;
   border-radius: 50%;
-  background: var(--gold-gradient);
+  background: #0f212e;
+  border: 2px solid #00e701;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 2.5rem;
-  color: #000;
-  box-shadow: var(--gold-glow);
+  font-size: 2.1rem;
+  color: #ffffff;
 }
 
 .profile-name {
   font-family: var(--font-display);
-  font-size: 1.8rem;
+  font-size: 1.65rem;
   font-weight: 800;
-  color: #FFF;
+  color: #ffffff;
 }
 
 .profile-rank-tag {
   display: inline-block;
-  background: rgba(212, 175, 55, 0.15);
-  border: 1px solid var(--gold-primary);
-  border-radius: var(--radius-full);
+  background: rgba(0, 231, 1, 0.14);
+  border: 1px solid rgba(0, 231, 1, 0.35);
+  border-radius: 999px;
   padding: 0.2rem 0.75rem;
-  font-size: 0.8rem;
-  color: var(--gold-light);
-  margin-top: 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #00e701;
+  margin-top: 0.3rem;
 }
 
 /* Stats Cards Grid */
@@ -63,9 +66,9 @@
 }
 
 .stat-box {
-  background: rgba(10, 26, 56, 0.75);
-  border: 1px solid var(--bg-glass-border);
-  border-radius: var(--radius-md);
+  background: #213743;
+  border: 1px solid #2f4553;
+  border-radius: 10px;
   padding: 1.25rem;
   display: flex;
   flex-direction: column;
@@ -73,77 +76,79 @@
 }
 
 .stat-label {
-  font-size: 0.8rem;
-  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #b1bad3;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.04em;
 }
 
 .stat-val {
-  font-family: var(--font-display);
+  font-family: var(--font-mono);
   font-size: 1.5rem;
   font-weight: 800;
-  color: #FFF;
+  color: #ffffff;
 }
 
-.stat-val.gold { color: var(--gold-light); }
-.stat-val.green { color: var(--win-green); }
+.stat-val.gold,
+.stat-val.green {
+  color: #00e701;
+}
 
-/* History Table */
+/* History Table Card */
 .history-card {
-  background: rgba(10, 26, 56, 0.85);
-  border: 1px solid var(--bg-glass-border);
-  border-radius: var(--radius-xl);
+  background: #213743;
+  border: 1px solid #2f4553;
+  border-radius: 10px;
   padding: 1.5rem;
-  box-shadow: var(--shadow-card);
 }
 
 /* Shop BDE Grid */
 .shop-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 1.25rem;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1.15rem;
 }
 
 .shop-item-card {
-  background: rgba(10, 26, 56, 0.8);
-  border: 1px solid rgba(212, 175, 55, 0.25);
-  border-radius: var(--radius-lg);
-  padding: 1.25rem;
+  background: #213743;
+  border: 1px solid #2f4553;
+  border-radius: 10px;
+  padding: 1.35rem;
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
   gap: 0.75rem;
-  transition: var(--transition-bounce);
+  transition: transform 0.2s ease, border-color 0.2s ease;
 }
 
 .shop-item-card:hover {
   transform: translateY(-4px);
-  border-color: var(--gold-primary);
-  box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+  border-color: #557086;
 }
 
 .shop-item-icon {
-  font-size: 2.8rem;
-  margin-bottom: 0.25rem;
+  font-size: 2.75rem;
+  margin-bottom: 0.15rem;
 }
 
 .shop-item-title {
-  font-weight: 700;
-  color: #FFF;
+  font-family: var(--font-display);
+  font-weight: 800;
+  color: #ffffff;
   font-size: 1.05rem;
 }
 
 .shop-item-desc {
   font-size: 0.82rem;
-  color: var(--text-secondary);
-  line-height: 1.35;
+  color: #b1bad3;
+  line-height: 1.45;
 }
 
 .shop-item-price {
-  font-family: var(--font-display);
+  font-family: var(--font-mono);
   font-size: 1.15rem;
   font-weight: 800;
-  color: var(--gold-light);
+  color: #00e701;
 }

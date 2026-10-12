@@ -9,7 +9,7 @@
     "reset-db": "node server/database/resetDb.js"
   },
   "engines": {
-    "node": "20.x"
+    "node": ">=20.0.0"
   },
   "repository": {
     "type": "git",
@@ -24,7 +24,7 @@
   "homepage": "https://github.com/leo-puechal/Marsabet#readme",
   "dependencies": {
     "bcryptjs": "^3.0.3",
-    "better-sqlite3": "^9.6.0",
+    "better-sqlite3": "^11.10.0",
     "cors": "^2.8.6",
     "dotenv": "^18.0.7",
     "express": "^5.3.0",

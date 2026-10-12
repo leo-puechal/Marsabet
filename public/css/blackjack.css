@@ -1,20 +1,21 @@
-/* Blackjack Table Styles — Marsabet */
+/* ==========================================================================
+   Marsabet — Stake Originals Blackjack Table
+   ========================================================================== */
 
 .bj-table {
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 1.85rem;
   align-items: center;
   position: relative;
   min-height: 380px;
 }
 
-/* Sabot de cartes (Deck Shoe) */
 .bj-shoe-container {
   position: absolute;
-  top: 15px;
-  right: 20px;
+  top: 10px;
+  right: 15px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -22,39 +23,26 @@
 }
 
 .bj-deck-shoe {
-  width: 65px;
-  height: 95px;
-  background: linear-gradient(135deg, #1E3A8A 0%, #0B1938 100%);
-  border: 2px solid var(--gold-primary);
+  width: 58px;
+  height: 84px;
+  background: #213743;
+  border: 2px solid #2f4553;
   border-radius: 8px;
-  box-shadow: 3px 3px 0 #D4AF37, 6px 6px 0 #172554, 10px 10px 20px rgba(0, 0, 0, 0.7);
+  box-shadow: 3px 3px 0 #1a2c38, 6px 6px 14px rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.8rem;
+  font-size: 1.5rem;
   user-select: none;
-  transform: rotate(-10deg);
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
-  cursor: default;
-}
-
-.bj-deck-shoe.card-dealing {
-  animation: shoePulse 0.35s ease;
-}
-
-@keyframes shoePulse {
-  0% { transform: rotate(-10deg) scale(1); }
-  50% { transform: rotate(-6deg) scale(1.08); filter: drop-shadow(0 0 10px #D4AF37); }
-  100% { transform: rotate(-10deg) scale(1); }
+  transform: rotate(-8deg);
 }
 
 .bj-shoe-label {
-  font-size: 0.65rem;
-  color: var(--gold-light);
+  font-size: 0.62rem;
+  color: #b1bad3;
   font-weight: 700;
   text-transform: uppercase;
   margin-top: 5px;
-  letter-spacing: 0.5px;
 }
 
 .bj-dealer-area,
@@ -62,7 +50,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.65rem;
   width: 100%;
 }
 
@@ -71,34 +59,34 @@
   align-items: center;
   gap: 0.5rem;
   font-family: var(--font-display);
-  font-size: 0.95rem;
-  color: var(--gold-light);
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #b1bad3;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 0.05em;
 }
 
 .bj-score-badge {
-  background: rgba(0, 0, 0, 0.6);
-  border: 1px solid var(--gold-primary);
-  border-radius: var(--radius-full);
-  padding: 0.2rem 0.65rem;
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: #FFF;
-  transition: all 0.3s ease;
+  background: #213743;
+  border: 1px solid #2f4553;
+  border-radius: 999px;
+  padding: 0.18rem 0.65rem;
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #ffffff;
 }
 
 .bj-cards-row {
   display: flex;
   justify-content: center;
-  gap: 14px;
+  gap: 12px;
   min-height: 140px;
   perspective: 1000px;
   flex-wrap: wrap;
   align-items: center;
 }
 
-/* Playing Cards Wrapper with 3D Perspective */
 .bj-card-wrapper {
   width: 96px;
   height: 140px;
@@ -106,18 +94,14 @@
   position: relative;
 }
 
-/* Deal Animation from Top-Right Deck Shoe */
 .bj-card-wrapper.animate-deal {
-  animation: dealSlideFromShoe 0.38s cubic-bezier(0.25, 0.9, 0.35, 1) forwards;
+  animation: dealSlideFromShoe 0.35s cubic-bezier(0.25, 0.9, 0.35, 1) forwards;
 }
 
 @keyframes dealSlideFromShoe {
   0% {
-    transform: translate(180px, -140px) rotate(22deg) scale(0.4);
+    transform: translate(160px, -120px) rotate(15deg) scale(0.5);
     opacity: 0;
-  }
-  30% {
-    opacity: 1;
   }
   100% {
     transform: translate(0, 0) rotate(0deg) scale(1);
@@ -125,15 +109,14 @@
   }
 }
 
-/* Card 3D Flip Container */
 .bj-card {
   width: 100%;
   height: 100%;
   position: relative;
   transform-style: preserve-3d;
-  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-  border-radius: 10px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.65), 0 0 1px rgba(255, 255, 255, 0.2);
+  transition: transform 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 8px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
 }
 
 .bj-card.flipped {
@@ -147,15 +130,14 @@
   height: 100%;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
-  border-radius: 10px;
+  border-radius: 8px;
   overflow: hidden;
   box-sizing: border-box;
 }
 
-/* Front Face */
 .bj-card-front {
-  background: #FFFFFF;
-  border: 1px solid #E2E8F0;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -165,13 +147,8 @@
   transform: rotateY(0deg);
 }
 
-.bj-card-front.red {
-  color: #DC2626;
-}
-
-.bj-card-front.black {
-  color: #0F172A;
-}
+.bj-card-front.red { color: #dc2626; }
+.bj-card-front.black { color: #0f172a; }
 
 .card-corner {
   display: flex;
@@ -181,20 +158,13 @@
   width: fit-content;
 }
 
-.card-top-left {
-  align-self: flex-start;
-}
-
-.card-bottom-right {
-  align-self: flex-end;
-  transform: rotate(180deg);
-}
+.card-top-left { align-self: flex-start; }
+.card-bottom-right { align-self: flex-end; transform: rotate(180deg); }
 
 .card-rank {
   font-family: var(--font-display);
   font-size: 1.15rem;
-  font-weight: 900;
-  letter-spacing: -0.5px;
+  font-weight: 800;
 }
 
 .card-suit {
@@ -215,28 +185,16 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.03);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  border-radius: 8px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
   width: 50px;
   height: 60px;
 }
 
-.figure-avatar {
-  font-size: 1.7rem;
-  line-height: 1;
-}
-
-.figure-suit-mini {
-  font-size: 1rem;
-  margin-top: 2px;
-}
-
-.ace-center {
-  font-size: 2.8rem;
-  line-height: 1;
-  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15));
-}
+.figure-avatar { font-size: 1.7rem; line-height: 1; }
+.figure-suit-mini { font-size: 1rem; margin-top: 2px; }
+.ace-center { font-size: 2.8rem; line-height: 1; }
 
 .number-center {
   display: flex;
@@ -258,33 +216,26 @@
   margin-top: 2px;
 }
 
-/* Back Face (Cosmic Mars Navy / Gold) */
+/* Back Face — Stake Slate */
 .bj-card-back {
-  background: linear-gradient(135deg, #071530 0%, #030C1D 100%);
-  border: 2px solid var(--gold-primary);
+  background: #213743;
+  border: 2px solid #2f4553;
   display: flex;
   align-items: center;
   justify-content: center;
   transform: rotateY(180deg);
   padding: 6px;
-  box-shadow: inset 0 0 15px rgba(212, 175, 55, 0.35);
 }
 
 .card-back-pattern {
   width: 100%;
   height: 100%;
-  border: 1px dashed rgba(212, 175, 55, 0.6);
-  border-radius: 6px;
+  border: 1px solid #2f4553;
+  border-radius: 5px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: repeating-linear-gradient(
-    45deg,
-    rgba(212, 175, 55, 0.05),
-    rgba(212, 175, 55, 0.05) 6px,
-    transparent 6px,
-    transparent 12px
-  );
+  background: #1a2c38;
 }
 
 .card-back-crest {
@@ -295,50 +246,35 @@
   text-align: center;
 }
 
-.crest-icon {
-  font-size: 2rem;
-  filter: drop-shadow(0 0 8px rgba(212, 175, 55, 0.7));
-  animation: crestPulse 2s infinite alternate ease-in-out;
-}
-
-@keyframes crestPulse {
-  from { transform: scale(0.95); }
-  to { transform: scale(1.08); }
-}
+.crest-icon { font-size: 1.85rem; }
 
 .crest-text {
   font-family: var(--font-display);
   font-size: 0.55rem;
-  font-weight: 900;
-  letter-spacing: 1.5px;
-  color: var(--gold-light);
-  margin-top: 2px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #b1bad3;
+  margin-top: 3px;
 }
 
-/* Actions Controls */
 .bj-actions-bar {
   display: flex;
-  gap: 1rem;
-  margin-top: 1rem;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+  flex-wrap: wrap;
+  justify-content: center;
 }
 
 .btn-bj-action {
-  padding: 0.75rem 1.75rem;
-  font-size: 1rem;
+  padding: 0.65rem 1.35rem;
+  font-size: 0.9rem;
   font-weight: 700;
-  border-radius: var(--radius-full);
-  transition: all 0.2s ease;
+  border-radius: 8px;
 }
 
-.btn-bj-action:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4);
-}
-
-/* Split Hands Layout */
 .bj-split-container {
   display: flex;
-  gap: 1.5rem;
+  gap: 1.25rem;
   width: 100%;
   justify-content: center;
   align-items: stretch;
@@ -349,76 +285,63 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.65rem;
+  gap: 0.6rem;
   padding: 0.85rem;
-  background: rgba(14, 39, 84, 0.25);
-  border: 1.5px solid rgba(212, 175, 55, 0.2);
-  border-radius: var(--radius-md);
-  transition: all 0.3s ease;
+  background: #1a2c38;
+  border: 1px solid #2f4553;
+  border-radius: 8px;
   position: relative;
   min-width: 0;
 }
 
 .bj-hand-box.bj-hand-active {
-  border-color: #38BDF8 !important;
-  background: rgba(14, 39, 84, 0.55) !important;
-  box-shadow: 0 0 20px rgba(56, 189, 248, 0.35) !important;
-  transform: translateY(-3px);
+  border-color: #00e701 !important;
+  box-shadow: 0 0 0 1px #00e701 !important;
 }
 
 .bj-hand-box.bj-hand-dimmed {
-  opacity: 0.6;
-  filter: grayscale(0.25);
+  opacity: 0.55;
 }
 
 .bj-hand-tag {
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   font-weight: 800;
   padding: 2px 8px;
-  border-radius: 99px;
-  background: rgba(255, 255, 255, 0.12);
-  color: var(--text-secondary);
+  border-radius: 4px;
+  background: #2f4553;
+  color: #b1bad3;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
 }
 
 .bj-hand-active .bj-hand-tag {
-  background: #38BDF8 !important;
-  color: #040c1c !important;
-  box-shadow: 0 0 10px rgba(56, 189, 248, 0.5) !important;
+  background: #00e701 !important;
+  color: #05080a !important;
 }
 
 .bj-hand-busted {
-  border-color: #EF4444 !important;
-  background: rgba(239, 68, 68, 0.15) !important;
+  border-color: #ff4d4d !important;
 }
 
 .bj-hand-busted .bj-hand-tag {
-  background: #EF4444 !important;
-  color: #FFF !important;
+  background: #ff4d4d !important;
+  color: #ffffff !important;
 }
 
 .bj-hand-bet-badge {
   font-size: 0.75rem;
-  color: var(--gold-light);
-  font-family: var(--font-display);
+  color: #ffffff;
+  font-family: var(--font-mono);
   font-weight: 700;
-  background: rgba(0, 0, 0, 0.4);
+  background: #0f212e;
   padding: 2px 7px;
   border-radius: 4px;
-  border: 1px solid rgba(212, 175, 55, 0.3);
+  border: 1px solid #2f4553;
 }
 
 .btn-bj-split {
-  background: linear-gradient(135deg, #06B6D4 0%, #0891B2 100%) !important;
-  color: #FFF !important;
-  border: 1.5px solid #22D3EE !important;
-  box-shadow: 0 0 15px rgba(6, 182, 212, 0.4) !important;
-}
-
-.btn-bj-split:hover:not(:disabled) {
-  box-shadow: 0 0 25px rgba(6, 182, 212, 0.6) !important;
-  transform: translateY(-2px);
+  background: #1475e1 !important;
+  color: #ffffff !important;
+  border: none !important;
 }
 
 @media (max-width: 640px) {

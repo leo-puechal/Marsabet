@@ -1,75 +1,57 @@
 /* =========================================================
-   MARSABET CASINO - 5x3 VIDEO SLOT MACHINE DESIGN SYSTEM
-   Theme: Navy Blue / Cosmic Gold / High-End Vegas Aesthetics
+   MARSABET CASINO - 5x3 VIDEO SLOT MACHINE (STAKE DARK SLATE)
    ========================================================= */
 
 .slots-cabinet {
-  background: linear-gradient(180deg, #132a52 0%, #0a1f44 45%, #040e24 100%);
-  border: 3.5px solid var(--gold-primary);
-  border-radius: var(--radius-xl);
-  padding: 1.5rem;
-  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.85), 0 0 40px rgba(212, 175, 55, 0.35);
+  background: #1a2c38;
+  border: 1px solid #2f4553;
+  border-radius: 12px;
+  padding: 1.25rem;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
   max-width: 820px;
   width: 100%;
   position: relative;
-  transition: all 0.4s ease;
+  transition: all 0.3s ease;
 }
 
-/* Mode Bonus Free Spins (Ambiance Cosmique Électrique & Dorée) */
 .slots-cabinet.bonus-mode {
-  border-color: #38BDF8;
-  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.9), 0 0 50px rgba(56, 189, 248, 0.5), inset 0 0 30px rgba(56, 189, 248, 0.2);
-  background: linear-gradient(180deg, #19386d 0%, #0f2757 45%, #071738 100%);
+  border-color: #00e701;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6), 0 0 30px rgba(0, 231, 1, 0.25);
 }
 
 .slots-header-lights {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 0.65rem;
-  margin-bottom: 0.75rem;
+  gap: 0.5rem;
+  margin-bottom: 0.65rem;
 }
 
 .slot-light {
-  width: 11px;
-  height: 11px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
-  background: var(--gold-light);
-  box-shadow: 0 0 10px var(--gold-light);
-  animation: pulseLight 0.9s infinite alternate;
+  background: #00e701;
+  opacity: 0.6;
 }
 
-.slot-light:nth-child(2n) { animation-delay: 0.2s; background: #38BDF8; box-shadow: 0 0 10px #38BDF8; }
-.slot-light:nth-child(3n) { animation-delay: 0.4s; background: #F43F5E; box-shadow: 0 0 10px #F43F5E; }
-.slot-light:nth-child(4n) { animation-delay: 0.6s; background: #10B981; box-shadow: 0 0 10px #10B981; }
+.slot-light:nth-child(2n) { background: #1475e1; }
+.slot-light:nth-child(3n) { background: #f59e0b; }
 
-@keyframes pulseLight {
-  from { opacity: 0.35; transform: scale(0.85); }
-  to { opacity: 1; transform: scale(1.2); }
-}
-
-/* Bannière Free Spins en cours */
 .slots-freespins-banner {
   display: none;
-  background: linear-gradient(90deg, rgba(56,189,248,0.2) 0%, rgba(212,175,55,0.3) 50%, rgba(56,189,248,0.2) 100%);
-  border: 1px solid #38BDF8;
-  border-radius: var(--radius-sm);
-  padding: 0.6rem 1rem;
+  background: rgba(0, 231, 1, 0.12);
+  border: 1px solid #00e701;
+  border-radius: 8px;
+  padding: 0.55rem 1rem;
   margin-bottom: 0.75rem;
   text-align: center;
-  animation: bannerGlow 1.5s infinite alternate;
 }
 
 .slots-freespins-banner.active {
   display: block;
 }
 
-@keyframes bannerGlow {
-  from { box-shadow: 0 0 10px rgba(56,189,248,0.3); }
-  to { box-shadow: 0 0 25px rgba(212,175,55,0.6); }
-}
-
-/* Cadre des Rouleaux avec Flancs Numérotés */
 .slots-reels-stage {
   position: relative;
   display: flex;
@@ -94,36 +76,33 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--text-muted);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  transition: all 0.2s ease;
+  background: #213743;
+  color: #b1bad3;
+  border: 1px solid #2f4553;
+  transition: all 0.15s ease;
   user-select: none;
 }
 
 .line-tag.active {
-  background: var(--line-color, #FFD700);
-  color: #000;
-  box-shadow: 0 0 10px var(--line-color, #FFD700);
-  transform: scale(1.15);
+  background: var(--line-color, #00e701);
+  color: #05080a;
+  transform: scale(1.1);
 }
 
-/* Conteneur 5x3 */
+/* 5x3 Reels Container */
 .slots-reels-container {
   flex: 1;
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 7px;
-  background: #010612;
-  border: 3px solid #D4AF37;
-  border-radius: var(--radius-md);
+  gap: 6px;
+  background: #0a161f;
+  border: 2px solid #2f4553;
+  border-radius: 10px;
   padding: 8px;
   overflow: hidden;
-  box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.95);
   position: relative;
 }
 
-/* Overlay SVG pour le tracé des paylines gagnantes */
 .slots-paylines-svg {
   position: absolute;
   inset: 0;
@@ -135,10 +114,10 @@
 
 .payline-svg-path {
   fill: none;
-  stroke-width: 4.5px;
+  stroke-width: 4px;
   stroke-linecap: round;
   stroke-linejoin: round;
-  filter: drop-shadow(0 0 8px currentColor);
+  filter: drop-shadow(0 0 6px currentColor);
   animation: lineDash 0.8s ease-in-out;
 }
 
@@ -147,15 +126,14 @@
   to { stroke-dasharray: 1000, 0; }
 }
 
-/* Rouleaux individuels */
 .slot-reel {
   height: 300px;
-  background: linear-gradient(180deg, #071328 0%, #0e244d 50%, #071328 100%);
-  border-radius: var(--radius-sm);
-  border: 1px solid rgba(212, 175, 55, 0.3);
+  background: #0f212e;
+  border-radius: 6px;
+  border: 1px solid #213743;
   overflow: hidden;
   position: relative;
-  box-shadow: inset 0 15px 25px rgba(0,0,0,0.85), inset 0 -15px 25px rgba(0,0,0,0.85);
+  box-shadow: inset 0 12px 20px rgba(0, 0, 0, 0.6), inset 0 -12px 20px rgba(0, 0, 0, 0.6);
 }
 
 .slot-strip {
@@ -164,10 +142,9 @@
   transition: transform 0.25s cubic-bezier(0.12, 0.8, 0.2, 1);
 }
 
-/* Animation de défilement rapide avec flou de mouvement (Motion Blur) */
 .slot-strip.spinning {
   animation: reelSpinFast 0.12s linear infinite;
-  filter: blur(1.8px);
+  filter: blur(1.5px);
 }
 
 @keyframes reelSpinFast {
@@ -175,7 +152,6 @@
   100% { transform: translateY(-300px); }
 }
 
-/* Cellules de symboles (100px par rangée) */
 .slot-cell {
   height: 100px;
   display: flex;
@@ -184,150 +160,112 @@
   justify-content: center;
   user-select: none;
   position: relative;
-  transition: all 0.25s ease;
+  transition: all 0.2s ease;
 }
 
 .cell-icon {
-  font-size: 2.85rem;
-  filter: drop-shadow(0 4px 6px rgba(0,0,0,0.6));
+  font-size: 2.75rem;
   line-height: 1;
-  transition: transform 0.25s ease;
+  transition: transform 0.2s ease;
 }
 
 .cell-badge {
-  font-size: 0.62rem;
+  font-size: 0.6rem;
   font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  padding: 1px 5px;
+  letter-spacing: 0.04em;
+  padding: 2px 5px;
   border-radius: 4px;
-  margin-top: 3px;
+  margin-top: 4px;
   line-height: 1.1;
 }
 
-/* Styles Spéciaux par type de symbole */
 .slot-cell[data-symbol="wild"] {
-  background: radial-gradient(circle, rgba(212,175,55,0.25) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(245, 158, 11, 0.2) 0%, transparent 70%);
 }
 .slot-cell[data-symbol="wild"] .cell-badge {
-  background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
-  color: #FFF;
-  border: 1px solid #FCD34D;
-  box-shadow: 0 0 8px rgba(245,158,11,0.6);
-  animation: wildPulsate 1s infinite alternate;
-}
-
-@keyframes wildPulsate {
-  from { transform: scale(0.95); box-shadow: 0 0 5px #F59E0B; }
-  to { transform: scale(1.1); box-shadow: 0 0 15px #FCD34D; }
+  background: #f59e0b;
+  color: #05080a;
 }
 
 .slot-cell[data-symbol="scatter"] {
-  background: radial-gradient(circle, rgba(56,189,248,0.25) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.2) 0%, transparent 70%);
 }
 .slot-cell[data-symbol="scatter"] .cell-badge {
-  background: linear-gradient(135deg, #0284C7 0%, #0369A1 100%);
-  color: #FFF;
-  border: 1px solid #38BDF8;
-  box-shadow: 0 0 8px rgba(56,189,248,0.6);
-  animation: scatterElectric 0.8s infinite alternate;
-}
-
-@keyframes scatterElectric {
-  from { transform: scale(0.95); box-shadow: 0 0 6px #38BDF8; }
-  to { transform: scale(1.1); box-shadow: 0 0 16px #38BDF8; }
+  background: #1475e1;
+  color: #ffffff;
 }
 
 .slot-cell[data-symbol="mars"] .cell-badge {
-  background: linear-gradient(135deg, #DC2626 0%, #991B1B 100%);
-  color: #FFF;
-  border: 1px solid #F87171;
+  background: #ef4444;
+  color: #ffffff;
 }
 
 .slot-cell[data-symbol="diamond"] .cell-badge {
-  background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
-  color: #FFF;
-  border: 1px solid #60A5FA;
+  background: #3b82f6;
+  color: #ffffff;
 }
 
-/* Animation cellule gagnante */
 .slot-cell.win-cell {
-  background: rgba(212, 175, 55, 0.3) !important;
-  border: 2px solid var(--gold-light);
-  border-radius: var(--radius-sm);
+  background: rgba(0, 231, 1, 0.18) !important;
+  border: 2px solid #00e701;
+  border-radius: 6px;
   z-index: 5;
-  animation: winCellGlow 0.8s infinite alternate;
 }
 
 .slot-cell.win-cell .cell-icon {
-  transform: scale(1.18);
-  filter: drop-shadow(0 0 15px var(--gold-light));
+  transform: scale(1.14);
 }
 
-@keyframes winCellGlow {
-  from {
-    box-shadow: 0 0 10px rgba(212,175,55,0.4), inset 0 0 10px rgba(212,175,55,0.2);
-    transform: scale(0.98);
-  }
-  to {
-    box-shadow: 0 0 25px rgba(212,175,55,0.8), inset 0 0 15px rgba(212,175,55,0.5);
-    transform: scale(1.04);
-  }
-}
-
-/* Zone Quitte ou Double / Gamble sous les rouleaux */
 .slots-gamble-bar {
   display: none;
-  background: linear-gradient(90deg, rgba(239,68,68,0.15) 0%, rgba(212,175,55,0.2) 50%, rgba(59,130,246,0.15) 100%);
-  border: 1.5px solid var(--gold-primary);
-  border-radius: var(--radius-md);
+  background: #213743;
+  border: 1px solid #2f4553;
+  border-radius: 8px;
   padding: 0.65rem 1rem;
   margin-top: 0.75rem;
-  display: flex;
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
   gap: 0.75rem;
 }
 
-/* Barre d'info sous les rouleaux */
 .slots-bottom-preview {
   margin-top: 0.75rem;
-  background: rgba(4, 12, 28, 0.7);
-  border: 1px solid rgba(212, 175, 55, 0.2);
-  border-radius: var(--radius-sm);
-  padding: 0.6rem 0.85rem;
+  background: #0f212e;
+  border: 1px solid #2f4553;
+  border-radius: 6px;
+  padding: 0.55rem 0.85rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
   gap: 0.5rem;
   font-size: 0.78rem;
-  color: var(--text-secondary);
+  color: #b1bad3;
 }
 
-/* Panneau de Contrôle & Mises */
+/* Controls in Left Bet Panel */
 .slots-bet-controls {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0.75rem;
-  margin-bottom: 0.75rem;
+  gap: 0.6rem;
 }
 
 .control-box {
-  background: rgba(4, 12, 28, 0.6);
-  border: 1px solid rgba(212, 175, 55, 0.25);
-  border-radius: var(--radius-sm);
-  padding: 0.5rem 0.75rem;
+  background: #0f212e;
+  border: 1px solid #2f4553;
+  border-radius: 6px;
+  padding: 0.5rem 0.6rem;
   text-align: center;
 }
 
 .control-box label {
   display: block;
-  font-size: 0.7rem;
-  color: var(--text-muted);
+  font-size: 0.68rem;
+  color: #b1bad3;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  font-weight: 700;
   margin-bottom: 0.25rem;
 }
 
@@ -335,127 +273,113 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
+  gap: 0.45rem;
 }
 
 .btn-step {
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
   border-radius: 4px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(212, 175, 55, 0.4);
-  color: #FFF;
-  font-weight: bold;
+  background: #2f4553;
+  border: 1px solid #3d5564;
+  color: #ffffff;
+  font-weight: 700;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
 }
 
 .btn-step:hover {
-  background: var(--gold-primary);
-  color: #000;
+  background: #3d5564;
 }
 
 .control-stepper span {
-  font-size: 1.1rem;
+  font-size: 0.98rem;
+  font-family: var(--font-mono);
   font-weight: 800;
-  color: var(--gold-light);
-  min-width: 45px;
+  color: #ffffff;
+  min-width: 40px;
 }
 
 .total-bet-display {
-  background: rgba(212, 175, 55, 0.12);
-  border: 1px solid var(--gold-primary);
-  border-radius: var(--radius-sm);
+  background: #0f212e;
+  border: 1px solid #2f4553;
+  border-radius: 6px;
   padding: 0.6rem 0.75rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.75rem;
-  font-size: 0.9rem;
-}
-
-.total-bet-display strong {
-  font-size: 1.25rem;
-  color: var(--gold-light);
-  font-family: var(--font-mono);
-}
-
-/* Boutons d'Action Principaux */
-.slots-action-row {
-  display: grid;
-  grid-template-columns: 1fr 2fr;
-  gap: 0.6rem;
-  margin-top: 0.5rem;
-}
-
-.btn-autoplay {
-  background: rgba(56, 189, 248, 0.15);
-  border: 1px solid #38BDF8;
-  color: #38BDF8;
-  font-weight: 700;
-  border-radius: var(--radius-md);
-  padding: 0.85rem 0.5rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
   font-size: 0.85rem;
 }
 
+.total-bet-display strong {
+  font-size: 1.1rem;
+  color: #00e701;
+  font-family: var(--font-mono);
+}
+
+.slots-action-row {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 0.5rem;
+}
+
+.btn-autoplay {
+  background: #2f4553;
+  border: 1px solid #3d5564;
+  color: #ffffff;
+  font-weight: 700;
+  border-radius: 8px;
+  padding: 0.75rem 0.5rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-size: 0.82rem;
+}
+
 .btn-autoplay:hover {
-  background: #38BDF8;
-  color: #000;
+  background: #3d5564;
 }
 
 .btn-autoplay.active {
-  background: #EF4444;
-  border-color: #EF4444;
-  color: #FFF;
-  animation: pulseStop 1s infinite alternate;
+  background: #ff4d4d;
+  border-color: #ff4d4d;
+  color: #ffffff;
 }
 
-@keyframes pulseStop {
-  from { transform: scale(0.98); }
-  to { transform: scale(1.02); }
-}
-
-/* Modale Quitte ou Double (Gamble) */
 .gamble-card-display {
   width: 140px;
   height: 200px;
   margin: 1.5rem auto;
-  border-radius: 12px;
-  background: #FFF;
-  border: 3px solid var(--gold-primary);
-  box-shadow: 0 15px 35px rgba(0,0,0,0.6), 0 0 20px rgba(212,175,55,0.4);
+  border-radius: 10px;
+  background: #ffffff;
+  border: 2px solid #2f4553;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   font-size: 3rem;
   font-weight: 800;
-  transition: transform 0.4s ease;
 }
 
-.gamble-card-display.red { color: #DC2626; }
-.gamble-card-display.black { color: #111827; }
+.gamble-card-display.red { color: #dc2626; }
+.gamble-card-display.black { color: #0f172a; }
 .gamble-card-display.flipped { transform: rotateY(180deg); }
 
-/* Modale Paytable */
 .paytable-grid-modal {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 0.75rem;
+  gap: 0.65rem;
   max-height: 60vh;
   overflow-y: auto;
   padding-right: 0.5rem;
 }
 
 .paytable-card-row {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: var(--radius-sm);
+  background: #0f212e;
+  border: 1px solid #2f4553;
+  border-radius: 6px;
   padding: 0.75rem;
   display: flex;
   align-items: center;

@@ -1,4 +1,4 @@
-// Marsabet UI Utilities
+// Marsabet UI Utilities — Enhanced Modals, Confetti & Navigation Sync
 
 const UI = {
   // Toasts
@@ -13,13 +13,13 @@ const UI = {
     if (type === 'success') icon = '✅';
     if (type === 'error') icon = '⚠️';
 
-    toast.innerHTML = `<span>${icon}</span> <div>${message}</div>`;
+    toast.innerHTML = `<span style="font-size:1.15rem;">${icon}</span> <div style="flex:1;">${message}</div>`;
     container.appendChild(toast);
 
     setTimeout(() => {
       toast.style.opacity = '0';
-      toast.style.transform = 'translateX(100%)';
-      toast.style.transition = 'all 0.3s ease';
+      toast.style.transform = 'translateX(110%)';
+      toast.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
       setTimeout(() => toast.remove(), 300);
     }, duration);
   },
@@ -40,11 +40,15 @@ const UI = {
       tabRegister.classList.remove('active');
       formLogin.style.display = 'block';
       formRegister.style.display = 'none';
+      const userInp = document.getElementById('loginUsername');
+      if (userInp) setTimeout(() => userInp.focus(), 100);
     } else {
       tabRegister.classList.add('active');
       tabLogin.classList.remove('active');
       formRegister.style.display = 'block';
       formLogin.style.display = 'none';
+      const regInp = document.getElementById('regUsername');
+      if (regInp) setTimeout(() => regInp.focus(), 100);
     }
   },
 
@@ -53,7 +57,7 @@ const UI = {
     if (modal) modal.classList.remove('active');
   },
 
-  // Confetti Canvas animation
+  // Confetti Canvas animation (Enhanced Luxury Gold & Ribbons)
   triggerConfetti() {
     const canvas = document.getElementById('confettiCanvas');
     if (!canvas) return;
@@ -62,19 +66,20 @@ const UI = {
     canvas.height = window.innerHeight;
 
     const particles = [];
-    const colors = ['#D4AF37', '#FFE27A', '#38BDF8', '#10B981', '#F43F5E', '#FFFFFF'];
+    const colors = ['#D4AF37', '#FFE27A', '#FFF4C2', '#38BDF8', '#10B981', '#F43F5E', '#C084FC'];
 
-    for (let i = 0; i < 100; i++) {
+    for (let i = 0; i < 120; i++) {
       particles.push({
-        x: canvas.width / 2,
-        y: canvas.height / 2,
-        vx: (Math.random() - 0.5) * 16,
-        vy: (Math.random() - 0.7) * 16,
-        size: Math.random() * 8 + 4,
+        x: canvas.width / 2 + (Math.random() - 0.5) * 120,
+        y: canvas.height * 0.45,
+        vx: (Math.random() - 0.5) * 18,
+        vy: (Math.random() - 0.8) * 18,
+        size: Math.random() * 9 + 5,
         color: colors[Math.floor(Math.random() * colors.length)],
         rotation: Math.random() * 360,
-        spin: (Math.random() - 0.5) * 10,
-        alpha: 1
+        spin: (Math.random() - 0.5) * 12,
+        alpha: 1,
+        isCircle: Math.random() > 0.7
       });
     }
 
@@ -86,9 +91,10 @@ const UI = {
       particles.forEach(p => {
         p.x += p.vx;
         p.y += p.vy;
-        p.vy += 0.25; // gravité
+        p.vx *= 0.99; // air resistance
+        p.vy += 0.28; // gravity
         p.rotation += p.spin;
-        p.alpha -= 0.012;
+        p.alpha -= 0.01;
 
         if (p.alpha > 0) {
           alive = true;
@@ -97,13 +103,19 @@ const UI = {
           ctx.rotate((p.rotation * Math.PI) / 180);
           ctx.fillStyle = p.color;
           ctx.globalAlpha = Math.max(0, p.alpha);
-          ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.6);
+          if (p.isCircle) {
+            ctx.beginPath();
+            ctx.arc(0, 0, p.size / 2, 0, Math.PI * 2);
+            ctx.fill();
+          } else {
+            ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.55);
+          }
           ctx.restore();
         }
       });
 
       frame++;
-      if (alive && frame < 150) {
+      if (alive && frame < 170) {
         requestAnimationFrame(render);
       } else {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -138,10 +150,12 @@ const UI = {
       }
     }
 
-    // Mettre à jour l'état actif dans la navbar
-    const links = document.querySelectorAll('.nav-link');
-    links.forEach(l => {
+    // Mettre à jour l'état actif dans la navbar et la sidebar
+    const gameViews = ['games', 'slots', 'blackjack', 'roulette', 'dice', 'slider', 'crash', 'plinko', 'wheel', 'free-wheel'];
+    document.querySelectorAll('.nav-link, .sidebar-link, .sidebar-sublink').forEach(l => {
       if (l.dataset.view === viewName) {
+        l.classList.add('active');
+      } else if (l.id === 'sidebarGamesToggle' && gameViews.includes(viewName)) {
         l.classList.add('active');
       } else {
         l.classList.remove('active');
@@ -149,5 +163,20 @@ const UI = {
     });
   }
 };
+
+// Fermeture globale des modales avec la touche Escape ou clic sur l'arrière-plan (Light Dismiss)
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.modal-overlay.active').forEach(modal => {
+      modal.classList.remove('active');
+    });
+  }
+});
+
+document.addEventListener('click', (e) => {
+  if (e.target.classList && e.target.classList.contains('modal-overlay') && e.target.classList.contains('active')) {
+    e.target.classList.remove('active');
+  }
+});
 
 window.UI = UI;
