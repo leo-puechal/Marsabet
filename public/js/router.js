@@ -7,7 +7,7 @@ const Router = {
     '/jeux': 'games',
     '/roues': 'wheels',
     '/classement': 'leaderboard',
-    '/boutique': 'shop',
+    '/boutique': 'wheels',
     '/profil': 'profile',
     '/codes': 'profile',
     '/recompenses': 'rewards',
@@ -30,7 +30,7 @@ const Router = {
     'wheel-arena': '/roues',
     'rewards': '/recompenses',
     'leaderboard': '/classement',
-    'shop': '/boutique',
+    'shop': '/roues',
     'profile': '/profil',
     'slots': '/jeux/machine-a-sous',
     'blackjack': '/jeux/blackjack',
@@ -165,8 +165,6 @@ const Router = {
       }
     } else if (viewName === 'rewards' && window.FortuneWheels) {
       window.FortuneWheels.loadMyRewards();
-    } else if (viewName === 'shop' && typeof window.loadShop === 'function') {
-      window.loadShop();
     } else if (viewName === 'wheels' && window.FortuneWheels) {
       window.FortuneWheels.loadWheelsList();
     } else if (viewName === 'wheel-arena' && window.FortuneWheels) {
@@ -200,9 +198,7 @@ const Router = {
       'wheel-arena': param ? `Roue ${param.toUpperCase()} — Marsabet` : 'Roue de la Fortune — Marsabet',
       'rewards': 'Mes Récompenses BDE — Marsabet',
       'leaderboard': 'Classement des Joueurs — Marsabet',
-      'shop': 'Boutique Produits BDE — Marsabet',
       'profile': 'Mon Profil & Statut VIP — Marsabet',
-      'slots': 'Machine à Sous Cosmique — Marsabet',
       'blackjack': 'Table de Blackjack — Marsabet',
       'roulette': 'Roulette Européenne — Marsabet',
       'dice': 'Jeu de Dés (Craps) — Marsabet',

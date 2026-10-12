@@ -334,3 +334,96 @@
   transform: translateY(-2px);
   box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4);
 }
+
+/* Split Hands Layout */
+.bj-split-container {
+  display: flex;
+  gap: 1.5rem;
+  width: 100%;
+  justify-content: center;
+  align-items: stretch;
+}
+
+.bj-hand-box {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.85rem;
+  background: rgba(14, 39, 84, 0.25);
+  border: 1.5px solid rgba(212, 175, 55, 0.2);
+  border-radius: var(--radius-md);
+  transition: all 0.3s ease;
+  position: relative;
+  min-width: 0;
+}
+
+.bj-hand-box.bj-hand-active {
+  border-color: #38BDF8 !important;
+  background: rgba(14, 39, 84, 0.55) !important;
+  box-shadow: 0 0 20px rgba(56, 189, 248, 0.35) !important;
+  transform: translateY(-3px);
+}
+
+.bj-hand-box.bj-hand-dimmed {
+  opacity: 0.6;
+  filter: grayscale(0.25);
+}
+
+.bj-hand-tag {
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.bj-hand-active .bj-hand-tag {
+  background: #38BDF8 !important;
+  color: #040c1c !important;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.5) !important;
+}
+
+.bj-hand-busted {
+  border-color: #EF4444 !important;
+  background: rgba(239, 68, 68, 0.15) !important;
+}
+
+.bj-hand-busted .bj-hand-tag {
+  background: #EF4444 !important;
+  color: #FFF !important;
+}
+
+.bj-hand-bet-badge {
+  font-size: 0.75rem;
+  color: var(--gold-light);
+  font-family: var(--font-display);
+  font-weight: 700;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 2px 7px;
+  border-radius: 4px;
+  border: 1px solid rgba(212, 175, 55, 0.3);
+}
+
+.btn-bj-split {
+  background: linear-gradient(135deg, #06B6D4 0%, #0891B2 100%) !important;
+  color: #FFF !important;
+  border: 1.5px solid #22D3EE !important;
+  box-shadow: 0 0 15px rgba(6, 182, 212, 0.4) !important;
+}
+
+.btn-bj-split:hover:not(:disabled) {
+  box-shadow: 0 0 25px rgba(6, 182, 212, 0.6) !important;
+  transform: translateY(-2px);
+}
+
+@media (max-width: 640px) {
+  .bj-split-container {
+    flex-direction: column;
+    gap: 0.85rem;
+  }
+}

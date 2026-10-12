@@ -1,7 +1,7 @@
 // Admin BDE Module for Marsabet
 
 const AdminBDE = {
-  activeTab: 'orders', // 'orders', 'products', 'promos'
+  activeTab: 'orders', // 'orders', 'promos', 'wheels'
 
   init() {
     this.bindEvents();
@@ -28,28 +28,6 @@ const AdminBDE = {
       searchFilter.addEventListener('input', () => {
         clearTimeout(this.searchTimeout);
         this.searchTimeout = setTimeout(() => this.loadOrders(), 350);
-      });
-    }
-
-    // Modal Ajout Produit
-    const addProductBtn = document.getElementById('adminAddProductBtn');
-    if (addProductBtn) {
-      addProductBtn.addEventListener('click', () => this.openProductModal());
-    }
-
-    const formProduct = document.getElementById('formAdminProduct');
-    if (formProduct) {
-      formProduct.addEventListener('submit', (e) => {
-        e.preventDefault();
-        this.saveProduct();
-      });
-    }
-
-    const closeProductModal = document.getElementById('closeAdminProductModal');
-    if (closeProductModal) {
-      closeProductModal.addEventListener('click', () => {
-        const m = document.getElementById('adminProductModal');
-        if (m) m.classList.remove('active');
       });
     }
 
@@ -87,6 +65,34 @@ const AdminBDE = {
         this.savePromoCode();
       });
     }
+
+    // Gestion des Roues de la Fortune
+    const wheelSelect = document.getElementById('adminWheelSelect');
+    if (wheelSelect) {
+      wheelSelect.addEventListener('change', (e) => {
+        this.selectWheel(e.target.value);
+      });
+    }
+
+    const addSegmentBtn = document.getElementById('adminAddSegmentBtn');
+    if (addSegmentBtn) {
+      addSegmentBtn.addEventListener('click', () => this.addSegment());
+    }
+
+    const resetWheelBtn = document.getElementById('adminResetWheelBtn');
+    if (resetWheelBtn) {
+      resetWheelBtn.addEventListener('click', () => this.resetWheelSegments());
+    }
+
+    const saveWheelBtn = document.getElementById('adminSaveWheelBtn');
+    if (saveWheelBtn) {
+      saveWheelBtn.addEventListener('click', () => this.saveWheelSegments());
+    }
+
+    const testSpinBtn = document.getElementById('adminTestSpinBtn');
+    if (testSpinBtn) {
+      testSpinBtn.addEventListener('click', () => this.testSpinPreview());
+    }
   },
 
   switchTab(tab) {
@@ -95,17 +101,17 @@ const AdminBDE = {
       b.classList.toggle('active', b.dataset.tab === tab);
     });
 
-    const areaProducts = document.getElementById('adminTabProducts');
     const areaOrders = document.getElementById('adminTabOrders');
     const areaPromos = document.getElementById('adminTabPromos');
+    const areaWheels = document.getElementById('adminTabWheels');
 
     if (areaOrders) areaOrders.style.display = (tab === 'orders') ? 'block' : 'none';
-    if (areaProducts) areaProducts.style.display = (tab === 'products') ? 'block' : 'none';
     if (areaPromos) areaPromos.style.display = (tab === 'promos') ? 'block' : 'none';
+    if (areaWheels) areaWheels.style.display = (tab === 'wheels') ? 'block' : 'none';
 
     if (tab === 'orders') this.loadOrders();
-    if (tab === 'products') this.loadProducts();
     if (tab === 'promos') this.loadPromoCodes();
+    if (tab === 'wheels') this.loadWheels();
   },
 
   async markDelivered(deliveryId) {
@@ -188,6 +194,7 @@ const AdminBDE = {
               <span style="color:var(--gold-light); font-weight:600; display:inline-flex; align-items:center; gap:4px;">
                 📍 ${escapeHtml(d.room_location)}
               </span>
+              ${d.notes ? `<br><small style="color:#CBD5E1; font-size:0.78rem; display:inline-block; margin-top:2px;">📝 <em>${escapeHtml(d.notes)}</em></small>` : ''}
             </td>
             <td style="font-size:0.85rem;">
               ${d.phone ? `<a href="tel:${escapeHtml(d.phone)}" style="color:var(--text-secondary); text-decoration:none;">📞 ${escapeHtml(d.phone)}</a>` : '<span style="color:var(--text-muted); font-size:0.8rem;">—</span>'}
@@ -217,133 +224,6 @@ const AdminBDE = {
     } catch (err) {
       console.error('Erreur chargement livraisons admin:', err);
       listEl.innerHTML = '<tr><td colspan="9" style="text-align:center; color:var(--lose-red); padding:1.5rem;">Erreur lors du chargement des livraisons.</td></tr>';
-    }
-  },
-
-  async loadProducts() {
-    const listEl = document.getElementById('adminProductsList');
-    if (!listEl) return;
-    listEl.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:1.5rem;">Chargement des stocks...</td></tr>';
-
-    try {
-      const data = await window.API.adminGetProducts();
-      const products = data.products || [];
-
-      listEl.innerHTML = products.map(p => {
-        const isLow = p.stock > 0 && p.stock <= 5;
-        const isOut = p.stock === 0;
-        let badgeClass = 'in-stock';
-        let badgeText = `${p.stock} en stock`;
-        if (isOut) { badgeClass = 'out-of-stock'; badgeText = '0 (Épuisé)'; }
-        else if (isLow) { badgeClass = 'low-stock'; badgeText = `${p.stock} (Faible)`; }
-
-        return `
-          <tr style="${!p.is_active ? 'opacity:0.5;' : ''}">
-            <td><span style="font-size:1.5rem;">${p.icon}</span></td>
-            <td><strong>${escapeHtml(p.name)}</strong></td>
-            <td style="color:var(--gold-light); font-weight:bold;">${p.price.toLocaleString()} 🪙</td>
-            <td><span class="stock-badge ${badgeClass}">${badgeText}</span></td>
-            <td>
-              <button class="btn btn-outline btn-quick-stock" data-id="${p.id}" data-change="10" style="padding:2px 8px; font-size:0.75rem;">+10</button>
-              <button class="btn btn-outline btn-quick-stock" data-id="${p.id}" data-change="-1" style="padding:2px 8px; font-size:0.75rem;">-1</button>
-            </td>
-            <td>
-              <button class="btn btn-outline btn-edit-product" data-product='${JSON.stringify(p).replace(/'/g, "&#39;")}' style="padding:4px 8px; font-size:0.8rem;">✏️ Modifier</button>
-            </td>
-          </tr>
-        `;
-      }).join('');
-
-      // Boutons ajustement rapide de stock
-      listEl.querySelectorAll('.btn-quick-stock').forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-          const id = e.currentTarget.dataset.id;
-          const delta = parseInt(e.currentTarget.dataset.change);
-          const prod = products.find(x => x.id === id);
-          if (prod) {
-            const newStock = Math.max(0, prod.stock + delta);
-            await window.API.adminUpdateProduct(id, { stock: newStock });
-            window.UI.showToast(`Stock de ${prod.name} mis à jour : ${newStock}`, 'success');
-            this.loadProducts();
-          }
-        });
-      });
-
-      // Boutons édition complète
-      listEl.querySelectorAll('.btn-edit-product').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-          const p = JSON.parse(e.currentTarget.dataset.product);
-          this.openProductModal(p);
-        });
-      });
-    } catch (err) {
-      listEl.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--lose-red);">Erreur produits admin.</td></tr>';
-    }
-  },
-
-  openProductModal(product = null) {
-    const modal = document.getElementById('adminProductModal');
-    const title = document.getElementById('adminProductModalTitle');
-    const idInput = document.getElementById('adminProdId');
-    const nameInput = document.getElementById('adminProdName');
-    const catInput = document.getElementById('adminProdCategory');
-    const priceInput = document.getElementById('adminProdPrice');
-    const stockInput = document.getElementById('adminProdStock');
-    const iconInput = document.getElementById('adminProdIcon');
-    const descInput = document.getElementById('adminProdDesc');
-
-    if (!modal) return;
-    modal.classList.add('active');
-
-    if (product) {
-      if (title) title.textContent = '✏️ Modifier le Produit BDE';
-      if (idInput) { idInput.value = product.id; idInput.disabled = true; }
-      if (nameInput) nameInput.value = product.name;
-      if (catInput) catInput.value = product.category;
-      if (priceInput) priceInput.value = product.price;
-      if (stockInput) stockInput.value = product.stock;
-      if (iconInput) iconInput.value = product.icon;
-      if (descInput) descInput.value = product.description || '';
-    } else {
-      if (title) title.textContent = '➕ Ajouter un Produit Physique BDE';
-      if (idInput) { idInput.value = ''; idInput.disabled = false; }
-      if (nameInput) nameInput.value = '';
-      if (catInput) catInput.value = 'boisson';
-      if (priceInput) priceInput.value = '5000';
-      if (stockInput) stockInput.value = '50';
-      if (iconInput) iconInput.value = '🥤';
-      if (descInput) descInput.value = '';
-    }
-  },
-
-  async saveProduct() {
-    const idInput = document.getElementById('adminProdId');
-    const isEdit = idInput && idInput.disabled;
-    const id = idInput ? idInput.value.trim() : '';
-
-    const payload = {
-      name: document.getElementById('adminProdName')?.value.trim(),
-      category: document.getElementById('adminProdCategory')?.value,
-      price: parseInt(document.getElementById('adminProdPrice')?.value),
-      stock: parseInt(document.getElementById('adminProdStock')?.value),
-      icon: document.getElementById('adminProdIcon')?.value.trim(),
-      description: document.getElementById('adminProdDesc')?.value.trim()
-    };
-
-    try {
-      if (isEdit) {
-        await window.API.adminUpdateProduct(id, payload);
-        window.UI.showToast('Produit BDE mis à jour !', 'success');
-      } else {
-        await window.API.adminCreateProduct({ id: id || undefined, ...payload });
-        window.UI.showToast('Nouveau produit physique ajouté !', 'success');
-      }
-
-      const modal = document.getElementById('adminProductModal');
-      if (modal) modal.classList.remove('active');
-      this.loadProducts();
-    } catch (err) {
-      window.UI.showToast(err.message, 'error');
     }
   },
 
@@ -488,6 +368,419 @@ const AdminBDE = {
     } catch (err) {
       window.UI.showToast(err.message, 'error');
     }
+  },
+
+  // ==========================================
+  // GESTION DYNAMIQUE DES ROUES DE LA FORTUNE
+  // ==========================================
+  wheelsData: [],
+  currentWheelId: null,
+  editedSegments: [],
+  previewAngle: 0,
+  previewSpinning: false,
+
+  async loadWheels() {
+    const select = document.getElementById('adminWheelSelect');
+    if (!select) return;
+
+    try {
+      select.innerHTML = '<option value="">Chargement des roues...</option>';
+      const data = await window.API.adminGetWheels();
+      this.wheelsData = data.wheels || [];
+
+      if (!this.wheelsData.length) {
+        select.innerHTML = '<option value="">Aucune roue trouvée</option>';
+        return;
+      }
+
+      select.innerHTML = this.wheelsData.map(w => `
+        <option value="${w.id}">${w.name} (${w.isFree ? 'Gratuit / 24h' : w.cost + ' coins'})</option>
+      `).join('');
+
+      const targetId = this.currentWheelId && this.wheelsData.some(w => w.id === this.currentWheelId)
+        ? this.currentWheelId
+        : this.wheelsData[0].id;
+
+      select.value = targetId;
+      this.selectWheel(targetId);
+    } catch (err) {
+      console.error('Erreur chargement roues admin:', err);
+      window.UI.showToast('Erreur lors du chargement des roues : ' + err.message, 'error');
+    }
+  },
+
+  selectWheel(wheelId) {
+    this.currentWheelId = wheelId;
+    const wheel = this.wheelsData.find(w => w.id === wheelId);
+    if (!wheel) return;
+
+    // Cloner profondément les segments pour modification sans toucher au cache tant que pas sauvegardé
+    this.editedSegments = JSON.parse(JSON.stringify(wheel.segments || []));
+
+    // Mettre à jour la bannière d'information
+    const nameEl = document.getElementById('adminWheelCurrentName');
+    const typeEl = document.getElementById('adminWheelCurrentType');
+    if (nameEl) nameEl.textContent = wheel.name;
+    if (typeEl) typeEl.textContent = wheel.isFree ? '🎁 Gratuite (Cooldown 24h)' : `🪙 Payante (${wheel.cost} Coins)`;
+
+    this.renderSegmentsTable();
+    this.drawAdminWheelPreview();
+  },
+
+  renderSegmentsTable() {
+    const tbody = document.getElementById('adminWheelSegmentsTbody');
+    const segCountEl = document.getElementById('adminWheelSegCount');
+    const probBadge = document.getElementById('adminWheelProbSumBadge');
+    const previewCountEl = document.getElementById('adminPreviewCount');
+    const previewWeightEl = document.getElementById('adminPreviewTotalWeight');
+
+    if (!tbody) return;
+
+    const totalWeight = this.editedSegments.reduce((acc, s) => acc + (parseFloat(s.weight) || 0), 0);
+    const count = this.editedSegments.length;
+
+    if (segCountEl) segCountEl.textContent = count;
+    if (previewCountEl) previewCountEl.textContent = count;
+    if (previewWeightEl) previewWeightEl.textContent = `${totalWeight.toFixed(1)}%`;
+
+    // Indicateur de probabilité
+    if (probBadge) {
+      const isExact100 = Math.abs(totalWeight - 100) < 0.1;
+      if (isExact100) {
+        probBadge.textContent = '100.0% ✅';
+        probBadge.style.color = 'var(--win-green)';
+      } else {
+        probBadge.textContent = `${totalWeight.toFixed(1)}% ⚠️ (Normalisé à 100%)`;
+        probBadge.style.color = '#F59E0B';
+      }
+    }
+
+    if (count === 0) {
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:1.5rem; color:var(--text-muted);">Aucun segment. Cliquez sur "+ Ajouter un Segment".</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = this.editedSegments.map((seg, idx) => {
+      const isPhysical = seg.type === 'physical';
+      const weightVal = parseFloat(seg.weight) || 0;
+      const pctNormalized = totalWeight > 0 ? ((weightVal / totalWeight) * 100).toFixed(1) : '0.0';
+
+      return `
+        <tr data-index="${idx}">
+          <td style="font-weight:700; color:var(--gold-light); text-align:center;">${idx + 1}</td>
+          <td>
+            <input type="color" value="${seg.color || (isPhysical ? '#DC2626' : (idx % 2 === 0 ? '#0B2252' : '#0F2C69'))}"
+              onchange="AdminBDE.updateSegmentField(${idx}, 'color', this.value)"
+              title="Choisir la couleur du segment" />
+          </td>
+          <td>
+            <input type="text" value="${seg.icon || (isPhysical ? '🥤' : '🪙')}" maxlength="4" style="text-align:center;"
+              oninput="AdminBDE.updateSegmentField(${idx}, 'icon', this.value)"
+              placeholder="🪙" />
+          </td>
+          <td>
+            <input type="text" value="${seg.label || ''}"
+              oninput="AdminBDE.updateSegmentField(${idx}, 'label', this.value)"
+              placeholder="Ex: 500 Coins ou Red Bull" required />
+          </td>
+          <td>
+            <select onchange="AdminBDE.updateSegmentField(${idx}, 'type', this.value)">
+              <option value="coins" ${seg.type === 'coins' ? 'selected' : ''}>🪙 Coins</option>
+              <option value="physical" ${seg.type === 'physical' ? 'selected' : ''}>📦 Produit Physique</option>
+              <option value="special" ${seg.type === 'special' ? 'selected' : ''}>✨ Spécial</option>
+            </select>
+          </td>
+          <td>
+            <input type="text" value="${seg.value !== undefined ? seg.value : (seg.type === 'coins' ? (seg.coins !== undefined ? seg.coins : '') : (seg.product?.name || seg.product?.itemId || ''))}"
+              oninput="AdminBDE.updateSegmentField(${idx}, 'value', this.value)"
+              placeholder="${isPhysical ? 'ID ou Nom produit' : 'Nombre de coins'}" />
+          </td>
+          <td>
+            <div style="display:flex; align-items:center; gap:0.25rem;">
+              <input type="number" step="0.1" min="0.1" max="100" value="${weightVal}" style="width:58px; text-align:right;"
+                oninput="AdminBDE.updateSegmentField(${idx}, 'weight', parseFloat(this.value) || 0)" />
+              <span style="font-size:0.75rem; color:var(--text-muted);">%</span>
+            </div>
+            <div style="font-size:0.7rem; color:var(--text-muted); text-align:right;">≈ ${pctNormalized}% réel</div>
+          </td>
+          <td style="text-align:center;">
+            <button class="btn btn-outline" onclick="AdminBDE.removeSegment(${idx})"
+              style="padding:4px 7px; font-size:0.8rem; border-color:#EF4444; color:#FCA5A5;"
+              ${count <= 2 ? 'disabled title="Minimum 2 segments"' : 'title="Supprimer ce segment"'}>
+              🗑️
+            </button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  },
+
+  updateSegmentField(index, field, value) {
+    if (!this.editedSegments[index]) return;
+
+    if (field === 'weight') {
+      this.editedSegments[index].weight = Math.max(0.1, parseFloat(value) || 0.1);
+    } else if (field === 'value') {
+      const num = Number(value);
+      this.editedSegments[index].value = (!isNaN(num) && value !== '') ? num : value;
+      if (this.editedSegments[index].type === 'coins') {
+        this.editedSegments[index].coins = (!isNaN(num) && value !== '') ? Math.max(0, num) : 0;
+      }
+    } else {
+      this.editedSegments[index][field] = value;
+    }
+
+    // Mise à jour rapide de la jauge et du canvas sans ré-injecter tout le HTML (évite la perte de focus)
+    const totalWeight = this.editedSegments.reduce((acc, s) => acc + (parseFloat(s.weight) || 0), 0);
+    const probBadge = document.getElementById('adminWheelProbSumBadge');
+    const previewWeightEl = document.getElementById('adminPreviewTotalWeight');
+
+    if (previewWeightEl) previewWeightEl.textContent = `${totalWeight.toFixed(1)}%`;
+    if (probBadge) {
+      const isExact100 = Math.abs(totalWeight - 100) < 0.1;
+      if (isExact100) {
+        probBadge.textContent = '100.0% ✅';
+        probBadge.style.color = 'var(--win-green)';
+      } else {
+        probBadge.textContent = `${totalWeight.toFixed(1)}% ⚠️ (Normalisé à 100%)`;
+        probBadge.style.color = '#F59E0B';
+      }
+    }
+
+    this.drawAdminWheelPreview();
+  },
+
+  addSegment() {
+    if (this.editedSegments.length >= 24) {
+      window.UI.showToast('Une roue ne peut pas comporter plus de 24 segments.', 'warning');
+      return;
+    }
+
+    const defaultColors = ['#0B2252', '#0F2C69', '#14367B', '#0A1E45', '#DC2626', '#D97706', '#059669'];
+    const color = defaultColors[this.editedSegments.length % defaultColors.length];
+
+    this.editedSegments.push({
+      id: 'seg_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
+      icon: '🎁',
+      label: 'Lot ' + (this.editedSegments.length + 1),
+      type: 'coins',
+      value: 100,
+      weight: 10,
+      color: color
+    });
+
+    this.renderSegmentsTable();
+    this.drawAdminWheelPreview();
+  },
+
+  removeSegment(index) {
+    if (this.editedSegments.length <= 2) {
+      window.UI.showToast('Une roue doit comporter au minimum 2 segments.', 'warning');
+      return;
+    }
+
+    this.editedSegments.splice(index, 1);
+    this.renderSegmentsTable();
+    this.drawAdminWheelPreview();
+  },
+
+  resetWheelSegments() {
+    if (!this.currentWheelId) return;
+    const wheel = this.wheelsData.find(w => w.id === this.currentWheelId);
+    if (!wheel) return;
+
+    this.editedSegments = JSON.parse(JSON.stringify(wheel.segments || []));
+    this.renderSegmentsTable();
+    this.drawAdminWheelPreview();
+    window.UI.showToast('Modifications réinitialisées aux valeurs sauvegardées.', 'info');
+  },
+
+  async saveWheelSegments() {
+    if (!this.currentWheelId) return;
+    const wheel = this.wheelsData.find(w => w.id === this.currentWheelId);
+    const wheelName = wheel ? wheel.name : this.currentWheelId;
+
+    if (this.editedSegments.length < 2) {
+      window.UI.showToast('La roue doit comporter au moins 2 segments.', 'error');
+      return;
+    }
+
+    const totalWeight = this.editedSegments.reduce((acc, s) => acc + (parseFloat(s.weight) || 0), 0);
+    const confirmMsg = `Confirmez-vous la modification de la roue "${wheelName}" ?\n\n`
+      + `• Nombre de segments : ${this.editedSegments.length}\n`
+      + `• Somme des probabilités : ${totalWeight.toFixed(1)}% (sera normalisée à 100%)\n\n`
+      + `⚠️ Les modifications seront appliquées immédiatement pour tous les élèves en jeu.`;
+
+    if (!confirm(confirmMsg)) return;
+
+    try {
+      const saveBtn = document.getElementById('adminSaveWheelBtn');
+      if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.textContent = '⏳ Sauvegarde en cours...';
+      }
+
+      const res = await window.API.adminUpdateWheelSegments(this.currentWheelId, this.editedSegments);
+      window.UI.showToast(res.message || 'Récompenses de la roue sauvegardées avec succès !', 'success', 5000);
+
+      // Mettre à jour les données locales
+      if (res.wheel) {
+        const idx = this.wheelsData.findIndex(w => w.id === this.currentWheelId);
+        if (idx !== -1) {
+          this.wheelsData[idx] = res.wheel;
+        }
+        this.editedSegments = JSON.parse(JSON.stringify(res.wheel.segments || []));
+        this.renderSegmentsTable();
+        this.drawAdminWheelPreview();
+      }
+
+      // Si le jeu FortuneWheels est instancié sur la page, mettre à jour son cache
+      if (window.FortuneWheels && typeof window.FortuneWheels.loadWheelArena === 'function') {
+        if (window.FortuneWheels.currentWheelId === this.currentWheelId) {
+          window.FortuneWheels.loadWheelArena(this.currentWheelId);
+        }
+      }
+    } catch (err) {
+      console.error('Erreur sauvegarde roue:', err);
+      window.UI.showToast('Erreur lors de la sauvegarde : ' + err.message, 'error');
+    } finally {
+      const saveBtn = document.getElementById('adminSaveWheelBtn');
+      if (saveBtn) {
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = '💾 Sauvegarder les Récompenses';
+      }
+    }
+  },
+
+  drawAdminWheelPreview(rotationAngle = 0) {
+    const canvas = document.getElementById('adminWheelPreviewCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const width = canvas.width;
+    const height = canvas.height;
+    const centerX = width / 2;
+    const centerY = height / 2;
+    const radius = width / 2 - 10;
+
+    const segments = this.editedSegments || [];
+    const count = segments.length || 8;
+    const segAngle = (2 * Math.PI) / count;
+
+    ctx.clearRect(0, 0, width, height);
+
+    ctx.save();
+    ctx.translate(centerX, centerY);
+    ctx.rotate(rotationAngle);
+
+    // Dessiner chaque secteur
+    for (let i = 0; i < count; i++) {
+      const seg = segments[i] || { label: 'Coins', color: '#0A2552' };
+      const startAngle = i * segAngle;
+      const endAngle = (i + 1) * segAngle;
+
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.arc(0, 0, radius, startAngle, endAngle);
+      ctx.closePath();
+
+      const isPhysical = seg.type === 'physical';
+      ctx.fillStyle = seg.color || (isPhysical ? '#DC2626' : (i % 2 === 0 ? '#0B2252' : '#0F2C69'));
+      ctx.fill();
+
+      ctx.strokeStyle = isPhysical ? '#F87171' : 'rgba(212, 175, 55, 0.45)';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      // Contenu du segment (icône + texte)
+      ctx.save();
+      ctx.rotate(startAngle + segAngle / 2);
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'middle';
+
+      // Icône
+      ctx.font = 'bold 16px Outfit, sans-serif';
+      ctx.fillText(seg.icon || (isPhysical ? '🥤' : '🪙'), radius - 12, 0);
+
+      // Label court
+      ctx.font = isPhysical ? 'bold 10px Outfit, sans-serif' : '600 10px Outfit, sans-serif';
+      ctx.fillStyle = isPhysical ? '#FFF' : '#FFE27A';
+      const labelText = (seg.label || '').length > 13 ? (seg.label || '').substring(0, 11) + '..' : (seg.label || '');
+      ctx.fillText(labelText, radius - 34, 0);
+
+      ctx.restore();
+    }
+
+    // Bordure extérieure or avec rivets
+    ctx.beginPath();
+    ctx.arc(0, 0, radius, 0, 2 * Math.PI);
+    ctx.lineWidth = 6;
+    ctx.strokeStyle = '#D4AF37';
+    ctx.stroke();
+
+    const rivetCount = count * 2;
+    for (let j = 0; j < rivetCount; j++) {
+      const rivetAngle = (j * 2 * Math.PI) / rivetCount;
+      const rx = Math.cos(rivetAngle) * (radius + 2);
+      const ry = Math.sin(rivetAngle) * (radius + 2);
+
+      ctx.beginPath();
+      ctx.arc(rx, ry, 2.5, 0, 2 * Math.PI);
+      ctx.fillStyle = j % 2 === 0 ? '#FFE27A' : '#FFF';
+      ctx.fill();
+    }
+
+    // Moyeu central
+    ctx.beginPath();
+    ctx.arc(0, 0, 22, 0, 2 * Math.PI);
+    ctx.fillStyle = '#061226';
+    ctx.fill();
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = '#FFD700';
+    ctx.stroke();
+
+    ctx.font = 'bold 14px Outfit, sans-serif';
+    ctx.fillStyle = '#FFD700';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('🪐', 0, 0);
+
+    ctx.restore();
+  },
+
+  testSpinPreview() {
+    if (this.previewSpinning || this.editedSegments.length < 2) return;
+    this.previewSpinning = true;
+
+    const testBtn = document.getElementById('adminTestSpinBtn');
+    if (testBtn) testBtn.disabled = true;
+
+    const duration = 3800; // 3.8s
+    const startTime = performance.now();
+    const startAngle = this.previewAngle;
+    const fullTurns = 4;
+    const randomExtra = Math.random() * 2 * Math.PI;
+    const targetAngle = startAngle + (fullTurns * 2 * Math.PI) + randomExtra;
+
+    const animate = (currentTime) => {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(1, elapsed / duration);
+
+      // Ease out quintic
+      const ease = 1 - Math.pow(1 - progress, 4.5);
+      const currentRotation = startAngle + (targetAngle - startAngle) * ease;
+      this.previewAngle = currentRotation % (2 * Math.PI);
+
+      this.drawAdminWheelPreview(currentRotation);
+
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        this.previewSpinning = false;
+        if (testBtn) testBtn.disabled = false;
+      }
+    };
+
+    requestAnimationFrame(animate);
   }
 };
 

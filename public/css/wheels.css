@@ -226,7 +226,8 @@
 }
 
 /* Wheel Canvas Stage Container */
-.wheel-container-box {
+.wheel-container-box,
+.wheel-canvas-wrapper {
   position: relative;
   width: 440px;
   height: 440px;
@@ -237,7 +238,8 @@
 }
 
 @media (max-width: 540px) {
-  .wheel-container-box {
+  .wheel-container-box,
+  .wheel-canvas-wrapper {
     width: 320px;
     height: 320px;
   }
@@ -252,7 +254,8 @@
 }
 
 /* Wheel Center Cap & Pointer */
-.wheel-pointer {
+.wheel-pointer,
+.wheel-canvas-pointer {
   position: absolute;
   top: -14px;
   left: 50%;
@@ -263,7 +266,8 @@
   filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.8));
 }
 
-.wheel-pointer::before {
+.wheel-pointer::before,
+.wheel-canvas-pointer::before {
   content: '';
   position: absolute;
   top: 0;
@@ -276,7 +280,8 @@
   border-top: 36px solid #F59E0B;
 }
 
-.wheel-pointer::after {
+.wheel-pointer::after,
+.wheel-canvas-pointer::after {
   content: '';
   position: absolute;
   top: 2px;
@@ -289,7 +294,8 @@
   border-top: 30px solid #FEF08A;
 }
 
-.wheel-center-cap {
+.wheel-center-cap,
+.wheel-center-hub {
   position: absolute;
   width: 68px;
   height: 68px;

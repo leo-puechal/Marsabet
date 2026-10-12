@@ -1,4 +1,7 @@
 const db = require('../database/db');
+const fortuneWheelService = require('../services/fortuneWheelService');
+const promoCodeService = require('../services/promoCodeService');
+const socketService = require('../services/socketService');
 
 // Récupérer toutes les demandes de livraison directe pour le suivi BDE
 exports.getAllDeliveries = (req, res) => {
@@ -6,13 +9,12 @@ exports.getAllDeliveries = (req, res) => {
     const { status, search } = req.query;
 
     let query = `
-      SELECT d.id, d.last_name, d.first_name, d.room_location, d.phone,
+      SELECT d.id, d.last_name, d.first_name, d.room_location, d.phone, d.notes,
              d.item_id, d.item_name, d.variant_name, d.quantity, d.coins_paid,
              d.source, d.status, d.email_status, d.email_error, d.delivered_at, d.created_at,
-             u.username, u.id as user_id, i.icon, admin.username as delivered_by_admin
+             u.username, u.id as user_id, admin.username as delivered_by_admin
       FROM delivery_orders d
       JOIN users u ON d.user_id = u.id
-      LEFT JOIN shop_items i ON d.item_id = i.id
       LEFT JOIN users admin ON d.delivered_by = admin.id
       WHERE 1=1
     `;
@@ -24,14 +26,22 @@ exports.getAllDeliveries = (req, res) => {
     }
 
     if (search && search.trim()) {
-      query += ' AND (u.username LIKE ? OR d.last_name LIKE ? OR d.first_name LIKE ? OR d.room_location LIKE ? OR d.item_name LIKE ?)';
+      query += ' AND (u.username LIKE ? OR d.last_name LIKE ? OR d.first_name LIKE ? OR d.room_location LIKE ? OR d.item_name LIKE ? OR d.notes LIKE ?)';
       const term = `%${search.trim()}%`;
-      params.push(term, term, term, term, term);
+      params.push(term, term, term, term, term, term);
     }
 
     query += ' ORDER BY d.created_at DESC LIMIT 150';
 
-    const deliveries = db.prepare(query).all(...params);
+    const rawDeliveries = db.prepare(query).all(...params);
+    const deliveries = rawDeliveries.map(d => {
+      let icon = '🎁';
+      const name = (d.item_name || '').toLowerCase();
+      if (name.includes('red bull') || name.includes('monster')) icon = '⚡';
+      else if (name.includes('canette') || name.includes('coca') || name.includes('boisson') || name.includes('oasis') || name.includes('fuze')) icon = '🥤';
+      else if (name.includes('chocolat') || name.includes('kinder') || name.includes('kitkat') || name.includes('snack')) icon = '🍫';
+      return { ...d, icon };
+    });
     return res.json({ deliveries, orders: deliveries });
   } catch (err) {
     console.error('Erreur récupération livraisons admin:', err);
@@ -86,6 +96,10 @@ exports.markDelivered = (req, res) => {
       WHERE d.id = ?
     `).get(deliveryId);
 
+    try {
+      socketService.notifyOrdersUpdated();
+    } catch (sockErr) {}
+
     return res.json({
       success: true,
       message: `Commande #${deliveryId} marquée comme livrée à ${delivery.first_name} ${delivery.last_name} (${delivery.room_location}) !`,
@@ -97,95 +111,8 @@ exports.markDelivered = (req, res) => {
   }
 };
 
-// Gestion des produits physiques
-exports.getProductsAdmin = (req, res) => {
-  try {
-    const products = db.prepare('SELECT * FROM shop_items ORDER BY is_active DESC, price ASC').all();
-    return res.json({ products });
-  } catch (err) {
-    return res.status(500).json({ error: 'Erreur produits admin.' });
-  }
-};
-
-exports.createProduct = (req, res) => {
-  try {
-    const { id, name, category, price, stock, icon, description } = req.body;
-
-    if (!name || !price) {
-      return res.status(400).json({ error: 'Nom et prix en coins requis.' });
-    }
-
-    const productId = id ? id.trim().toLowerCase().replace(/[^a-z0-9_]/g, '_') : `prod_${Date.now()}`;
-    const cleanPrice = Math.max(1, parseInt(price));
-    const cleanStock = Math.max(0, parseInt(stock) || 0);
-
-    db.prepare(`
-      INSERT INTO shop_items (id, name, category, price, stock, initial_stock, icon, description, is_active)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
-    `).run(productId, name.trim(), category || 'snack', cleanPrice, cleanStock, cleanStock, icon || '🎁', description || '');
-
-    const newProduct = db.prepare('SELECT * FROM shop_items WHERE id = ?').get(productId);
-    return res.status(201).json({ message: 'Nouveau produit BDE ajouté au catalogue !', product: newProduct });
-  } catch (err) {
-    if (err.message.includes('UNIQUE')) {
-      return res.status(400).json({ error: 'Un produit avec cet identifiant existe déjà.' });
-    }
-    return res.status(500).json({ error: 'Erreur lors de la création du produit.' });
-  }
-};
-
-exports.updateProduct = (req, res) => {
-  try {
-    const { id } = req.params;
-    const { name, category, price, stock, icon, description, is_active } = req.body;
-
-    const existing = db.prepare('SELECT * FROM shop_items WHERE id = ?').get(id);
-    if (!existing) {
-      return res.status(404).json({ error: 'Produit introuvable.' });
-    }
-
-    db.prepare(`
-      UPDATE shop_items
-      SET name = COALESCE(?, name),
-          category = COALESCE(?, category),
-          price = COALESCE(?, price),
-          stock = COALESCE(?, stock),
-          icon = COALESCE(?, icon),
-          description = COALESCE(?, description),
-          is_active = COALESCE(?, is_active)
-      WHERE id = ?
-    `).run(
-      name ? name.trim() : null,
-      category || null,
-      price !== undefined ? Math.max(1, parseInt(price)) : null,
-      stock !== undefined ? Math.max(0, parseInt(stock)) : null,
-      icon || null,
-      description !== undefined ? description : null,
-      is_active !== undefined ? (is_active ? 1 : 0) : null,
-      id
-    );
-
-    const updated = db.prepare('SELECT * FROM shop_items WHERE id = ?').get(id);
-    return res.json({ message: 'Produit BDE mis à jour avec succès.', product: updated });
-  } catch (err) {
-    return res.status(500).json({ error: 'Erreur lors de la mise à jour.' });
-  }
-};
-
-exports.deleteProduct = (req, res) => {
-  try {
-    const { id } = req.params;
-    // Désactivation logique pour garder l'intégrité de l'historique
-    db.prepare('UPDATE shop_items SET is_active = 0 WHERE id = ?').run(id);
-    return res.json({ message: 'Produit archivé et retiré de la boutique.' });
-  } catch (err) {
-    return res.status(500).json({ error: 'Erreur lors de la suppression.' });
-  }
-};
 
 // ======================== CODES PROMO ADMIN ========================
-const promoCodeService = require('../services/promoCodeService');
-
 exports.getPromoCodes = (req, res) => {
   try {
     const codes = promoCodeService.listPromoCodes();
@@ -243,3 +170,54 @@ exports.deletePromoCode = (req, res) => {
     return res.status(400).json({ error: err.message || 'Erreur lors de la suppression du code promo.' });
   }
 };
+
+// ========================================================
+// GESTION DYNAMIQUE DES RÉCOMPENSES DE ROUES (ADMIN BDE)
+// ========================================================
+
+// Récupérer la liste des roues et leurs segments pour l'interface admin
+exports.getWheelsAdmin = (req, res) => {
+  try {
+    const wheels = fortuneWheelService.getAllWheelsAdmin();
+    const availableProducts = [
+      { id: 'canette', name: 'Canette au choix (Coca, Oasis, Fuze Tea...)', category: 'boisson', icon: '🥤' },
+      { id: 'chocolat', name: 'Chocolat au choix (Kinder Bueno, KitKat...)', category: 'snack', icon: '🍫' },
+      { id: 'redbull', name: 'Canette Red Bull (Saveur au choix)', category: 'energie', icon: '⚡' }
+    ];
+    return res.json({
+      wheels,
+      availableProducts
+    });
+  } catch (err) {
+    console.error('Erreur getWheelsAdmin:', err);
+    return res.status(500).json({ error: 'Impossible de charger la configuration des roues.' });
+  }
+};
+
+// Sauvegarder les modifications d'une roue (ajout, modification, suppression de segments)
+exports.updateWheelSegments = (req, res) => {
+  try {
+    const { id } = req.params;
+    const { segments } = req.body;
+
+    if (!id) {
+      return res.status(400).json({ error: 'Identifiant de roue manquant.' });
+    }
+
+    if (!Array.isArray(segments) || segments.length < 2) {
+      return res.status(400).json({ error: 'Une roue doit obligatoirement comporter au moins 2 segments.' });
+    }
+
+    const updatedWheel = fortuneWheelService.updateWheelSegments(id, segments);
+
+    return res.json({
+      success: true,
+      message: `Récompenses de la roue "${updatedWheel.name}" sauvegardées avec succès !`,
+      wheel: updatedWheel
+    });
+  } catch (err) {
+    console.error('Erreur updateWheelSegments:', err);
+    return res.status(400).json({ error: err.message || 'Erreur lors de la mise à jour des segments de la roue.' });
+  }
+};
+

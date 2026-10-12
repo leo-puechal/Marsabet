@@ -114,6 +114,18 @@ async function sendDeliveryNotification(delivery) {
             </table>
           </div>
 
+          <!-- Précision / Remarque de l'élève si fournie -->
+          ${delivery.notes ? `
+          <div style="background: rgba(253, 224, 71, 0.08); border: 1px solid rgba(253, 224, 71, 0.4); border-left: 5px solid #FDE047; border-radius: 8px; padding: 18px; margin-bottom: 20px;">
+            <h2 style="color: #FDE047; font-size: 16px; margin: 0 0 10px;">
+              📝 Précision / Remarque de l'élève
+            </h2>
+            <div style="color: #FFFFFF; font-size: 15px; line-height: 1.5; white-space: pre-wrap; background: rgba(0, 0, 0, 0.25); padding: 10px 14px; border-radius: 6px;">
+              ${delivery.notes}
+            </div>
+          </div>
+          ` : ''}
+
           <!-- Informations système -->
           <div style="font-size: 12px; color: #64748B; border-top: 1px solid rgba(255, 255, 255, 0.1); padding-top: 15px; margin-top: 20px; line-height: 1.5;">
             🕒 Date de la demande : <strong>${formattedDate}</strong><br>
@@ -135,7 +147,7 @@ DESTINATAIRE :
 - Nom & Prénom : ${delivery.first_name} ${delivery.last_name} (${delivery.username || 'Élève'})
 - SALLE / LIEU : ${delivery.room_location}
 - Téléphone : ${delivery.phone || 'Non renseigné'}
-
+${delivery.notes ? `- Précision / Remarque : ${delivery.notes}\n` : ''}
 COMMANDE :
 - Produit : ${displayName}
 - Quantité : ${delivery.quantity || 1}

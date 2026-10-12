@@ -24,70 +24,157 @@ const WHEELS_CONFIG = {
       { id: 'q_kinder', type: 'physical', product: { itemId: 'kinder_bueno', name: 'Kinder Bueno', icon: '🍫', category: 'Sucreries' }, label: '🍫 Kinder Bueno', color: '#EA580C', textColor: '#FFF', weight: 4, isPhysical: true }
     ]
   },
-  'snack': {
-    id: 'snack',
-    name: 'Roue Pause & Confiseries',
-    subtitle: 'Mise accessible pour les pauses gourmandes',
-    type: 'paid',
-    cost: 250,
-    badge: '250 🪙',
-    badgeClass: 'badge-coins',
-    icon: '🍫',
-    description: 'Mise de 250 coins gagnés en jouant. Transforme tes jetons virtuels en confiseries, chips et Capri-Sun réels !',
-    segments: [
-      { id: 's_100', type: 'coins', coins: 100, label: '100 🪙', color: '#334155', textColor: '#FFF', weight: 28 },
-      { id: 's_250', type: 'coins', coins: 250, label: '250 🪙 (Remboursé)', color: '#1E3A8A', textColor: '#FFF', weight: 24 },
-      { id: 's_500', type: 'coins', coins: 500, label: '500 🪙 (x2)', color: '#0D9488', textColor: '#FFF', weight: 18 },
-      { id: 's_750', type: 'coins', coins: 750, label: '750 🪙 (x3)', color: '#3B82F6', textColor: '#FFF', weight: 12 },
-      { id: 's_1500', type: 'coins', coins: 1500, label: '⚡ 1 500 🪙 (x6)', color: '#8B5CF6', textColor: '#FFF', weight: 8 },
-      { id: 's_capri', type: 'physical', product: { itemId: 'capri_sun', name: 'Capri-Sun', icon: '🧃', category: 'Boissons Fraîches' }, label: '🧃 Capri-Sun', color: '#16A34A', textColor: '#FFF', weight: 4, isPhysical: true },
-      { id: 's_chips', type: 'physical', product: { itemId: 'chips_barbecue', name: 'Chips Barbecue', icon: '🥔', category: 'Chips' }, label: '🥔 Chips BBQ', color: '#CA8A04', textColor: '#000', weight: 3, isPhysical: true },
-      { id: 's_kitkat', type: 'physical', product: { itemId: 'kitkat', name: 'Kitkat', icon: '🍫', category: 'Sucreries' }, label: '🍫 Kitkat', color: '#DC2626', textColor: '#FFF', weight: 3, isPhysical: true }
-    ]
-  },
-  'energie': {
-    id: 'energie',
-    name: 'Roue Énergie & Red Bull',
-    subtitle: 'La recharge des nuits de rush et hackathons',
-    type: 'paid',
-    cost: 750,
-    badge: '750 🪙',
-    badgeClass: 'badge-coins',
-    icon: '⚡',
-    description: 'Vise les canettes Red Bull et Monster Energy ou décroche le jackpot de 5 000 coins !',
-    segments: [
-      { id: 'e_300', type: 'coins', coins: 300, label: '300 🪙', color: '#334155', textColor: '#FFF', weight: 26 },
-      { id: 'e_750', type: 'coins', coins: 750, label: '750 🪙 (Remboursé)', color: '#1E3A8A', textColor: '#FFF', weight: 24 },
-      { id: 'e_1500', type: 'coins', coins: 1500, label: '1 500 🪙 (x2)', color: '#0D9488', textColor: '#FFF', weight: 18 },
-      { id: 'e_2500', type: 'coins', coins: 2500, label: '2 500 🪙 (x3.3)', color: '#3B82F6', textColor: '#FFF', weight: 12 },
-      { id: 'e_5000', type: 'coins', coins: 5000, label: '🔥 5 000 🪙 (x6.6)', color: '#8B5CF6', textColor: '#FFF', weight: 8, isJackpot: true },
-      { id: 'e_redbull', type: 'physical', product: { itemId: 'red_bull_classic', name: 'Red Bull', icon: '⚡', category: 'Red Bull' }, label: '⚡ Red Bull 250ml', color: '#2563EB', textColor: '#FFF', weight: 4, isPhysical: true },
-      { id: 'e_monster', type: 'physical', product: { itemId: 'monster_mango_loco', name: 'Monster Mango Loco', icon: '⚡', category: 'Boissons Fraîches' }, label: '⚡ Monster Mango', color: '#059669', textColor: '#FFF', weight: 4, isPhysical: true },
-      { id: 'e_juneberry', type: 'physical', product: { itemId: 'red_bull_juneberry', name: 'Red Bull Juneberry', icon: '⚡', category: 'Red Bull' }, label: '⚡ RB Juneberry', color: '#7C3AED', textColor: '#FFF', weight: 4, isPhysical: true }
-    ]
-  },
-  'royale': {
-    id: 'royale',
-    name: 'Roue Royale BDE',
-    subtitle: 'La plus haute mise pour les repas et jackpots',
+  'roue_2000': {
+    id: 'roue_2000',
+    name: 'Roue 2000 Coins',
+    subtitle: 'Boissons fraîches & chocolats gourmands',
     type: 'paid',
     cost: 2000,
+    dailyLimit: 5,
     badge: '2 000 🪙',
     badgeClass: 'badge-coins',
-    icon: '👑',
-    description: 'La table VIP des roues de la fortune : 10 000 coins de jackpot, Hot-Dogs chauds et menus complets au stand !',
+    icon: '🥤',
+    description: 'Coût : 2 000 coins par tour. 80% de chance de remporter 250 coins, 10% de gagner une canette au choix et 10% un chocolat ! (Max 5 tours / jour)',
     segments: [
-      { id: 'r_1000', type: 'coins', coins: 1000, label: '1 000 🪙', color: '#334155', textColor: '#FFF', weight: 26 },
-      { id: 'r_2000', type: 'coins', coins: 2000, label: '2 000 🪙 (Remboursé)', color: '#1E3A8A', textColor: '#FFF', weight: 24 },
-      { id: 'r_3500', type: 'coins', coins: 3500, label: '3 500 🪙 (x1.75)', color: '#0D9488', textColor: '#FFF', weight: 18 },
-      { id: 'r_5000', type: 'coins', coins: 5000, label: '5 000 🪙 (x2.5)', color: '#3B82F6', textColor: '#FFF', weight: 12 },
-      { id: 'r_10000', type: 'coins', coins: 10000, label: '👑 10 000 🪙 (x5)', color: '#D4AF37', textColor: '#000', weight: 8, isJackpot: true },
-      { id: 'r_hotdog', type: 'physical', product: { itemId: 'hot_dog_simple', name: 'Hot-dog (version simple)', icon: '🌭', category: 'Repas' }, label: '🌭 Hot-Dog Chaud', color: '#DC2626', textColor: '#FFF', weight: 4, isPhysical: true },
-      { id: 'r_pringles', type: 'physical', product: { itemId: 'pringles_sour_cream', name: 'Pringles Sour Cream and Onion 70g', icon: '🥔', category: 'Chips' }, label: '🥔 Pringles 70g', color: '#059669', textColor: '#FFF', weight: 4, isPhysical: true },
-      { id: 'r_menu', type: 'physical', product: { itemId: 'menu_hot_dog', name: 'Menu Hot-Dog', icon: '🌭', category: 'Repas' }, label: '🌭 Menu Complet BDE', color: '#D97706', textColor: '#000', weight: 4, isPhysical: true }
+      { id: 'r2000_c1', type: 'coins', coins: 250, label: '250 🪙', color: '#1E3A8A', textColor: '#FFF', weight: 10 },
+      { id: 'r2000_canette', type: 'physical', product: { itemId: 'canette', name: 'Canette 33cl au choix', icon: '🥤', category: 'Boissons Fraîches' }, label: '🥤 Canette au choix', color: '#DC2626', textColor: '#FFF', weight: 10, isPhysical: true },
+      { id: 'r2000_c2', type: 'coins', coins: 250, label: '250 🪙', color: '#0D9488', textColor: '#FFF', weight: 10 },
+      { id: 'r2000_c3', type: 'coins', coins: 250, label: '250 🪙', color: '#3B82F6', textColor: '#FFF', weight: 10 },
+      { id: 'r2000_chocolat', type: 'physical', product: { itemId: 'chocolat', name: 'Chocolat au choix', icon: '🍫', category: 'Sucreries' }, label: '🍫 Chocolat au choix', color: '#EA580C', textColor: '#FFF', weight: 10, isPhysical: true },
+      { id: 'r2000_c4', type: 'coins', coins: 250, label: '250 🪙', color: '#1E3A8A', textColor: '#FFF', weight: 10 },
+      { id: 'r2000_c5', type: 'coins', coins: 250, label: '250 🪙', color: '#0D9488', textColor: '#FFF', weight: 10 },
+      { id: 'r2000_c6', type: 'coins', coins: 250, label: '250 🪙', color: '#3B82F6', textColor: '#FFF', weight: 10 },
+      { id: 'r2000_c7', type: 'coins', coins: 250, label: '250 🪙', color: '#8B5CF6', textColor: '#FFF', weight: 10 },
+      { id: 'r2000_c8', type: 'coins', coins: 250, label: '250 🪙', color: '#0284C7', textColor: '#FFF', weight: 10 }
+    ]
+  },
+  'roue_3000': {
+    id: 'roue_3000',
+    name: 'Roue 3000 Coins',
+    subtitle: 'Énergie Red Bull & recharges express',
+    type: 'paid',
+    cost: 3000,
+    dailyLimit: 5,
+    badge: '3 000 🪙',
+    badgeClass: 'badge-coins',
+    icon: '⚡',
+    description: 'Coût : 3 000 coins par tour. 80% de chance de remporter 300 coins et 20% de gagner une canette Red Bull 250ml ! (Max 5 tours / jour)',
+    segments: [
+      { id: 'r3000_c1', type: 'coins', coins: 300, label: '300 🪙', color: '#1E3A8A', textColor: '#FFF', weight: 10 },
+      { id: 'r3000_rb1', type: 'physical', product: { itemId: 'red_bull', name: 'Canette Red Bull 250ml', icon: '⚡', category: 'Red Bull' }, label: '⚡ Red Bull 250ml', color: '#2563EB', textColor: '#FFF', weight: 10, isPhysical: true },
+      { id: 'r3000_c2', type: 'coins', coins: 300, label: '300 🪙', color: '#0D9488', textColor: '#FFF', weight: 10 },
+      { id: 'r3000_c3', type: 'coins', coins: 300, label: '300 🪙', color: '#3B82F6', textColor: '#FFF', weight: 10 },
+      { id: 'r3000_c4', type: 'coins', coins: 300, label: '300 🪙', color: '#8B5CF6', textColor: '#FFF', weight: 10 },
+      { id: 'r3000_c5', type: 'coins', coins: 300, label: '300 🪙', color: '#1E3A8A', textColor: '#FFF', weight: 10 },
+      { id: 'r3000_rb2', type: 'physical', product: { itemId: 'red_bull', name: 'Canette Red Bull 250ml', icon: '⚡', category: 'Red Bull' }, label: '⚡ Red Bull 250ml', color: '#7C3AED', textColor: '#FFF', weight: 10, isPhysical: true },
+      { id: 'r3000_c6', type: 'coins', coins: 300, label: '300 🪙', color: '#0D9488', textColor: '#FFF', weight: 10 },
+      { id: 'r3000_c7', type: 'coins', coins: 300, label: '300 🪙', color: '#3B82F6', textColor: '#FFF', weight: 10 },
+      { id: 'r3000_c8', type: 'coins', coins: 300, label: '300 🪙', color: '#0284C7', textColor: '#FFF', weight: 10 }
     ]
   }
 };
+
+const DAILY_PAID_SPIN_LIMIT = 5;
+
+// Obtient la date du jour au format YYYY-MM-DD (fuseau local, reset automatique à minuit)
+function getTodayDateString() {
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+// Récupère l'état des tours quotidiens d'un utilisateur pour une roue
+function getUserDailySpins(userId, wheelId) {
+  const spinDate = getTodayDateString();
+  const row = db.prepare('SELECT spins_count FROM user_wheel_daily_spins WHERE user_id = ? AND wheel_id = ? AND spin_date = ?').get(userId, wheelId, spinDate);
+  const spinsToday = row ? row.spins_count : 0;
+  const maxSpins = DAILY_PAID_SPIN_LIMIT;
+  const remainingSpins = Math.max(0, maxSpins - spinsToday);
+  return {
+    spinDate,
+    spinsToday,
+    maxSpins,
+    remainingSpins,
+    limitReached: spinsToday >= maxSpins
+  };
+}
+
+// Initialisation dans SQLite
+function initWheelConfigsDb() {
+  try {
+    const tableExists = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='wheel_configs'").get();
+    if (!tableExists) return;
+
+    // Supprimer les anciennes roues payantes obsolètes si existantes
+    const obsoleteIds = ['snack', 'energie', 'royale'];
+    for (const oldId of obsoleteIds) {
+      db.prepare('DELETE FROM wheel_configs WHERE id = ?').run(oldId);
+    }
+
+    const upsert = db.prepare(`
+      INSERT INTO wheel_configs (id, name, subtitle, type, cost, cooldown_hours, badge, badge_class, icon, description, segments_json)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(id) DO UPDATE SET
+        name = excluded.name,
+        subtitle = excluded.subtitle,
+        type = excluded.type,
+        cost = excluded.cost,
+        cooldown_hours = excluded.cooldown_hours,
+        badge = excluded.badge,
+        badge_class = excluded.badge_class,
+        icon = excluded.icon,
+        description = excluded.description,
+        segments_json = excluded.segments_json
+    `);
+
+    for (const key of Object.keys(WHEELS_CONFIG)) {
+      const w = WHEELS_CONFIG[key];
+      upsert.run(
+        w.id,
+        w.name,
+        w.subtitle,
+        w.type,
+        w.cost,
+        w.cooldownHours || 24,
+        w.badge,
+        w.badgeClass,
+        w.icon,
+        w.description,
+        JSON.stringify(w.segments)
+      );
+    }
+  } catch (err) {
+    console.error('Erreur initWheelConfigsDb:', err);
+  }
+}
+initWheelConfigsDb();
+
+// Récupère une configuration de roue depuis SQLite (ou fallback code)
+function getWheelConfig(wheelId) {
+  try {
+    const row = db.prepare('SELECT * FROM wheel_configs WHERE id = ?').get(wheelId);
+    if (row) {
+      return {
+        id: row.id,
+        name: row.name,
+        subtitle: row.subtitle,
+        type: row.type,
+        cost: row.cost,
+        cooldownHours: row.cooldown_hours,
+        badge: row.badge,
+        badgeClass: row.badge_class,
+        icon: row.icon,
+        description: row.description,
+        segments: JSON.parse(row.segments_json)
+      };
+    }
+  } catch (err) {
+    console.error(`Erreur getWheelConfig(${wheelId}):`, err);
+  }
+  return WHEELS_CONFIG[wheelId] || null;
+}
 
 // Vérifie le cooldown d'un utilisateur pour une roue
 function getUserCooldown(userId, wheel) {
@@ -136,8 +223,42 @@ function getUserCooldown(userId, wheel) {
 
 // Récupère la liste de toutes les roues avec le statut pour l'utilisateur
 function getAllWheels(userId) {
-  return Object.values(WHEELS_CONFIG).map(w => {
-    const cd = userId ? getUserCooldown(userId, w) : { canSpin: w.type !== 'free', remainingMs: 0, streak: 0 };
+  let wheels = [];
+  try {
+    const rows = db.prepare('SELECT * FROM wheel_configs ORDER BY cost ASC').all();
+    if (rows && rows.length > 0) {
+      wheels = rows.map(r => ({
+        id: r.id,
+        name: r.name,
+        subtitle: r.subtitle,
+        type: r.type,
+        cost: r.cost,
+        cooldownHours: r.cooldown_hours,
+        badge: r.badge,
+        badgeClass: r.badge_class,
+        icon: r.icon,
+        description: r.description,
+        segments: JSON.parse(r.segments_json)
+      }));
+    }
+  } catch (e) {
+    wheels = Object.values(WHEELS_CONFIG);
+  }
+  if (!wheels || wheels.length === 0) wheels = Object.values(WHEELS_CONFIG);
+
+  return wheels.map(w => {
+    const isFree = w.type === 'free';
+    const cd = isFree ? (userId ? getUserCooldown(userId, w) : { canSpin: true, remainingMs: 0, streak: 0 }) : { canSpin: true, remainingMs: 0, streak: 0 };
+    const dailyLimit = (!isFree && userId) ? getUserDailySpins(userId, w.id) : {
+      spinDate: getTodayDateString(),
+      spinsToday: 0,
+      maxSpins: DAILY_PAID_SPIN_LIMIT,
+      remainingSpins: DAILY_PAID_SPIN_LIMIT,
+      limitReached: false
+    };
+
+    const canSpin = isFree ? cd.canSpin : !dailyLimit.limitReached;
+
     return {
       id: w.id,
       name: w.name,
@@ -150,33 +271,56 @@ function getAllWheels(userId) {
       description: w.description,
       segmentsCount: w.segments.length,
       topPrizes: w.segments.filter(s => s.isPhysical || s.isJackpot).map(s => s.label),
-      canSpin: cd.canSpin,
+      canSpin,
       remainingMs: cd.remainingMs,
-      streak: cd.streak
+      streak: cd.streak,
+      dailyLimit,
+      spinsToday: dailyLimit.spinsToday,
+      maxSpins: dailyLimit.maxSpins,
+      remainingSpinsToday: dailyLimit.remainingSpins,
+      limitReached: dailyLimit.limitReached
     };
   });
 }
 
 // Récupère la configuration détaillée d'une roue pour l'écran de jeu
 function getWheel(wheelId, userId) {
-  const wheel = WHEELS_CONFIG[wheelId];
+  const wheel = getWheelConfig(wheelId);
   if (!wheel) return null;
 
-  const cd = userId ? getUserCooldown(userId, wheel) : { canSpin: wheel.type !== 'free', remainingMs: 0, streak: 0 };
+  const isFree = wheel.type === 'free';
+  const cd = isFree ? (userId ? getUserCooldown(userId, wheel) : { canSpin: true, remainingMs: 0, streak: 0 }) : { canSpin: true, remainingMs: 0, streak: 0 };
+  const dailyLimit = (!isFree && userId) ? getUserDailySpins(userId, wheel.id) : {
+    spinDate: getTodayDateString(),
+    spinsToday: 0,
+    maxSpins: DAILY_PAID_SPIN_LIMIT,
+    remainingSpins: DAILY_PAID_SPIN_LIMIT,
+    limitReached: false
+  };
 
-  // Exclure les poids exacts côté client pour la sécurité
-  const safeSegments = wheel.segments.map((s, index) => ({
-    index,
-    id: s.id,
-    type: s.type,
-    coins: s.coins || 0,
-    label: s.label,
-    color: s.color,
-    textColor: s.textColor || '#FFF',
-    isPhysical: !!s.isPhysical,
-    isJackpot: !!s.isJackpot,
-    product: s.product || null
-  }));
+  const canSpin = isFree ? cd.canSpin : !dailyLimit.limitReached;
+
+  // Calcul des probabilités exactes pour l'affichage transparent
+  const totalWeight = wheel.segments.reduce((acc, s) => acc + (Number(s.weight) || 1), 0);
+
+  const safeSegments = wheel.segments.map((s, index) => {
+    const weight = Number(s.weight) || 1;
+    const probability = totalWeight > 0 ? (weight / totalWeight) : (1 / wheel.segments.length);
+    return {
+      index,
+      id: s.id || `seg_${index}`,
+      type: s.type,
+      coins: s.coins || 0,
+      label: s.label,
+      icon: s.icon || (s.type === 'physical' ? '🥤' : '🪙'),
+      color: s.color,
+      textColor: s.textColor || '#FFF',
+      isPhysical: !!s.isPhysical,
+      isJackpot: !!s.isJackpot,
+      product: s.product || null,
+      probability: Number(probability.toFixed(4))
+    };
+  });
 
   return {
     id: wheel.id,
@@ -189,15 +333,129 @@ function getWheel(wheelId, userId) {
     icon: wheel.icon,
     description: wheel.description,
     segments: safeSegments,
-    canSpin: cd.canSpin,
+    canSpin,
     remainingMs: cd.remainingMs,
-    streak: cd.streak
+    streak: cd.streak,
+    dailyLimit,
+    spinsToday: dailyLimit.spinsToday,
+    maxSpins: dailyLimit.maxSpins,
+    remainingSpinsToday: dailyLimit.remainingSpins,
+    limitReached: dailyLimit.limitReached
   };
+}
+
+// Récupère toutes les roues avec tous les détails pour l'administration BDE
+function getAllWheelsAdmin() {
+  initWheelConfigsDb();
+  let rows = [];
+  try {
+    rows = db.prepare('SELECT * FROM wheel_configs ORDER BY cost ASC').all();
+  } catch (e) {
+    rows = [];
+  }
+
+  return rows.map(r => {
+    let segments = [];
+    try {
+      segments = JSON.parse(r.segments_json);
+    } catch (e) {
+      segments = [];
+    }
+
+    const totalWeight = segments.reduce((sum, s) => sum + (Number(s.weight) || 1), 0);
+    const enrichedSegments = segments.map((s, idx) => {
+      const weight = Number(s.weight) || 1;
+      const probPercent = totalWeight > 0 ? (weight / totalWeight) * 100 : 0;
+      return {
+        id: s.id || `seg_${idx}`,
+        label: s.label || `Lot #${idx + 1}`,
+        type: s.type || 'coins',
+        coins: Number(s.coins) || 0,
+        icon: s.icon || (s.type === 'physical' ? '🎁' : '🪙'),
+        color: s.color || '#1E3A8A',
+        textColor: s.textColor || '#FFF',
+        weight: weight,
+        probabilityPercent: Number(probPercent.toFixed(1)),
+        isJackpot: !!s.isJackpot,
+        isPhysical: s.type === 'physical',
+        product: s.product || null
+      };
+    });
+
+    return {
+      id: r.id,
+      name: r.name,
+      subtitle: r.subtitle,
+      type: r.type,
+      cost: r.cost,
+      cooldownHours: r.cooldown_hours,
+      badge: r.badge,
+      badgeClass: r.badge_class,
+      icon: r.icon,
+      description: r.description,
+      segments: enrichedSegments,
+      totalWeight,
+      updatedAt: r.updated_at
+    };
+  });
+}
+
+// Mise à jour sécurisée des segments d'une roue par l'administrateur
+function updateWheelSegments(wheelId, newSegments) {
+  const wheel = getWheelConfig(wheelId);
+  if (!wheel) {
+    throw new Error('Roue introuvable.');
+  }
+
+  if (!Array.isArray(newSegments) || newSegments.length < 2) {
+    throw new Error('Une roue doit comporter au minimum 2 segments.');
+  }
+
+  if (newSegments.length > 24) {
+    throw new Error('Une roue ne peut pas comporter plus de 24 segments.');
+  }
+
+  // Nettoyage et validation de chaque segment
+  let totalWeight = 0;
+  const cleanedSegments = newSegments.map((s, idx) => {
+    const label = String(s.label || '').trim();
+    if (!label) {
+      throw new Error(`Le segment #${idx + 1} doit avoir un libellé.`);
+    }
+
+    const type = s.type === 'physical' ? 'physical' : 'coins';
+    const coins = type === 'coins' ? Math.max(0, parseInt(s.coins !== undefined ? s.coins : s.value, 10) || 0) : 0;
+    const weight = Math.max(0.1, parseFloat(s.weight || s.probabilityPercent || 10));
+    totalWeight += weight;
+
+    return {
+      id: s.id || `seg_${Date.now()}_${idx}`,
+      label,
+      type,
+      coins,
+      icon: s.icon ? String(s.icon).trim() : (type === 'physical' ? '🎁' : '🪙'),
+      color: s.color || '#1E3A8A',
+      textColor: s.textColor || '#FFFFFF',
+      weight: Number(weight.toFixed(1)),
+      isPhysical: type === 'physical',
+      isJackpot: !!s.isJackpot,
+      product: type === 'physical' ? (s.product || { itemId: String(s.value || 'custom'), name: label, icon: s.icon || '🎁', category: 'Lots BDE' }) : null
+    };
+  });
+
+  // Sauvegarde dans la base de données
+  db.prepare(`
+    UPDATE wheel_configs
+    SET segments_json = ?, updated_at = CURRENT_TIMESTAMP
+    WHERE id = ?
+  `).run(JSON.stringify(cleanedSegments), wheelId);
+
+  return getWheelConfig(wheelId);
 }
 
 // Lancement d'un tour de roue (sécurisé serveur)
 function spinWheel(wheelId, userId) {
-  const wheel = WHEELS_CONFIG[wheelId];
+  const wheel = getWheelConfig(wheelId);
   if (!wheel) {
     throw new Error('Roue introuvable.');
   }
@@ -222,6 +480,11 @@ function spinWheel(wheelId, userId) {
 
   // 2. Vérification pour roue payante en coins
   if (wheel.type === 'paid') {
+    const daily = getUserDailySpins(userId, wheel.id);
+    if (daily.limitReached) {
+      throw new Error(`Limite quotidienne atteinte pour cette roue (${daily.maxSpins}/${daily.maxSpins} tours). Reviens demain !`);
+    }
+
     if (user.coins < wheel.cost) {
       throw new Error(`Solde insuffisant ! Il te manque ${(wheel.cost - user.coins).toLocaleString()} coins.`);
     }
@@ -255,6 +518,15 @@ function spinWheel(wheelId, userId) {
       if (deduct.changes === 0) {
         throw new Error('Solde insuffisant.');
       }
+
+      // Incrémentation du compteur journalier pour roue payante (limite 5/jour)
+      const todayStr = getTodayDateString();
+      db.prepare(`
+        INSERT INTO user_wheel_daily_spins (user_id, wheel_id, spin_date, spins_count)
+        VALUES (?, ?, ?, 1)
+        ON CONFLICT(user_id, wheel_id, spin_date) DO UPDATE SET
+          spins_count = spins_count + 1
+      `).run(userId, wheel.id, todayStr);
     }
 
     // Gestion du gain
@@ -334,48 +606,89 @@ function spinWheel(wheelId, userId) {
 
   const txResult = executeSpin();
 
-  return {
-    wheelId: wheel.id,
-    segmentIndex: winningSegmentIndex,
-    winningIndex: winningSegmentIndex,
-    targetAngle,
-    segment: {
-      index: winningSegmentIndex,
-      id: winningSegment.id,
-      type: winningSegment.type,
-      label: winningSegment.label,
-      icon: winningSegment.icon || (winningSegment.type === 'physical' ? '🥤' : '🪙'),
-      color: winningSegment.color,
+  try {
+    const socketService = require('./socketService');
+    socketService.notifyUserBalance(userId, txResult.newCoins);
+    socketService.notifyLeaderboardUpdated();
+    if (orderInfo) {
+      socketService.notifyOrdersUpdated();
+    }
+    const profit = (winningSegment.type === 'coins' ? winningSegment.coins : 0) - wheel.cost;
+    if (profit > 0 || winningSegment.isPhysical || winningSegment.isJackpot) {
+      socketService.notifyNewWin({
+        username: user.username,
+        game_type: `wheel_${wheel.id}`,
+        profit: Math.max(0, profit),
+        payout: winningSegment.type === 'coins' ? winningSegment.coins : 0,
+        label: winningSegment.label,
+        created_at: new Date().toISOString()
+      });
+    }
+  } catch (sockErr) {}
+
+    const postDaily = wheel.type === 'paid' ? getUserDailySpins(userId, wheel.id) : null;
+
+    return {
+      wheelId: wheel.id,
+      segmentIndex: winningSegmentIndex,
+      winningIndex: winningSegmentIndex,
+      targetAngle,
+      segment: {
+        index: winningSegmentIndex,
+        id: winningSegment.id,
+        type: winningSegment.type,
+        label: winningSegment.label,
+        icon: winningSegment.icon || (winningSegment.type === 'physical' ? '🥤' : '🪙'),
+        color: winningSegment.color,
+        isPhysical: !!winningSegment.isPhysical,
+        isJackpot: !!winningSegment.isJackpot,
+        coins: winningSegment.coins || 0,
+        product: winningSegment.product || null
+      },
+      wonItem: {
+        index: winningSegmentIndex,
+        id: winningSegment.id,
+        type: winningSegment.type,
+        label: winningSegment.label,
+        icon: winningSegment.icon || (winningSegment.type === 'physical' ? '🥤' : '🪙'),
+        color: winningSegment.color,
+        isPhysical: !!winningSegment.isPhysical,
+        isJackpot: !!winningSegment.isJackpot,
+        coins: winningSegment.coins || 0,
+        product: winningSegment.product || null
+      },
+      winningSegment: {
+        index: winningSegmentIndex,
+        id: winningSegment.id,
+        type: winningSegment.type,
+        label: winningSegment.label,
+        icon: winningSegment.icon || (winningSegment.type === 'physical' ? '🥤' : '🪙'),
+        color: winningSegment.color,
+        isPhysical: !!winningSegment.isPhysical,
+        isJackpot: !!winningSegment.isJackpot,
+        coins: winningSegment.coins || 0,
+        product: winningSegment.product || null
+      },
       isPhysical: !!winningSegment.isPhysical,
-      isJackpot: !!winningSegment.isJackpot,
-      coins: winningSegment.coins || 0,
-      product: winningSegment.product || null
-    },
-    wonItem: {
-      index: winningSegmentIndex,
-      id: winningSegment.id,
-      type: winningSegment.type,
-      label: winningSegment.label,
-      icon: winningSegment.icon || (winningSegment.type === 'physical' ? '🥤' : '🪙'),
-      color: winningSegment.color,
-      isPhysical: !!winningSegment.isPhysical,
-      isJackpot: !!winningSegment.isJackpot,
-      coins: winningSegment.coins || 0,
-      product: winningSegment.product || null
-    },
-    isPhysical: !!winningSegment.isPhysical,
-    order: orderInfo,
-    coins: txResult.newCoins,
-    userCoins: txResult.newCoins,
-    cost: wheel.cost,
-    streak: newStreak
-  };
-}
+      order: orderInfo,
+      coins: txResult.newCoins,
+      userCoins: txResult.newCoins,
+      cost: wheel.cost,
+      remainingMs: wheel.type === 'free' ? (wheel.cooldownHours || 24) * 3600 * 1000 : 0,
+      canSpin: wheel.type === 'free' ? false : (postDaily ? !postDaily.limitReached : true),
+      streak: newStreak,
+      dailyLimit: postDaily,
+      spinsToday: postDaily ? postDaily.spinsToday : 0,
+      maxSpins: postDaily ? postDaily.maxSpins : 5,
+      remainingSpinsToday: postDaily ? postDaily.remainingSpins : 5,
+      limitReached: postDaily ? postDaily.limitReached : false
+    };
+  }
 
 /**
  * Confirme la demande de livraison pour un lot gagné à la roue
  */
-async function confirmWheelDelivery(orderId, userId, { lastName, firstName, roomLocation, phone }) {
+async function confirmWheelDelivery(orderId, userId, { lastName, firstName, roomLocation, phone, notes }) {
   if (!lastName || typeof lastName !== 'string' || lastName.trim().length < 2) {
     throw new Error('Le nom est obligatoire (2 caractères minimum).');
   }
@@ -390,6 +703,7 @@ async function confirmWheelDelivery(orderId, userId, { lastName, firstName, room
   const cleanFirstName = firstName.trim();
   const cleanRoomLocation = roomLocation.trim();
   const cleanPhone = (phone && typeof phone === 'string') ? phone.trim() : null;
+  const cleanNotes = (notes && typeof notes === 'string') ? notes.trim() : null;
 
   const order = db.prepare(`
     SELECT d.*, u.username
@@ -408,9 +722,10 @@ async function confirmWheelDelivery(orderId, userId, { lastName, firstName, room
         first_name = ?,
         room_location = ?,
         phone = ?,
+        notes = ?,
         status = 'pending'
     WHERE id = ?
-  `).run(cleanLastName, cleanFirstName, cleanRoomLocation, cleanPhone, orderId);
+  `).run(cleanLastName, cleanFirstName, cleanRoomLocation, cleanPhone, cleanNotes, orderId);
 
   const updated = db.prepare(`
     SELECT d.*, u.username
@@ -448,6 +763,8 @@ module.exports = {
   WHEELS_CONFIG,
   getAllWheels,
   getWheel,
+  getAllWheelsAdmin,
+  updateWheelSegments,
   spinWheel,
   getUserCooldown,
   confirmWheelDelivery

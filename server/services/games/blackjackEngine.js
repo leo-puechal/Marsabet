@@ -68,8 +68,16 @@ function drawCard(deck) {
   return deck.pop();
 }
 
+function canSplit(cards) {
+  if (!cards || cards.length !== 2) return false;
+  const val1 = cards[0].value;
+  const val2 = cards[1].value;
+  return val1 === val2 || cards[0].rank === cards[1].rank;
+}
+
 module.exports = {
   createDeck,
   calculateHand,
-  drawCard
+  drawCard,
+  canSplit
 };

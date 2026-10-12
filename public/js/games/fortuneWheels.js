@@ -127,7 +127,13 @@ const FortuneWheels = {
             actionStatusHtml = `<span class="wheel-list-timer" data-wheel-id="${wheel.id}" data-ms="${wheel.remainingMs}" style="color:var(--text-muted); font-size:0.85rem;">⏱️ Prêt dans ${countdownStr}</span>`;
           }
         } else {
-          actionStatusHtml = `<span style="color:var(--gold-light); font-weight:600;">Coût fixe : ${wheel.cost} 🪙</span>`;
+          const remaining = (wheel.remainingSpinsToday !== undefined) ? wheel.remainingSpinsToday : 5;
+          const maxSpins = wheel.maxSpins || 5;
+          if (remaining <= 0 || wheel.limitReached) {
+            actionStatusHtml = `<span style="color:#EF4444; font-weight:700; font-size:0.85rem;">🚫 0/${maxSpins} tour restant aujourd'hui</span>`;
+          } else {
+            actionStatusHtml = `<span style="color:var(--gold-light); font-weight:600; font-size:0.85rem;">⚡ ${remaining}/${maxSpins} tours restants aujourd'hui</span>`;
+          }
         }
 
         // Preview des lots
@@ -230,10 +236,12 @@ const FortuneWheels = {
       if (centerIcon) centerIcon.textContent = wheel.icon || '🪐';
 
       if (costBadge) {
-        if (wheel.isFree) {
+        if (wheel.isFree || wheel.type === 'free') {
           costBadge.innerHTML = '<span class="badge-free">✨ 100% GRATUIT (24H)</span>';
         } else {
-          costBadge.innerHTML = `<span class="badge-coins">🪙 ${wheel.cost} COINS</span>`;
+          const rem = (wheel.remainingSpinsToday !== undefined) ? wheel.remainingSpinsToday : 5;
+          const max = wheel.maxSpins || 5;
+          costBadge.innerHTML = `<span class="badge-coins">🪙 ${wheel.cost} COINS</span> <span style="font-size:0.8rem; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.15); border-radius:12px; padding:4px 8px; margin-left:6px; color:var(--gold-light); font-weight:600;">${rem}/${max} tours restants aujourd'hui</span>`;
         }
       }
 
@@ -282,6 +290,14 @@ const FortuneWheels = {
     const cooldownText = document.getElementById('wheelArenaCooldownTime');
     const statusText = document.getElementById('wheelArenaStatusText');
 
+    if (this.isSpinning) {
+      if (spinBtn) {
+        spinBtn.disabled = true;
+        spinBtn.style.pointerEvents = 'none';
+      }
+      return;
+    }
+
     if (this.cooldownTimer) clearInterval(this.cooldownTimer);
 
     if (wheel.isFree) {
@@ -327,19 +343,29 @@ const FortuneWheels = {
       if (cooldownBox) cooldownBox.style.display = 'none';
       const userCoins = window.State?.user?.coins || 0;
       const canAfford = userCoins >= wheel.cost;
+      const remainingSpins = (wheel.remainingSpinsToday !== undefined) ? wheel.remainingSpinsToday : 5;
+      const maxSpins = wheel.maxSpins || 5;
+      const limitReached = wheel.limitReached || remainingSpins <= 0;
 
       if (spinBtn) {
-        spinBtn.style.background = 'linear-gradient(135deg, #FFE27A 0%, #D4AF37 50%, #997819 100%)';
-        spinBtn.style.color = '#061226';
-
-        if (canAfford) {
-          spinBtn.disabled = false;
-          spinBtn.innerHTML = `<span>🪙</span> TOURNER LA ROUE (${wheel.cost} COINS)`;
-          if (statusText) statusText.textContent = `Coût : ${wheel.cost} coins virtuels déduits de ton solde.`;
-        } else {
+        if (limitReached) {
           spinBtn.disabled = true;
+          spinBtn.style.background = '#334155';
+          spinBtn.style.color = '#94A3B8';
+          spinBtn.innerHTML = `<span>🚫</span> LIMITE ATTEINTE (0/${maxSpins})`;
+          if (statusText) statusText.textContent = 'Limite quotidienne atteinte, reviens demain';
+        } else if (!canAfford) {
+          spinBtn.disabled = true;
+          spinBtn.style.background = '#334155';
+          spinBtn.style.color = '#94A3B8';
           spinBtn.innerHTML = `<span>🚫</span> SOLDE INSUFFISANT (${wheel.cost} COINS)`;
-          if (statusText) statusText.textContent = `Il te manque ${wheel.cost - userCoins} coins pour lancer cette roue.`;
+          if (statusText) statusText.textContent = `Il te manque ${(wheel.cost - userCoins).toLocaleString()} coins pour lancer cette roue. (${remainingSpins}/${maxSpins} tours restants aujourd'hui)`;
+        } else {
+          spinBtn.disabled = false;
+          spinBtn.style.background = 'linear-gradient(135deg, #FFE27A 0%, #D4AF37 50%, #997819 100%)';
+          spinBtn.style.color = '#061226';
+          spinBtn.innerHTML = `<span>🪙</span> TOURNER LA ROUE (${wheel.cost} COINS)`;
+          if (statusText) statusText.textContent = `${remainingSpins}/${maxSpins} tours restants aujourd'hui (Coût : ${wheel.cost} coins virtuels)`;
         }
       }
     }
@@ -438,52 +464,69 @@ const FortuneWheels = {
     const banner = document.getElementById('wheelArenaBanner');
     if (banner) banner.style.display = 'none';
 
+    // Verrouillage strict anti double-clic
     this.isSpinning = true;
-    if (spinBtn) spinBtn.disabled = true;
+    if (spinBtn) {
+      spinBtn.disabled = true;
+      spinBtn.style.pointerEvents = 'none';
+      spinBtn.innerHTML = '<span>⚡</span> LA ROUE TOURNE...';
+    }
+
+    const cost = this.currentWheel.cost || 0;
+    if (window.State && cost > 0) {
+      window.State.deductBet(cost);
+    } else if (window.State) {
+      window.State.setGameAnimating(true);
+    }
 
     try {
       const data = await window.API.spinFortuneWheel(this.currentWheel.id);
-      const winningIndex = data.winningIndex;
-      const wonItem = data.wonItem;
-      const isPhysical = data.isPhysical;
-      const userCoins = data.userCoins;
+      const winningIndex = (data.winningIndex !== undefined) ? data.winningIndex : data.segmentIndex;
+      const wonItem = data.wonItem || data.segment;
+      const isPhysical = !!data.isPhysical;
+      const userCoins = data.userCoins || data.coins;
       const segments = this.currentWheel.segments || [];
-      const totalSegments = segments.length;
+      const totalSegments = segments.length || 8;
 
-      // Mise à jour locale du solde
-      if (window.State) {
-        window.State.updateUser({ coins: userCoins });
+      // =========================================================================
+      // CALCUL D'ANGLE MATHÉMATIQUE EXACT & INFAILLIBLE :
+      // - Dans le Canvas, le secteur k s'étend de k*segAngle à (k+1)*segAngle.
+      // - Son centre exact est à (k + 0.5) * segAngle (sens horaire depuis 3h00).
+      // - Le pointeur fixe est au sommet de la roue (12h00), soit 3*PI/2 rad (270°).
+      // - Rotation de la roue dans le repère mondial : (segCenter + targetAngle).
+      // - Condition d'alignement parfait : segCenter + targetAngle = 3*PI/2 (mod 2*PI).
+      // - targetAngle = 3*PI/2 - segCenter (mod 2*PI).
+      // =========================================================================
+      const TWO_PI = 2 * Math.PI;
+      const segAngle = TWO_PI / totalSegments;
+      const segCenter = (winningIndex + 0.5) * segAngle;
+
+      const targetMod = (((1.5 * Math.PI - segCenter) % TWO_PI) + TWO_PI) % TWO_PI;
+      const currentMod = ((this.wheelAngle % TWO_PI) + TWO_PI) % TWO_PI;
+
+      let additionalAngle = (targetMod - currentMod);
+      if (additionalAngle < 0) {
+        additionalAngle += TWO_PI;
       }
 
-      // Calcul de l'angle d'arrivée physique
-      // Le pointeur est au sommet : angle = -Math.PI / 2 (ou 3*Math.PI/2)
-      // Segment `winningIndex` est à [winningIndex * segAngle, (winningIndex + 1) * segAngle]
-      // Pour que le centre du segment s'arrête exactement sous le pointeur :
-      const segAngle = (2 * Math.PI) / totalSegments;
-      const segmentCenterAngle = (winningIndex + 0.5) * segAngle;
-
-      // Pointeur au top (angle 3pi/2 = -pi/2). Position finale roue = (3*pi/2 - segmentCenterAngle)
-      const pointerAngle = (3 * Math.PI) / 2;
-      const baseTarget = pointerAngle - segmentCenterAngle;
-
-      // 5 à 7 tours complets pour l'effet de suspense
-      const fullSpins = 6 * 2 * Math.PI;
-      const currentMod = this.wheelAngle % (2 * Math.PI);
+      // Au moins 6 tours complets pour un suspense réaliste de 4.8 secondes
+      const fullSpins = 6 * TWO_PI;
       this.startAngle = this.wheelAngle;
-      this.targetAngle = this.wheelAngle + fullSpins + ((baseTarget - currentMod) % (2 * Math.PI));
-      if (this.targetAngle <= this.wheelAngle + 4 * 2 * Math.PI) {
-        this.targetAngle += 2 * Math.PI;
-      }
-
+      this.targetAngle = this.wheelAngle + fullSpins + additionalAngle;
+      this.spinDuration = 4800;
       this.spinStartTime = performance.now();
 
-      // Animation avec courbe de décélération quintic ease-out
+      // Animation avec décélération progressive quintic ease-out
       this.animateSpin(() => {
         this.onSpinCompleted(data);
       });
 
     } catch (err) {
       this.isSpinning = false;
+      if (spinBtn) {
+        spinBtn.style.pointerEvents = 'auto';
+      }
+      if (window.State) window.State.setGameAnimating(false);
       this.updateArenaControls(this.currentWheel);
       window.UI.showToast(err.message, 'error');
     }
@@ -494,9 +537,19 @@ const FortuneWheels = {
     const elapsed = now - this.spinStartTime;
     const progress = Math.min(elapsed / this.spinDuration, 1);
 
-    // Fonction d'assouplissement : quintic ease-out (décélération très progressive et naturelle)
-    const easeOut = 1 - Math.pow(1 - progress, 4.5);
+    // Décélération progressive (quintic ease-out sur 4.8 secondes)
+    const easeOut = 1 - Math.pow(1 - progress, 4.2);
+    const prevAngle = this.wheelAngle;
     this.wheelAngle = this.startAngle + (this.targetAngle - this.startAngle) * easeOut;
+
+    // Détection de passage de cran pour cliquetis audio
+    const count = this.currentWheel?.segments?.length || 8;
+    const segAngle = (2 * Math.PI) / count;
+    const prevSeg = Math.floor(prevAngle / segAngle);
+    const curSeg = Math.floor(this.wheelAngle / segAngle);
+    if (curSeg !== prevSeg && window.sound && typeof window.sound.playSpinTick === 'function') {
+      window.sound.playSpinTick();
+    }
 
     this.drawWheelCanvas();
 
@@ -506,21 +559,25 @@ const FortuneWheels = {
       this.wheelAngle = this.targetAngle;
       this.drawWheelCanvas();
       this.isSpinning = false;
+      const spinBtn = document.getElementById('wheelArenaSpinBtn');
+      if (spinBtn) spinBtn.style.pointerEvents = 'auto';
       if (onComplete) onComplete();
     }
   },
 
   onSpinCompleted(data) {
-    const wonItem = data.wonItem;
-    const isPhysical = data.isPhysical;
+    const wonItem = data.wonItem || data.segment;
+    const isPhysical = !!data.isPhysical;
+    const userCoins = data.userCoins || data.coins;
 
-    // Son de victoire si le système audio est prêt
-    if (window.AudioSystem) {
-      if (isPhysical) {
-        window.AudioSystem.playWin();
-      } else {
-        window.AudioSystem.playWin();
-      }
+    // Mettre à jour le solde uniquement après la fin de la rotation
+    if (window.State && userCoins !== undefined) {
+      window.State.setGameAnimating(false, userCoins);
+    }
+
+    // Sons et effets de victoire
+    if (window.sound && typeof window.sound.playWin === 'function') {
+      window.sound.playWin();
     }
 
     if (isPhysical) {
@@ -530,8 +587,19 @@ const FortuneWheels = {
       }
       this.lastPhysicalItem = wonItem;
       this.lastPhysicalOrder = data.order;
-      // Modale de célébration pour le lot physique
-      this.showPhysicalWinModal(wonItem, data.order);
+
+      // Déclenchement automatique de la demande de livraison (modal + email BDE)
+      if (window.openDeliveryModal && data.order) {
+        window.openDeliveryModal({
+          source: 'wheel',
+          orderId: data.order.id,
+          productName: wonItem.label || wonItem.name,
+          icon: wonItem.icon || '🥤',
+          quantity: 1
+        });
+      } else {
+        this.showPhysicalWinModal(wonItem, data.order);
+      }
     } else {
       // Gain en coins
       const banner = document.getElementById('wheelArenaBanner');
@@ -543,12 +611,33 @@ const FortuneWheels = {
       window.UI.showToast(`🎉 Tu as remporté ${wonItem.label} !`, 'success');
     }
 
-    // Mettre à jour l'état de recharge de la roue
-    if (this.currentWheel.isFree) {
+    // Mettre à jour l'état de recharge de la roue immédiatement
+    if (this.currentWheel.type === 'free' || this.currentWheel.isFree) {
       this.currentWheel.canSpin = false;
-      this.currentWheel.remainingMs = (this.currentWheel.cooldownHours || 24) * 3600 * 1000;
+      const remainingMs = data.remainingMs || (this.currentWheel.cooldownHours || 24) * 3600 * 1000;
+      this.currentWheel.remainingMs = remainingMs;
+      if (this.wheelsData[this.currentWheel.id]) {
+        this.wheelsData[this.currentWheel.id].canSpin = false;
+        this.wheelsData[this.currentWheel.id].remainingMs = remainingMs;
+      }
       this.updateArenaControls(this.currentWheel);
     } else {
+      if (data.remainingSpinsToday !== undefined) {
+        this.currentWheel.remainingSpinsToday = data.remainingSpinsToday;
+        this.currentWheel.spinsToday = data.spinsToday;
+        this.currentWheel.limitReached = data.limitReached;
+        if (this.wheelsData[this.currentWheel.id]) {
+          this.wheelsData[this.currentWheel.id].remainingSpinsToday = data.remainingSpinsToday;
+          this.wheelsData[this.currentWheel.id].spinsToday = data.spinsToday;
+          this.wheelsData[this.currentWheel.id].limitReached = data.limitReached;
+        }
+      }
+      const costBadge = document.getElementById('wheelArenaCostBadge');
+      if (costBadge) {
+        const rem = (this.currentWheel.remainingSpinsToday !== undefined) ? this.currentWheel.remainingSpinsToday : 5;
+        const max = this.currentWheel.maxSpins || 5;
+        costBadge.innerHTML = `<span class="badge-coins">🪙 ${this.currentWheel.cost} COINS</span> <span style="font-size:0.8rem; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.15); border-radius:12px; padding:4px 8px; margin-left:6px; color:var(--gold-light); font-weight:600;">${rem}/${max} tours restants aujourd'hui</span>`;
+      }
       this.updateArenaControls(this.currentWheel);
     }
   },
@@ -619,7 +708,7 @@ const FortuneWheels = {
         <div style="grid-column:1/-1; text-align:center; padding:3rem 1rem; color:var(--text-muted); background:var(--bg-card); border-radius:var(--radius-lg); border:1px solid var(--bg-glass-border);">
           <div style="font-size:2.5rem; margin-bottom:0.75rem;">📦</div>
           <h3 style="color:#FFF; font-size:1.15rem; margin-bottom:0.4rem;">Aucune demande de livraison dans cette catégorie</h3>
-          <p style="font-size:0.9rem; margin-bottom:1.25rem;">Tourne les <strong>Roues de la Fortune</strong> ou échange tes coins en boutique pour te faire livrer des boissons et snacks dans ta salle !</p>
+          <p style="font-size:0.9rem; margin-bottom:1.25rem;">Tourne les <strong>Roues de la Fortune</strong> pour te faire livrer des boissons et snacks dans ta salle !</p>
           <button class="btn btn-gold" onclick="window.Router ? window.Router.navigate('/roues') : window.UI.switchView('wheels')">🎡 Découvrir les Roues ▶</button>
         </div>
       `;
@@ -645,7 +734,7 @@ const FortuneWheels = {
     if (filtered.length === 0) {
       container.innerHTML = `
         <div style="grid-column:1/-1; text-align:center; padding:2rem 1rem; color:var(--text-muted);">
-          Aucune demande de livraison pour le moment. Fais tourner une roue ou visite la boutique !
+          Aucune demande de livraison pour le moment. Fais tourner une roue de la fortune !
         </div>
       `;
       return;
@@ -677,8 +766,7 @@ const FortuneWheels = {
   buildRewardCardHtml(reward) {
     const isDelivered = reward.status === 'delivered';
     const isPendingInfo = reward.status === 'pending_info';
-    const isWheel = reward.source === 'wheel';
-    const sourceLabel = isWheel ? '🎡 Roue de la Fortune' : '🛍️ Boutique BDE';
+    const sourceLabel = '🎡 Roue de la Fortune';
 
     let statusText = '⏳ En cours de livraison';
     let statusClass = 'status-pending';
@@ -721,6 +809,11 @@ const FortuneWheels = {
               <div style="font-size:0.75rem; color:var(--text-muted); margin-top:2px;">
                 Élève : ${this.escapeHtml(reward.first_name || '')} ${this.escapeHtml(reward.last_name || '')}
               </div>
+              ${reward.notes ? `
+                <div style="font-size:0.75rem; color:#CBD5E1; margin-top:3px; font-style:italic;">
+                  📝 Précision : ${this.escapeHtml(reward.notes)}
+                </div>
+              ` : ''}
             </div>
             <div>
               ${emailBadge}

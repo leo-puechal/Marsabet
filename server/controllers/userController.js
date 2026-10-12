@@ -51,114 +51,147 @@ exports.getLeaderboard = (req, res) => {
 
 exports.getProfile = (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Non authentifié.' });
+    }
 
     const user = db.prepare(`
       SELECT id, username, role, coins, daily_streak, last_daily_claim, last_free_spin, free_spin_streak, total_wagered, total_won, games_played, biggest_win, created_at
       FROM users WHERE id = ?
     `).get(userId);
 
-    const vipInfo = vipService.getVipInfo(user.total_wagered);
+    if (!user) {
+      return res.status(404).json({ error: 'Utilisateur introuvable.' });
+    }
 
-    const isStaff = user.role === 'admin' || user.role === 'bde';
-    const rankRow = isStaff ? null : db.prepare(`
-      SELECT COUNT(*) + 1 as rank
-      FROM users
-      WHERE role NOT IN ('admin', 'bde') AND coins > ?
-    `).get(user.coins);
+    const safeUser = {
+      ...user,
+      coins: user.coins ?? 0,
+      total_wagered: user.total_wagered ?? 0,
+      total_won: user.total_won ?? 0,
+      games_played: user.games_played ?? 0,
+      biggest_win: user.biggest_win ?? 0,
+      daily_streak: user.daily_streak ?? 0,
+      role: user.role || 'student'
+    };
 
-    // 20 dernières parties
-    const history = db.prepare(`
-      SELECT id, game_type, bet, payout, profit, details, created_at
-      FROM game_history
-      WHERE user_id = ?
-      ORDER BY created_at DESC
-      LIMIT 25
-    `).all(userId);
+    const vipInfo = vipService.getVipInfo(safeUser.total_wagered);
+
+    const isStaff = safeUser.role === 'admin' || safeUser.role === 'bde';
+    let userRank = 1;
+    if (!isStaff) {
+      try {
+        const rankRow = db.prepare(`
+          SELECT COUNT(*) + 1 as rank
+          FROM users
+          WHERE role NOT IN ('admin', 'bde') AND coins > ?
+        `).get(safeUser.coins);
+        if (rankRow) userRank = rankRow.rank;
+      } catch (e) {
+        userRank = 1;
+      }
+    }
+
+    // 25 dernières parties avec parsing JSON sécurisé
+    let rawHistory = [];
+    try {
+      rawHistory = db.prepare(`
+        SELECT id, game_type, bet, payout, profit, details, created_at
+        FROM game_history
+        WHERE user_id = ?
+        ORDER BY created_at DESC
+        LIMIT 25
+      `).all(userId) || [];
+    } catch (e) {
+      rawHistory = [];
+    }
+
+    const history = rawHistory.map(h => {
+      let detailsObj = null;
+      if (h.details) {
+        try {
+          detailsObj = typeof h.details === 'object' ? h.details : JSON.parse(h.details);
+        } catch (e) {
+          detailsObj = { raw: h.details };
+        }
+      }
+      return {
+        id: h.id,
+        game_type: h.game_type || 'unknown',
+        bet: h.bet ?? 0,
+        payout: h.payout ?? 0,
+        profit: h.profit ?? 0,
+        details: detailsObj,
+        created_at: h.created_at
+      };
+    });
 
     // Statistiques par type de jeu
-    const statsByGame = db.prepare(`
-      SELECT game_type, COUNT(*) as count, SUM(bet) as total_bet, SUM(payout) as total_payout, SUM(profit) as net_profit
-      FROM game_history
-      WHERE user_id = ? AND game_type != 'daily_bonus'
-      GROUP BY game_type
-    `).all(userId);
+    let statsByGame = [];
+    try {
+      statsByGame = db.prepare(`
+        SELECT game_type, COUNT(*) as count, SUM(bet) as total_bet, SUM(payout) as total_payout, SUM(profit) as net_profit
+        FROM game_history
+        WHERE user_id = ? AND game_type != 'daily_bonus'
+        GROUP BY game_type
+      `).all(userId) || [];
+    } catch (e) {
+      statsByGame = [];
+    }
 
     // Demandes de livraison directe de la boutique BDE et roues de la fortune
-    const orders = db.prepare(`
-      SELECT d.id, d.last_name, d.first_name, d.room_location, d.phone,
-             d.item_name, d.variant_name, d.quantity, d.coins_paid, d.status,
-             d.email_status, d.delivered_at, d.created_at, d.source,
-             i.icon, i.category
-      FROM delivery_orders d
-      LEFT JOIN shop_items i ON d.item_id = i.id
-      WHERE d.user_id = ?
-      ORDER BY d.created_at DESC
-    `).all(userId);
+    let orders = [];
+    try {
+      const rawOrders = db.prepare(`
+        SELECT d.id, d.last_name, d.first_name, d.room_location, d.phone,
+               d.item_id, d.item_name, d.variant_name, d.quantity, d.coins_paid, d.status,
+               d.email_status, d.delivered_at, d.created_at, d.source
+        FROM delivery_orders d
+        WHERE d.user_id = ?
+        ORDER BY d.created_at DESC
+      `).all(userId) || [];
+
+      orders = rawOrders.map(o => {
+        let icon = '🎁';
+        let category = 'snack';
+        const name = (o.item_name || '').toLowerCase();
+        if (name.includes('red bull') || name.includes('monster')) {
+          icon = '⚡';
+          category = 'energie';
+        } else if (name.includes('canette') || name.includes('coca') || name.includes('boisson') || name.includes('oasis') || name.includes('fuze')) {
+          icon = '🥤';
+          category = 'boisson';
+        } else if (name.includes('chocolat') || name.includes('kinder') || name.includes('kitkat')) {
+          icon = '🍫';
+          category = 'snack';
+        }
+        return { ...o, icon, category };
+      });
+    } catch (e) {
+      orders = [];
+    }
 
     return res.json({
+      success: true,
       user: {
-        ...user,
-        rank: rankRow ? rankRow.rank : 1
+        ...safeUser,
+        rank: userRank
       },
-      vipInfo,
-      history: history.map(h => ({
-        ...h,
-        details: h.details ? JSON.parse(h.details) : null
-      })),
+      vipInfo: {
+        ...vipInfo,
+        wager: safeUser.total_wagered
+      },
+      wager: safeUser.total_wagered,
+      history,
       statsByGame,
-      orders
+      orders,
+      deliveries: orders,
+      inventory: orders
     });
   } catch (err) {
     console.error('Erreur profil:', err);
     return res.status(500).json({ error: 'Impossible de charger le profil.' });
-  }
-};
-
-exports.getShopItems = (req, res) => {
-  try {
-    const items = db.prepare('SELECT * FROM shop_items ORDER BY price ASC').all();
-    return res.json({ items });
-  } catch (err) {
-    return res.status(500).json({ error: 'Erreur lors de la récupération des articles.' });
-  }
-};
-
-exports.buyShopItem = (req, res) => {
-  const userId = req.user.id;
-  const { itemId } = req.body;
-
-  if (!itemId) {
-    return res.status(400).json({ error: 'Identifiant de l’article manquant.' });
-  }
-
-  const item = db.prepare('SELECT * FROM shop_items WHERE id = ?').get(itemId);
-  if (!item) {
-    return res.status(404).json({ error: 'Article introuvable dans le catalogue BDE.' });
-  }
-
-  const user = db.prepare('SELECT coins FROM users WHERE id = ?').get(userId);
-  if (user.coins < item.price) {
-    return res.status(400).json({ error: `Solde insuffisant ! Il te manque ${item.price - user.coins} jetons.` });
-  }
-
-  const transaction = db.transaction(() => {
-    const newCoins = user.coins - item.price;
-    db.prepare('UPDATE users SET coins = ? WHERE id = ?').run(newCoins, userId);
-    db.prepare('INSERT INTO shop_purchases (user_id, item_id) VALUES (?, ?)').run(userId, item.id);
-    return newCoins;
-  });
-
-  try {
-    const newCoins = transaction();
-    return res.json({
-      message: `Félicitations ! Tu as échangé tes jetons contre : ${item.name} (${item.icon}) !`,
-      item,
-      coins: newCoins
-    });
-  } catch (err) {
-    console.error('Erreur achat shop:', err);
-    return res.status(500).json({ error: 'Échec de la transaction.' });
   }
 };
 

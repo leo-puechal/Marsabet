@@ -13,16 +13,15 @@ router.get('/deliveries', adminController.getAllDeliveries);
 router.patch('/deliveries/:id/deliver', adminController.markDelivered);
 router.get('/orders', adminController.getAllDeliveries);
 
-// Gestion du catalogue et stocks
-router.get('/products', adminController.getProductsAdmin);
-router.post('/products', adminController.createProduct);
-router.put('/products/:id', adminController.updateProduct);
-router.delete('/products/:id', adminController.deleteProduct);
 
 // Codes promo BDE
 router.get('/promo-codes', adminController.getPromoCodes);
 router.post('/promo-codes', adminController.createPromoCode);
 router.patch('/promo-codes/:id/toggle', adminController.togglePromoCode);
 router.delete('/promo-codes/:id', adminController.deletePromoCode);
+
+// Configuration et récompenses des Roues de la Fortune BDE
+router.get('/wheels', adminController.getWheelsAdmin);
+router.put('/wheels/:id/segments', adminController.updateWheelSegments);
 
 module.exports = router;

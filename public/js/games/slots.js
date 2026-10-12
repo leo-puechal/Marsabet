@@ -132,6 +132,26 @@ const SlotsGame = {
       });
     }
 
+    // Saisie libre de la mise par ligne
+    const inputBetLine = document.getElementById('slotsBetPerLineInput');
+    if (inputBetLine) {
+      inputBetLine.addEventListener('input', (e) => {
+        if (this.isSpinning || this.freeSpinsState.isActive) return;
+        const val = parseInt(e.target.value, 10);
+        if (!isNaN(val) && val > 0) {
+          this.betPerLine = val;
+          const dispTotal = document.getElementById('slotsTotalBetDisplay');
+          const total = this.freeSpinsState.isActive ? 0 : (this.activeLines * this.betPerLine);
+          if (dispTotal) dispTotal.textContent = `${total.toLocaleString()} 🪙`;
+        }
+      });
+      inputBetLine.addEventListener('change', (e) => {
+        if (this.isSpinning || this.freeSpinsState.isActive) return;
+        const val = parseInt(e.target.value, 10);
+        this.setBetPerLine(isNaN(val) || val <= 0 ? 1 : val);
+      });
+    }
+
     // Puces rapides de mise
     document.querySelectorAll('#view-slots .quick-bet-chips .casino-chip').forEach(chip => {
       chip.addEventListener('click', (e) => {
@@ -229,11 +249,13 @@ const SlotsGame = {
   updateControlsDisplay() {
     const dispLines = document.getElementById('displayLinesCount');
     const dispBetLine = document.getElementById('displayBetPerLine');
+    const inputBetLine = document.getElementById('slotsBetPerLineInput');
     const dispTotal = document.getElementById('slotsTotalBetDisplay');
     const linesBadge = document.getElementById('slotsActiveLinesBadge');
 
     if (dispLines) dispLines.textContent = this.activeLines;
     if (dispBetLine) dispBetLine.textContent = this.betPerLine;
+    if (inputBetLine) inputBetLine.value = this.betPerLine;
 
     const total = this.freeSpinsState.isActive ? 0 : (this.activeLines * this.betPerLine);
     if (dispTotal) {
@@ -338,11 +360,30 @@ const SlotsGame = {
       return;
     }
 
+    const inputBet = document.getElementById('slotsBetPerLineInput');
+    if (inputBet) {
+      const val = parseInt(inputBet.value, 10);
+      if (!isNaN(val) && val > 0) this.betPerLine = val;
+    }
+
     const totalBet = this.freeSpinsState.isActive ? 0 : (this.activeLines * this.betPerLine);
-    if (!this.freeSpinsState.isActive && window.State.user.coins < totalBet) {
-      window.UI.showToast('Solde insuffisant pour couvrir cette mise.', 'error');
-      this.stopAutoplay();
-      return;
+    if (!this.freeSpinsState.isActive) {
+      if (!Number.isInteger(totalBet) || totalBet < 10) {
+        window.UI.showToast('Mise totale minimale : 10 coins.', 'error');
+        this.stopAutoplay();
+        return;
+      }
+      if (window.State.user.coins < totalBet) {
+        window.UI.showToast('Solde insuffisant pour couvrir cette mise.', 'error');
+        this.stopAutoplay();
+        return;
+      }
+    }
+
+    if (totalBet > 0 && window.State) {
+      window.State.deductBet(totalBet);
+    } else if (window.State) {
+      window.State.setGameAnimating(true);
     }
 
     this.isSpinning = true;
@@ -415,9 +456,9 @@ const SlotsGame = {
 
       clearInterval(spinSoundInterval);
 
-      // Mettre à jour le solde
+      // Mettre à jour le solde uniquement après l'arrêt complet de tous les rouleaux
       if (window.State && data.coins !== undefined) {
-        window.State.updateCoins(data.coins);
+        window.State.setGameAnimating(false, data.coins);
       }
 
       // Mise à jour de l'état Free Spins
@@ -704,8 +745,10 @@ const SlotsGame = {
         }, 200);
       }
 
+      await new Promise(r => setTimeout(r, 450));
+
       if (window.State && data.coins !== undefined) {
-        window.State.updateCoins(data.coins);
+        window.State.setGameAnimating(false, data.coins);
       }
 
       if (data.won) {

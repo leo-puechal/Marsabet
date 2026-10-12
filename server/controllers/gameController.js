@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const db = require('../database/db');
+const socketService = require('../services/socketService');
 const slotsEngine = require('../services/games/slotsEngine');
 const blackjackEngine = require('../services/games/blackjackEngine');
 const rouletteEngine = require('../services/games/rouletteEngine');
@@ -57,7 +58,26 @@ function recordGameResult(userId, gameType, bet, payout, details, alreadyDeducte
     return { newCoins, newWager, vipInfo, historyId: hist.lastInsertRowid };
   });
 
-  return runTx();
+  const txRes = runTx();
+
+  try {
+    socketService.notifyUserBalance(userId, txRes.newCoins, { wager: txRes.newWager, vipInfo: txRes.vipInfo });
+    socketService.notifyLeaderboardUpdated();
+    if (profit > 0) {
+      const u = db.prepare('SELECT username FROM users WHERE id = ?').get(userId);
+      socketService.notifyNewWin({
+        username: u ? u.username : 'Joueur',
+        game_type: gameType,
+        profit,
+        payout,
+        created_at: new Date().toISOString()
+      });
+    }
+  } catch (sockErr) {
+    // Non-bloquant
+  }
+
+  return txRes;
 }
 
 // ======================== SLOTS (5x3 VIDÉO SLOT) ========================
@@ -105,17 +125,27 @@ exports.playSlots = (req, res) => {
     } else {
       // Tour régulier : calcul de la mise totale
       if (req.body.betPerLine !== undefined) {
-        betPerLine = Math.max(1, Math.floor(Number(req.body.betPerLine)));
-        linesCount = Math.min(20, Math.max(1, Math.floor(Number(req.body.linesCount || 20))));
+        betPerLine = Number(req.body.betPerLine);
+        linesCount = Number(req.body.linesCount || 20);
+        if (!Number.isInteger(betPerLine) || betPerLine <= 0) {
+          return res.status(400).json({ error: 'La mise par ligne doit être un nombre entier positif (minimum 1 jeton).' });
+        }
+        if (!Number.isInteger(linesCount) || linesCount < 1 || linesCount > 20) {
+          return res.status(400).json({ error: 'Nombre de lignes invalide (entre 1 et 20).' });
+        }
         totalBet = betPerLine * linesCount;
       } else {
         const rawBet = Number(req.body.bet || 20);
-        if (!Number.isInteger(rawBet) || rawBet <= 0) {
-          return res.status(400).json({ error: 'Mise invalide (minimum 1 jeton).' });
+        if (!Number.isInteger(rawBet) || rawBet < 10) {
+          return res.status(400).json({ error: 'Mise invalide (minimum 10 jetons).' });
         }
         linesCount = 20;
         betPerLine = Math.max(1, Math.floor(rawBet / linesCount));
         totalBet = betPerLine * linesCount;
+      }
+
+      if (totalBet < 10) {
+        return res.status(400).json({ error: 'Mise totale minimale : 10 jetons.' });
       }
 
       const user = db.prepare('SELECT coins FROM users WHERE id = ?').get(userId);
@@ -368,6 +398,7 @@ exports.getBlackjackState = (req, res) => {
   }
 
   const playerHand = JSON.parse(session.player_hand);
+  const playerHand2 = session.player_hand_2 ? JSON.parse(session.player_hand_2) : null;
   const dealerHand = JSON.parse(session.dealer_hand);
   const isPlaying = session.status === 'playing';
 
@@ -375,15 +406,26 @@ exports.getBlackjackState = (req, res) => {
   const visibleDealerHand = isPlaying ? [dealerHand[0], { rank: '?', suit: '?', color: 'hidden' }] : dealerHand;
   const dealerScore = isPlaying ? blackjackEngine.calculateHand([dealerHand[0]]).score : blackjackEngine.calculateHand(dealerHand).score;
 
+  const activeHand = session.active_hand || 1;
+  const canDouble = activeHand === 1 ? session.can_double === 1 : session.can_double_2 === 1;
+
   return res.json({
     activeGame: true,
     bet: session.bet,
+    bet2: session.bet_2 || 0,
     playerHand,
     playerScore: blackjackEngine.calculateHand(playerHand).score,
+    playerHand2,
+    playerScore2: playerHand2 ? blackjackEngine.calculateHand(playerHand2).score : null,
+    hasSplit: !!playerHand2,
+    activeHand,
     dealerHand: visibleDealerHand,
     dealerScore,
     status: session.status,
-    canDouble: session.can_double === 1
+    status1: session.status_1,
+    status2: session.status_2,
+    canDouble,
+    canSplit: session.can_split === 1
   });
 };
 
@@ -392,8 +434,8 @@ exports.dealBlackjack = (req, res) => {
     const userId = req.user.id;
     const bet = Number(req.body.bet);
 
-    if (!Number.isInteger(bet) || bet <= 0) {
-      return res.status(400).json({ error: 'Mise invalide (minimum 1 jeton).' });
+    if (!Number.isInteger(bet) || bet < 10) {
+      return res.status(400).json({ error: 'Mise invalide (minimum 10 jetons).' });
     }
 
     // Vérifier si une partie est déjà active
@@ -426,11 +468,9 @@ exports.dealBlackjack = (req, res) => {
       let outcome = 'lose';
 
       if (dealerCalc.isBlackjack) {
-        // Push
         payout = bet;
         outcome = 'push';
       } else {
-        // Joueur gagne avec Blackjack (3:2 = x2.5)
         payout = Math.floor(bet * 2.5);
         outcome = 'blackjack';
       }
@@ -456,30 +496,240 @@ exports.dealBlackjack = (req, res) => {
       });
     }
 
-    // Partie en cours
-    db.prepare(`
-      INSERT OR REPLACE INTO blackjack_sessions (user_id, deck, player_hand, dealer_hand, bet, status, can_double)
-      VALUES (?, ?, ?, ?, ?, 'playing', 1)
-    `).run(userId, JSON.stringify(deck), JSON.stringify(playerHand), JSON.stringify(dealerHand), bet);
+    // Éligibilité du split : deux cartes de même valeur/rang et solde suffisant pour poser la seconde mise
+    const coinsAfterDeduct = user.coins - bet;
+    const canSplitCards = blackjackEngine.canSplit(playerHand);
+    const eligibleForSplit = canSplitCards && (coinsAfterDeduct >= bet);
+    const canSplitVal = eligibleForSplit ? 1 : 0;
 
-    const updatedCoins = db.prepare('SELECT coins FROM users WHERE id = ?').get(userId).coins;
+    db.prepare(`
+      INSERT OR REPLACE INTO blackjack_sessions (
+        user_id, deck, player_hand, player_hand_2, dealer_hand, bet, bet_2,
+        status, active_hand, can_double, can_double_2, can_split, split_aces, status_1, status_2
+      )
+      VALUES (?, ?, ?, NULL, ?, ?, 0, 'playing', 1, 1, 1, ?, 0, NULL, NULL)
+    `).run(userId, JSON.stringify(deck), JSON.stringify(playerHand), JSON.stringify(dealerHand), bet, canSplitVal);
 
     return res.json({
       activeGame: true,
       bet,
+      bet2: 0,
       playerHand,
       playerScore: playerCalc.score,
+      playerHand2: null,
+      playerScore2: null,
+      hasSplit: false,
+      activeHand: 1,
       dealerHand: [dealerHand[0], { rank: '?', suit: '?', color: 'hidden' }],
       dealerScore: blackjackEngine.calculateHand([dealerHand[0]]).score,
       status: 'playing',
       canDouble: true,
-      coins: updatedCoins
+      canSplit: eligibleForSplit,
+      coins: coinsAfterDeduct
     });
   } catch (err) {
     console.error('Erreur deal blackjack:', err);
     return res.status(500).json({ error: 'Erreur Blackjack.' });
   }
 };
+
+exports.splitBlackjack = (req, res) => {
+  try {
+    const userId = req.user.id;
+    const session = db.prepare("SELECT * FROM blackjack_sessions WHERE user_id = ? AND status = 'playing'").get(userId);
+
+    if (!session || session.can_split !== 1 || session.player_hand_2 !== null) {
+      return res.status(400).json({ error: 'Le split n’est pas disponible sur cette main.' });
+    }
+
+    const bet = session.bet;
+    const user = db.prepare('SELECT coins FROM users WHERE id = ?').get(userId);
+    if (!user || user.coins < bet) {
+      return res.status(400).json({ error: 'Solde insuffisant pour splitter (seconde mise égale requise).' });
+    }
+
+    // Déduire la seconde mise de façon atomique
+    const updateDeduct = db.prepare('UPDATE users SET coins = coins - ? WHERE id = ? AND coins >= ?').run(bet, userId, bet);
+    if (updateDeduct.changes === 0) {
+      return res.status(400).json({ error: 'Solde insuffisant pour splitter.' });
+    }
+
+    const deck = JSON.parse(session.deck);
+    const initialHand = JSON.parse(session.player_hand);
+    const dealerHand = JSON.parse(session.dealer_hand);
+
+    // Séparer les deux cartes en deux mains et distribuer 1 nouvelle carte à chacune
+    const hand1 = [initialHand[0], deck.pop()];
+    const hand2 = [initialHand[1], deck.pop()];
+
+    // Détection du split d'As (règle classique casino : 1 seule carte par As, pas de hit/double, stand immédiat)
+    const isAces = initialHand[0].rank === 'A' || initialHand[0].value === 11;
+
+    if (isAces) {
+      let dealerCalc = blackjackEngine.calculateHand(dealerHand);
+      while (dealerCalc.score < 17) {
+        dealerHand.push(deck.pop());
+        dealerCalc = blackjackEngine.calculateHand(dealerHand);
+      }
+
+      const calc1 = blackjackEngine.calculateHand(hand1);
+      const calc2 = blackjackEngine.calculateHand(hand2);
+
+      const evalHand = (calc, handBet) => {
+        if (calc.isBust) return { payout: 0, outcome: 'bust' };
+        if (dealerCalc.isBust) return { payout: handBet * 2, outcome: 'dealer_bust' };
+        if (calc.score > dealerCalc.score) return { payout: handBet * 2, outcome: 'win' };
+        if (calc.score === dealerCalc.score) return { payout: handBet, outcome: 'push' };
+        return { payout: 0, outcome: 'lose' };
+      };
+
+      const res1 = evalHand(calc1, bet);
+      const res2 = evalHand(calc2, bet);
+
+      const totalBet = bet * 2;
+      const totalPayout = res1.payout + res2.payout;
+
+      db.prepare('DELETE FROM blackjack_sessions WHERE user_id = ?').run(userId);
+      const { newCoins } = recordGameResult(userId, 'blackjack', totalBet, totalPayout, {
+        split: true,
+        splitAces: true,
+        hand1,
+        hand2,
+        score1: calc1.score,
+        score2: calc2.score,
+        outcome1: res1.outcome,
+        outcome2: res2.outcome,
+        payout1: res1.payout,
+        payout2: res2.payout,
+        dealerHand,
+        dealerScore: dealerCalc.score
+      }, true);
+
+      return res.json({
+        activeGame: false,
+        hasSplit: true,
+        splitAces: true,
+        bet,
+        bet2: bet,
+        totalBet,
+        playerHand: hand1,
+        playerScore: calc1.score,
+        playerHand2: hand2,
+        playerScore2: calc2.score,
+        dealerHand,
+        dealerScore: dealerCalc.score,
+        status: 'finished',
+        outcome1: res1.outcome,
+        outcome2: res2.outcome,
+        payout1: res1.payout,
+        payout2: res2.payout,
+        payout: totalPayout,
+        coins: newCoins
+      });
+    }
+
+    // Split standard hors As : Main 1 commence
+    const calc1 = blackjackEngine.calculateHand(hand1);
+    const calc2 = blackjackEngine.calculateHand(hand2);
+
+    db.prepare(`
+      UPDATE blackjack_sessions
+      SET deck = ?, player_hand = ?, player_hand_2 = ?, bet_2 = ?, active_hand = 1,
+          can_split = 0, can_double = 1, can_double_2 = 1, split_aces = 0, status_1 = NULL, status_2 = NULL
+      WHERE user_id = ?
+    `).run(JSON.stringify(deck), JSON.stringify(hand1), JSON.stringify(hand2), bet, userId);
+
+    const remainingCoins = db.prepare('SELECT coins FROM users WHERE id = ?').get(userId).coins;
+
+    return res.json({
+      activeGame: true,
+      hasSplit: true,
+      splitAces: false,
+      activeHand: 1,
+      bet,
+      bet2: bet,
+      playerHand: hand1,
+      playerScore: calc1.score,
+      playerHand2: hand2,
+      playerScore2: calc2.score,
+      dealerHand: [dealerHand[0], { rank: '?', suit: '?', color: 'hidden' }],
+      dealerScore: blackjackEngine.calculateHand([dealerHand[0]]).score,
+      status: 'playing',
+      canDouble: true,
+      canSplit: false,
+      coins: remainingCoins
+    });
+  } catch (err) {
+    console.error('Erreur split blackjack:', err);
+    return res.status(500).json({ error: 'Erreur Split Blackjack.' });
+  }
+};
+
+// Helper pour finaliser une partie de Blackjack avec Split
+function resolveSplitGame(userId, session, deck, hand1, hand2, dealerHand, status1, status2, bet1, bet2) {
+  const calc1 = blackjackEngine.calculateHand(hand1);
+  const calc2 = blackjackEngine.calculateHand(hand2);
+
+  const bothBusted = (status1 === 'bust' || calc1.isBust) && (status2 === 'bust' || calc2.isBust);
+
+  let dealerCalc = blackjackEngine.calculateHand(dealerHand);
+  if (!bothBusted) {
+    while (dealerCalc.score < 17) {
+      dealerHand.push(deck.pop());
+      dealerCalc = blackjackEngine.calculateHand(dealerHand);
+    }
+  }
+
+  const evalHand = (calc, stat, handBet) => {
+    if (stat === 'bust' || calc.isBust) return { payout: 0, outcome: 'bust' };
+    if (dealerCalc.isBust) return { payout: handBet * 2, outcome: 'dealer_bust' };
+    if (calc.score > dealerCalc.score) return { payout: handBet * 2, outcome: 'win' };
+    if (calc.score === dealerCalc.score) return { payout: handBet, outcome: 'push' };
+    return { payout: 0, outcome: 'lose' };
+  };
+
+  const res1 = evalHand(calc1, status1, bet1);
+  const res2 = evalHand(calc2, status2, bet2);
+
+  const totalBet = bet1 + bet2;
+  const totalPayout = res1.payout + res2.payout;
+
+  db.prepare('DELETE FROM blackjack_sessions WHERE user_id = ?').run(userId);
+  const { newCoins } = recordGameResult(userId, 'blackjack', totalBet, totalPayout, {
+    split: true,
+    hand1,
+    hand2,
+    score1: calc1.score,
+    score2: calc2.score,
+    outcome1: res1.outcome,
+    outcome2: res2.outcome,
+    payout1: res1.payout,
+    payout2: res2.payout,
+    dealerHand,
+    dealerScore: dealerCalc.score
+  }, true);
+
+  return {
+    activeGame: false,
+    hasSplit: true,
+    bet: bet1,
+    bet2,
+    totalBet,
+    playerHand: hand1,
+    playerScore: calc1.score,
+    playerHand2: hand2,
+    playerScore2: calc2.score,
+    dealerHand,
+    dealerScore: dealerCalc.score,
+    status: 'finished',
+    outcome1: res1.outcome,
+    outcome2: res2.outcome,
+    payout1: res1.payout,
+    payout2: res2.payout,
+    payout: totalPayout,
+    coins: newCoins
+  };
+}
 
 exports.hitBlackjack = (req, res) => {
   try {
@@ -491,17 +741,154 @@ exports.hitBlackjack = (req, res) => {
     }
 
     const deck = JSON.parse(session.deck);
-    const playerHand = JSON.parse(session.player_hand);
+    let playerHand = JSON.parse(session.player_hand);
+    let playerHand2 = session.player_hand_2 ? JSON.parse(session.player_hand_2) : null;
     const dealerHand = JSON.parse(session.dealer_hand);
     const bet = session.bet;
+    const bet2 = session.bet_2 || 0;
 
+    // --- CAS SPLIT ---
+    if (playerHand2) {
+      const activeHand = session.active_hand || 1;
+
+      if (activeHand === 1) {
+        playerHand.push(deck.pop());
+        const calc1 = blackjackEngine.calculateHand(playerHand);
+
+        if (calc1.isBust) {
+          // Main 1 a sauté -> passage automatique à la Main 2
+          db.prepare(`
+            UPDATE blackjack_sessions
+            SET deck = ?, player_hand = ?, active_hand = 2, status_1 = 'bust', can_double = 0
+            WHERE user_id = ?
+          `).run(JSON.stringify(deck), JSON.stringify(playerHand), userId);
+
+          return res.json({
+            activeGame: true,
+            hasSplit: true,
+            activeHand: 2,
+            hand1Busted: true,
+            bet,
+            bet2,
+            playerHand,
+            playerScore: calc1.score,
+            playerHand2,
+            playerScore2: blackjackEngine.calculateHand(playerHand2).score,
+            dealerHand: [dealerHand[0], { rank: '?', suit: '?', color: 'hidden' }],
+            dealerScore: blackjackEngine.calculateHand([dealerHand[0]]).score,
+            status: 'playing',
+            status1: 'bust',
+            canDouble: session.can_double_2 === 1,
+            canSplit: false
+          });
+        }
+
+        // Si la main 1 atteint 21, on passe automatiquement à la main 2
+        if (calc1.score === 21) {
+          db.prepare(`
+            UPDATE blackjack_sessions
+            SET deck = ?, player_hand = ?, active_hand = 2, status_1 = 'stand', can_double = 0
+            WHERE user_id = ?
+          `).run(JSON.stringify(deck), JSON.stringify(playerHand), userId);
+
+          return res.json({
+            activeGame: true,
+            hasSplit: true,
+            activeHand: 2,
+            bet,
+            bet2,
+            playerHand,
+            playerScore: 21,
+            playerHand2,
+            playerScore2: blackjackEngine.calculateHand(playerHand2).score,
+            dealerHand: [dealerHand[0], { rank: '?', suit: '?', color: 'hidden' }],
+            dealerScore: blackjackEngine.calculateHand([dealerHand[0]]).score,
+            status: 'playing',
+            status1: 'stand',
+            canDouble: session.can_double_2 === 1,
+            canSplit: false
+          });
+        }
+
+        // Main 1 continue
+        db.prepare(`
+          UPDATE blackjack_sessions
+          SET deck = ?, player_hand = ?, can_double = 0, can_split = 0
+          WHERE user_id = ?
+        `).run(JSON.stringify(deck), JSON.stringify(playerHand), userId);
+
+        return res.json({
+          activeGame: true,
+          hasSplit: true,
+          activeHand: 1,
+          bet,
+          bet2,
+          playerHand,
+          playerScore: calc1.score,
+          playerHand2,
+          playerScore2: blackjackEngine.calculateHand(playerHand2).score,
+          dealerHand: [dealerHand[0], { rank: '?', suit: '?', color: 'hidden' }],
+          dealerScore: blackjackEngine.calculateHand([dealerHand[0]]).score,
+          status: 'playing',
+          canDouble: false,
+          canSplit: false
+        });
+      } else {
+        // Main 2 active
+        playerHand2.push(deck.pop());
+        const calc2 = blackjackEngine.calculateHand(playerHand2);
+
+        if (calc2.isBust) {
+          // Main 2 a sauté -> fin du tour
+          const finalResult = resolveSplitGame(
+            userId, session, deck, playerHand, playerHand2, dealerHand,
+            session.status_1, 'bust', bet, bet2
+          );
+          return res.json(finalResult);
+        }
+
+        if (calc2.score === 21) {
+          // Main 2 atteint 21 -> fin du tour
+          const finalResult = resolveSplitGame(
+            userId, session, deck, playerHand, playerHand2, dealerHand,
+            session.status_1, 'stand', bet, bet2
+          );
+          return res.json(finalResult);
+        }
+
+        // Main 2 continue
+        db.prepare(`
+          UPDATE blackjack_sessions
+          SET deck = ?, player_hand_2 = ?, can_double_2 = 0
+          WHERE user_id = ?
+        `).run(JSON.stringify(deck), JSON.stringify(playerHand2), userId);
+
+        return res.json({
+          activeGame: true,
+          hasSplit: true,
+          activeHand: 2,
+          bet,
+          bet2,
+          playerHand,
+          playerScore: blackjackEngine.calculateHand(playerHand).score,
+          playerHand2,
+          playerScore2: calc2.score,
+          dealerHand: [dealerHand[0], { rank: '?', suit: '?', color: 'hidden' }],
+          dealerScore: blackjackEngine.calculateHand([dealerHand[0]]).score,
+          status: 'playing',
+          status1: session.status_1,
+          canDouble: false,
+          canSplit: false
+        });
+      }
+    }
+
+    // --- CAS NORMAL SANS SPLIT ---
     const newCard = deck.pop();
     playerHand.push(newCard);
-
     const playerCalc = blackjackEngine.calculateHand(playerHand);
 
     if (playerCalc.isBust) {
-      // Défaite immédiate (Bust)
       db.prepare('DELETE FROM blackjack_sessions WHERE user_id = ?').run(userId);
       const { newCoins } = recordGameResult(userId, 'blackjack', bet, 0, {
         playerHand,
@@ -523,10 +910,9 @@ exports.hitBlackjack = (req, res) => {
       });
     }
 
-    // Sauvegarde de la main mise à jour (ne peut plus doubler après avoir tiré)
     db.prepare(`
       UPDATE blackjack_sessions
-      SET deck = ?, player_hand = ?, can_double = 0
+      SET deck = ?, player_hand = ?, can_double = 0, can_split = 0
       WHERE user_id = ?
     `).run(JSON.stringify(deck), JSON.stringify(playerHand), userId);
 
@@ -538,9 +924,11 @@ exports.hitBlackjack = (req, res) => {
       dealerHand: [dealerHand[0], { rank: '?', suit: '?', color: 'hidden' }],
       dealerScore: blackjackEngine.calculateHand([dealerHand[0]]).score,
       status: 'playing',
-      canDouble: false
+      canDouble: false,
+      canSplit: false
     });
   } catch (err) {
+    console.error('Erreur hit blackjack:', err);
     return res.status(500).json({ error: 'Erreur Hit Blackjack.' });
   }
 };
@@ -556,12 +944,53 @@ exports.standBlackjack = (req, res) => {
 
     const deck = JSON.parse(session.deck);
     const playerHand = JSON.parse(session.player_hand);
+    const playerHand2 = session.player_hand_2 ? JSON.parse(session.player_hand_2) : null;
     const dealerHand = JSON.parse(session.dealer_hand);
     const bet = session.bet;
+    const bet2 = session.bet_2 || 0;
 
+    // --- CAS SPLIT ---
+    if (playerHand2) {
+      const activeHand = session.active_hand || 1;
+
+      if (activeHand === 1) {
+        // Main 1 s'arrête (stand) -> on bascule sur la Main 2
+        db.prepare(`
+          UPDATE blackjack_sessions
+          SET active_hand = 2, status_1 = 'stand'
+          WHERE user_id = ?
+        `).run(userId);
+
+        return res.json({
+          activeGame: true,
+          hasSplit: true,
+          activeHand: 2,
+          bet,
+          bet2,
+          playerHand,
+          playerScore: blackjackEngine.calculateHand(playerHand).score,
+          playerHand2,
+          playerScore2: blackjackEngine.calculateHand(playerHand2).score,
+          dealerHand: [dealerHand[0], { rank: '?', suit: '?', color: 'hidden' }],
+          dealerScore: blackjackEngine.calculateHand([dealerHand[0]]).score,
+          status: 'playing',
+          status1: 'stand',
+          canDouble: session.can_double_2 === 1,
+          canSplit: false
+        });
+      } else {
+        // Main 2 s'arrête -> fin du tour complet
+        const finalResult = resolveSplitGame(
+          userId, session, deck, playerHand, playerHand2, dealerHand,
+          session.status_1 || 'stand', 'stand', bet, bet2
+        );
+        return res.json(finalResult);
+      }
+    }
+
+    // --- CAS SANS SPLIT ---
     const playerCalc = blackjackEngine.calculateHand(playerHand);
 
-    // Tour du croupier : tire jusqu'à avoir au moins 17
     let dealerCalc = blackjackEngine.calculateHand(dealerHand);
     while (dealerCalc.score < 17) {
       dealerHand.push(deck.pop());
@@ -607,6 +1036,7 @@ exports.standBlackjack = (req, res) => {
       coins: newCoins
     });
   } catch (err) {
+    console.error('Erreur stand blackjack:', err);
     return res.status(500).json({ error: 'Erreur Stand Blackjack.' });
   }
 };
@@ -614,31 +1044,115 @@ exports.standBlackjack = (req, res) => {
 exports.doubleBlackjack = (req, res) => {
   try {
     const userId = req.user.id;
-    const session = db.prepare("SELECT * FROM blackjack_sessions WHERE user_id = ? AND status = 'playing' AND can_double = 1").get(userId);
+    const session = db.prepare("SELECT * FROM blackjack_sessions WHERE user_id = ? AND status = 'playing'").get(userId);
 
     if (!session) {
+      return res.status(400).json({ error: 'Aucune partie active à doubler.' });
+    }
+
+    const deck = JSON.parse(session.deck);
+    let playerHand = JSON.parse(session.player_hand);
+    let playerHand2 = session.player_hand_2 ? JSON.parse(session.player_hand_2) : null;
+    const dealerHand = JSON.parse(session.dealer_hand);
+    let bet = session.bet;
+    let bet2 = session.bet_2 || 0;
+
+    // --- CAS SPLIT ---
+    if (playerHand2) {
+      const activeHand = session.active_hand || 1;
+
+      if (activeHand === 1) {
+        if (session.can_double !== 1) {
+          return res.status(400).json({ error: 'Impossible de doubler sur la main 1.' });
+        }
+
+        const user = db.prepare('SELECT coins FROM users WHERE id = ?').get(userId);
+        if (!user || user.coins < bet) {
+          return res.status(400).json({ error: 'Solde insuffisant pour doubler la main 1.' });
+        }
+
+        const deduct = db.prepare('UPDATE users SET coins = coins - ? WHERE id = ? AND coins >= ?').run(bet, userId, bet);
+        if (deduct.changes === 0) {
+          return res.status(400).json({ error: 'Solde insuffisant pour doubler.' });
+        }
+
+        // Tirer exactement 1 carte pour la main 1
+        playerHand.push(deck.pop());
+        const calc1 = blackjackEngine.calculateHand(playerHand);
+        const status1 = calc1.isBust ? 'bust' : 'doubled';
+        bet = bet * 2;
+
+        // Passage automatique à la main 2
+        db.prepare(`
+          UPDATE blackjack_sessions
+          SET deck = ?, player_hand = ?, bet = ?, active_hand = 2, status_1 = ?, can_double = 0
+          WHERE user_id = ?
+        `).run(JSON.stringify(deck), JSON.stringify(playerHand), bet, status1, userId);
+
+        return res.json({
+          activeGame: true,
+          hasSplit: true,
+          activeHand: 2,
+          hand1Doubled: true,
+          bet,
+          bet2,
+          playerHand,
+          playerScore: calc1.score,
+          playerHand2,
+          playerScore2: blackjackEngine.calculateHand(playerHand2).score,
+          dealerHand: [dealerHand[0], { rank: '?', suit: '?', color: 'hidden' }],
+          dealerScore: blackjackEngine.calculateHand([dealerHand[0]]).score,
+          status: 'playing',
+          status1,
+          canDouble: session.can_double_2 === 1,
+          canSplit: false
+        });
+      } else {
+        // Double sur Main 2
+        if (session.can_double_2 !== 1) {
+          return res.status(400).json({ error: 'Impossible de doubler sur la main 2.' });
+        }
+
+        const user = db.prepare('SELECT coins FROM users WHERE id = ?').get(userId);
+        if (!user || user.coins < bet2) {
+          return res.status(400).json({ error: 'Solde insuffisant pour doubler la main 2.' });
+        }
+
+        const deduct = db.prepare('UPDATE users SET coins = coins - ? WHERE id = ? AND coins >= ?').run(bet2, userId, bet2);
+        if (deduct.changes === 0) {
+          return res.status(400).json({ error: 'Solde insuffisant pour doubler.' });
+        }
+
+        playerHand2.push(deck.pop());
+        const calc2 = blackjackEngine.calculateHand(playerHand2);
+        const status2 = calc2.isBust ? 'bust' : 'doubled';
+        bet2 = bet2 * 2;
+
+        // Fin du tour après avoir doublé la main 2
+        const finalResult = resolveSplitGame(
+          userId, session, deck, playerHand, playerHand2, dealerHand,
+          session.status_1 || 'stand', status2, bet, bet2
+        );
+        return res.json(finalResult);
+      }
+    }
+
+    // --- CAS NORMAL SANS SPLIT ---
+    if (session.can_double !== 1) {
       return res.status(400).json({ error: 'Impossible de doubler sur cette main.' });
     }
 
-    const bet = session.bet;
     const user = db.prepare('SELECT coins FROM users WHERE id = ?').get(userId);
-
     if (!user || user.coins < bet) {
       return res.status(400).json({ error: 'Solde insuffisant pour doubler la mise.' });
     }
 
-    // Déduire la mise supplémentaire de façon atomique
     const updateDeduct = db.prepare('UPDATE users SET coins = coins - ? WHERE id = ? AND coins >= ?').run(bet, userId, bet);
     if (updateDeduct.changes === 0) {
       return res.status(400).json({ error: 'Solde insuffisant pour doubler la mise.' });
     }
     const totalBet = bet * 2;
 
-    const deck = JSON.parse(session.deck);
-    const playerHand = JSON.parse(session.player_hand);
-    const dealerHand = JSON.parse(session.dealer_hand);
-
-    // Tirer exactement 1 carte pour le joueur
     playerHand.push(deck.pop());
     const playerCalc = blackjackEngine.calculateHand(playerHand);
 
@@ -667,7 +1181,6 @@ exports.doubleBlackjack = (req, res) => {
       });
     }
 
-    // Croupier joue
     let dealerCalc = blackjackEngine.calculateHand(dealerHand);
     while (dealerCalc.score < 17) {
       dealerHand.push(deck.pop());
@@ -711,9 +1224,11 @@ exports.doubleBlackjack = (req, res) => {
       coins: newCoins
     });
   } catch (err) {
+    console.error('Erreur double blackjack:', err);
     return res.status(500).json({ error: 'Erreur Double Blackjack.' });
   }
 };
+
 
 // ======================== ROULETTE ========================
 exports.playRoulette = (req, res) => {
@@ -729,14 +1244,18 @@ exports.playRoulette = (req, res) => {
     for (const b of bets) {
       const amt = Number(b.amount);
       if (!Number.isInteger(amt) || amt <= 0) {
-        return res.status(400).json({ error: 'Montant de pari invalide.' });
+        return res.status(400).json({ error: 'Montant de pari invalide (doit être un entier positif).' });
       }
       totalBet += amt;
     }
 
+    if (totalBet < 10) {
+      return res.status(400).json({ error: 'Mise totale minimale sur la roulette : 10 jetons.' });
+    }
+
     const user = db.prepare('SELECT coins FROM users WHERE id = ?').get(userId);
     if (!user || user.coins < totalBet) {
-      return res.status(400).json({ error: 'Solde insuffisant.' });
+      return res.status(400).json({ error: 'Solde insuffisant pour placer ces paris.' });
     }
 
     const result = rouletteEngine.spinRoulette(bets);
@@ -764,13 +1283,13 @@ exports.playDice = (req, res) => {
     const mode = req.body.mode || 'classic';
     const options = req.body.options || {};
 
-    if (!Number.isInteger(bet) || bet <= 0) {
-      return res.status(400).json({ error: 'Mise invalide (minimum 1 jeton).' });
+    if (!Number.isInteger(bet) || bet < 10) {
+      return res.status(400).json({ error: 'Mise invalide (minimum 10 jetons).' });
     }
 
     const user = db.prepare('SELECT coins FROM users WHERE id = ?').get(userId);
     if (!user || user.coins < bet) {
-      return res.status(400).json({ error: 'Solde insuffisant.' });
+      return res.status(400).json({ error: 'Solde insuffisant pour cette mise.' });
     }
 
     const result = diceEngine.rollDice(bet, mode, options);
@@ -792,13 +1311,13 @@ exports.playWheel = (req, res) => {
     const userId = req.user.id;
     const bet = Number(req.body.bet);
 
-    if (!Number.isInteger(bet) || bet <= 0) {
-      return res.status(400).json({ error: 'Mise invalide (minimum 1 jeton).' });
+    if (!Number.isInteger(bet) || bet < 10) {
+      return res.status(400).json({ error: 'Mise invalide (minimum 10 jetons).' });
     }
 
     const user = db.prepare('SELECT coins FROM users WHERE id = ?').get(userId);
     if (!user || user.coins < bet) {
-      return res.status(400).json({ error: 'Solde insuffisant.' });
+      return res.status(400).json({ error: 'Solde insuffisant pour cette mise.' });
     }
 
     const result = wheelEngine.spinWheel(bet);
@@ -825,8 +1344,8 @@ exports.playPlinko = (req, res) => {
     const risk = req.body.risk || 'medium';
     const ballCount = Math.max(1, Math.min(10, parseInt(req.body.ballCount, 10) || 1));
 
-    if (!Number.isInteger(unitBet) || unitBet <= 0) {
-      return res.status(400).json({ error: 'Mise invalide (minimum 1 jeton par bille).' });
+    if (!Number.isInteger(unitBet) || unitBet < 10) {
+      return res.status(400).json({ error: 'Mise invalide (minimum 10 jetons par bille).' });
     }
 
     const totalBet = unitBet * ballCount;
@@ -977,10 +1496,10 @@ exports.playSlider = (req, res) => {
     const userId = req.user.id;
     const bet = Number(req.body.bet);
     const target = parseFloat(req.body.target) || 50;
-    const condition = req.body.condition || 'under';
+    const condition = req.body.condition || req.body.mode || 'under';
 
-    if (!Number.isInteger(bet) || bet <= 0) {
-      return res.status(400).json({ error: 'Mise invalide (minimum 1 jeton).' });
+    if (!Number.isInteger(bet) || bet < 10) {
+      return res.status(400).json({ error: 'Mise invalide (minimum 10 jetons).' });
     }
 
     const user = db.prepare('SELECT coins FROM users WHERE id = ?').get(userId);
@@ -992,8 +1511,14 @@ exports.playSlider = (req, res) => {
     const { newCoins } = recordGameResult(userId, 'slider', bet, result.payout, result);
 
     return res.json({
+      success: true,
       ...result,
-      coins: newCoins
+      coins: newCoins,
+      data: {
+        ...result,
+        balance: newCoins,
+        coins: newCoins
+      }
     });
   } catch (err) {
     console.error('Erreur slider:', err);
@@ -1018,8 +1543,8 @@ exports.startCrash = (req, res) => {
     const userId = req.user.id;
     const bet = Number(req.body.bet);
 
-    if (!Number.isInteger(bet) || bet <= 0) {
-      return res.status(400).json({ error: 'Mise invalide (minimum 1 jeton).' });
+    if (!Number.isInteger(bet) || bet < 10) {
+      return res.status(400).json({ error: 'Mise invalide (minimum 10 jetons).' });
     }
 
     const user = db.prepare('SELECT coins FROM users WHERE id = ?').get(userId);
@@ -1046,8 +1571,14 @@ exports.startCrash = (req, res) => {
       success: true,
       gameId,
       bet,
-      crashPoint, // Secret côté serveur mais calculé d'avance et transmis au moteur
-      coins: updatedCoins
+      crashPoint,
+      coins: updatedCoins,
+      data: {
+        gameId,
+        bet,
+        crashPoint,
+        coins: updatedCoins
+      }
     });
   } catch (err) {
     console.error('Erreur démarrage crash:', err);
@@ -1110,13 +1641,37 @@ exports.cashoutCrash = (req, res) => {
 
       const updatedCoins = runTx();
 
+      try {
+        socketService.notifyUserBalance(userId, updatedCoins);
+        socketService.notifyLeaderboardUpdated();
+        if (profit > 0) {
+          const u = db.prepare('SELECT username FROM users WHERE id = ?').get(userId);
+          socketService.notifyNewWin({
+            username: u ? u.username : 'Joueur',
+            game_type: 'crash',
+            profit,
+            payout,
+            created_at: new Date().toISOString()
+          });
+        }
+      } catch (sockErr) {}
+
       return res.json({
+        success: true,
         won: true,
         multiplier: userMult,
         payout,
         profit,
         crashPoint,
-        coins: updatedCoins
+        coins: updatedCoins,
+        data: {
+          won: true,
+          multiplier: userMult,
+          payout,
+          profit,
+          crashPoint,
+          coins: updatedCoins
+        }
       });
     } else {
       // Trop tard : partie crashée
@@ -1143,12 +1698,21 @@ exports.cashoutCrash = (req, res) => {
       const currentCoins = db.prepare('SELECT coins FROM users WHERE id = ?').get(userId).coins;
 
       return res.json({
+        success: true,
         won: false,
         multiplier: 0,
         payout: 0,
         profit: -session.bet,
         crashPoint,
-        coins: currentCoins
+        coins: currentCoins,
+        data: {
+          won: false,
+          multiplier: 0,
+          payout: 0,
+          profit: -session.bet,
+          crashPoint,
+          coins: currentCoins
+        }
       });
     }
   } catch (err) {

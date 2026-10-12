@@ -215,15 +215,23 @@ const FreeWheelGame = {
       return;
     }
 
+    if (window.State) {
+      window.State.setGameAnimating(true);
+    }
+
+    this.isSpinning = true;
     const banner = document.getElementById('freeWheelResultBanner');
     if (banner) banner.style.display = 'none';
 
     const spinBtn = document.getElementById('freeWheelSpinBtn');
-    if (spinBtn) spinBtn.disabled = true;
+    if (spinBtn) {
+      spinBtn.disabled = true;
+      spinBtn.style.pointerEvents = 'none';
+      spinBtn.innerHTML = '⏳ Tirage en cours...';
+    }
 
     try {
       const data = await window.API.spinFreeWheel();
-      this.isSpinning = true;
 
       // Calcul de la rotation
       // Pointer au sommet (270 deg / -90 deg)
@@ -258,8 +266,10 @@ const FreeWheelGame = {
         this.isSpinning = false;
         clearInterval(tickInterval);
 
-        // Mise à jour des coins et de l'état
-        window.State.updateCoins(data.coins);
+        // Mise à jour des coins et de l'état uniquement après l'arrêt complet de la roue
+        if (window.State && data.coins !== undefined) {
+          window.State.setGameAnimating(false, data.coins);
+        }
 
         // Affichage du résultat
         if (banner) {
@@ -295,7 +305,11 @@ const FreeWheelGame = {
 
     } catch (err) {
       this.isSpinning = false;
-      if (spinBtn) spinBtn.disabled = false;
+      if (spinBtn) {
+        spinBtn.disabled = false;
+        spinBtn.style.pointerEvents = 'auto';
+      }
+      if (window.State) window.State.setGameAnimating(false);
       window.UI.showToast(err.message, 'error');
     }
   }

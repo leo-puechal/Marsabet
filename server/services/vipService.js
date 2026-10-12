@@ -10,6 +10,7 @@ const VIP_TIERS = [
     minWager: 0,
     bonusMultiplier: 1.0,
     perk: 'Statut joueur de base',
+    perks: ['Statut joueur de base'],
     badgeClass: 'vip-bronze'
   },
   {
@@ -21,6 +22,7 @@ const VIP_TIERS = [
     minWager: 50000,
     bonusMultiplier: 1.10,
     perk: '+10% sur les bonus & badge argent',
+    perks: ['+10% sur les bonus', 'Badge argent'],
     badgeClass: 'vip-argent'
   },
   {
@@ -32,6 +34,7 @@ const VIP_TIERS = [
     minWager: 200000,
     bonusMultiplier: 1.25,
     perk: '+25% sur les bonus & liseré doré VIP',
+    perks: ['+25% sur les bonus', 'Liseré doré VIP'],
     badgeClass: 'vip-or'
   },
   {
@@ -43,6 +46,7 @@ const VIP_TIERS = [
     minWager: 500000,
     bonusMultiplier: 1.40,
     perk: '+40% sur les bonus & aura azur prestigieuse',
+    perks: ['+40% sur les bonus', 'Aura azur prestigieuse'],
     badgeClass: 'vip-platine'
   },
   {
@@ -54,6 +58,7 @@ const VIP_TIERS = [
     minWager: 1000000,
     bonusMultiplier: 1.60,
     perk: '+60% sur les bonus & couronne royale violette',
+    perks: ['+60% sur les bonus', 'Couronne royale violette'],
     badgeClass: 'vip-diamant'
   },
   {
@@ -65,6 +70,7 @@ const VIP_TIERS = [
     minWager: 2500000,
     bonusMultiplier: 2.00,
     perk: 'x2 sur tous les bonus & avatar légendaire de Mars',
+    perks: ['x2 sur tous les bonus', 'Avatar légendaire de Mars'],
     badgeClass: 'vip-mars'
   }
 ];

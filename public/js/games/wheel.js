@@ -45,16 +45,30 @@ const WheelGame = {
     multBtns.forEach(b => {
       b.addEventListener('click', (e) => {
         const action = e.currentTarget.dataset.action;
-        if (action === 'half') this.setBet(Math.max(1, Math.floor(this.currentBet / 2)));
+        if (action === 'half') this.setBet(Math.max(10, Math.floor(this.currentBet / 2)));
         if (action === 'double') this.setBet(this.currentBet * 2);
         if (action === 'max' && window.State.user) this.setBet(window.State.user.coins);
         window.sound.playChip();
       });
     });
+
+    const input = document.getElementById('wheelBetInput');
+    if (input) {
+      input.addEventListener('input', (e) => {
+        if (this.isSpinning) return;
+        const val = parseInt(e.target.value, 10);
+        if (!isNaN(val)) this.currentBet = val;
+      });
+      input.addEventListener('change', (e) => {
+        if (this.isSpinning) return;
+        const val = parseInt(e.target.value, 10);
+        this.setBet(isNaN(val) || val < 10 ? 10 : val);
+      });
+    }
   },
 
   setBet(val) {
-    this.currentBet = Math.max(1, val);
+    this.currentBet = Math.max(10, val);
     const input = document.getElementById('wheelBetInput');
     if (input) input.value = this.currentBet;
   },
@@ -119,9 +133,24 @@ const WheelGame = {
       return;
     }
 
+    const input = document.getElementById('wheelBetInput');
+    if (input) {
+      const val = parseInt(input.value, 10);
+      if (!isNaN(val)) this.currentBet = val;
+    }
+
+    if (!Number.isInteger(this.currentBet) || this.currentBet < 10) {
+      window.UI.showToast('Mise invalide (minimum 10 coins).', 'error');
+      return;
+    }
+
     if (window.State.user.coins < this.currentBet) {
       window.UI.showToast('Solde insuffisant pour miser.', 'error');
       return;
+    }
+
+    if (window.State && this.currentBet > 0) {
+      window.State.deductBet(this.currentBet);
     }
 
     this.isSpinning = true;
@@ -134,31 +163,44 @@ const WheelGame = {
     try {
       const data = await window.API.spinWheel(this.currentBet);
 
-      // Calcul de la rotation en degrés
-      // Le pointeur est en haut (270° ou -90°)
-      const segAngle = 360 / this.segments.length; // 22.5 deg
-      const targetDeg = data.targetAngle;
-      const extraSpins = 360 * 6; // 6 tours complets
-      // Pour aligner avec le pointeur en haut :
-      const finalDeg = this.currentRotation + extraSpins + (270 - (this.currentRotation % 360) - targetDeg);
+      // =========================================================================
+      // CALCUL D'ANGLE EXACT DU CASINO :
+      // - Segment k a son centre à (k + 0.5) * segAngle (depuis 3h00 / 0°)
+      // - Pointeur au sommet (12h00) = 270°
+      // - Condition d'arrêt au pointeur : targetMod = 270 - segCenter (mod 360)
+      // =========================================================================
+      const segAngle = 360 / this.segments.length;
+      const segCenter = (data.segmentIndex + 0.5) * segAngle;
+      const targetMod = (((270 - segCenter) % 360) + 360) % 360;
+      const currentMod = (((this.currentRotation % 360) + 360) % 360);
+      let additional = (targetMod - currentMod);
+      if (additional < 0) additional += 360;
+
+      const finalDeg = this.currentRotation + (360 * 6) + additional;
       this.currentRotation = finalDeg;
 
       const canvas = document.getElementById('wheelCanvas');
       if (canvas) {
-        canvas.style.transition = 'transform 4s cubic-bezier(0.12, 0.9, 0.2, 1)';
+        canvas.style.transition = 'transform 4.5s cubic-bezier(0.12, 0.9, 0.2, 1)';
         canvas.style.transform = `rotate(${finalDeg}deg)`;
       }
 
       const tickSoundInterval = setInterval(() => {
         window.sound.playSpinTick();
-      }, 100);
+      }, 120);
 
       setTimeout(() => {
         clearInterval(tickSoundInterval);
         this.isSpinning = false;
-        if (spinBtn) spinBtn.disabled = false;
+        if (spinBtn) {
+          spinBtn.disabled = false;
+          spinBtn.style.pointerEvents = 'auto';
+        }
 
-        window.State.updateCoins(data.coins);
+        // Mettre à jour le solde uniquement après l'arrêt complet de la roue
+        if (window.State && data.coins !== undefined) {
+          window.State.setGameAnimating(false, data.coins);
+        }
 
         if (banner) {
           if (data.won) {
@@ -180,10 +222,11 @@ const WheelGame = {
             window.sound.playLose();
           }
         }
-      }, 4100);
+      }, 4600);
     } catch (err) {
       this.isSpinning = false;
       if (spinBtn) spinBtn.disabled = false;
+      if (window.State) window.State.setGameAnimating(false);
       window.UI.showToast(err.message, 'error');
     }
   }

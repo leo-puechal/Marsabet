@@ -843,7 +843,7 @@
           <p>Ouvre ton navigateur sur ton PC ou smartphone, connecte-toi avec tes identifiants et commence à jouer gratuitement dès maintenant !</p>
           
           <div class="footer-url-box">
-            <span>🌐</span> http://localhost:3001
+            <span>🌐</span> <span id="posterUrlDisplay">http://localhost:3001</span>
           </div>
         </div>
 
@@ -906,5 +906,11 @@
     </div>
   </div>
 
+  <script>
+    if (window.location && window.location.origin && !window.location.origin.includes('file://')) {
+      const el = document.getElementById('posterUrlDisplay');
+      if (el) el.textContent = window.location.origin;
+    }
+  </script>
 </body>
 </html>

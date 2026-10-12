@@ -184,6 +184,12 @@ exports.claimDailyBonus = (req, res) => {
     VALUES (?, 'daily_bonus', 0, ?, ?, ?)
   `).run(userId, bonusAmount, bonusAmount, JSON.stringify({ streak: newStreak, day: today }));
 
+  try {
+    const socketService = require('../services/socketService');
+    socketService.notifyUserBalance(userId, newCoins, { daily_streak: newStreak });
+    socketService.notifyLeaderboardUpdated();
+  } catch (sockErr) {}
+
   return res.json({
     message: `Bonus quotidien réclamé : +${bonusAmount} jetons ! (Série : ${newStreak} jour${newStreak > 1 ? 's' : ''})`,
     bonusAmount,

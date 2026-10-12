@@ -41,10 +41,18 @@ function initDb() {
       user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
       deck TEXT NOT NULL,
       player_hand TEXT NOT NULL,
+      player_hand_2 TEXT DEFAULT NULL,
       dealer_hand TEXT NOT NULL,
       bet INTEGER NOT NULL,
+      bet_2 INTEGER NOT NULL DEFAULT 0,
       status TEXT NOT NULL DEFAULT 'playing',
+      active_hand INTEGER NOT NULL DEFAULT 1,
       can_double INTEGER NOT NULL DEFAULT 1,
+      can_double_2 INTEGER NOT NULL DEFAULT 1,
+      can_split INTEGER NOT NULL DEFAULT 0,
+      split_aces INTEGER NOT NULL DEFAULT 0,
+      status_1 TEXT DEFAULT NULL,
+      status_2 TEXT DEFAULT NULL,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 
@@ -183,6 +191,20 @@ function initDb() {
     db.exec("ALTER TABLE shop_orders ADD COLUMN source TEXT NOT NULL DEFAULT 'shop'");
   }
 
+  // Migration blackjack_sessions pour le Split
+  const bjCols = db.prepare("PRAGMA table_info(blackjack_sessions)").all();
+  const hasHand2 = bjCols.some(c => c.name === 'player_hand_2');
+  if (!hasHand2) {
+    db.exec("ALTER TABLE blackjack_sessions ADD COLUMN player_hand_2 TEXT DEFAULT NULL");
+    db.exec("ALTER TABLE blackjack_sessions ADD COLUMN bet_2 INTEGER NOT NULL DEFAULT 0");
+    db.exec("ALTER TABLE blackjack_sessions ADD COLUMN active_hand INTEGER NOT NULL DEFAULT 1");
+    db.exec("ALTER TABLE blackjack_sessions ADD COLUMN can_split INTEGER NOT NULL DEFAULT 0");
+    db.exec("ALTER TABLE blackjack_sessions ADD COLUMN split_aces INTEGER NOT NULL DEFAULT 0");
+    db.exec("ALTER TABLE blackjack_sessions ADD COLUMN status_1 TEXT DEFAULT NULL");
+    db.exec("ALTER TABLE blackjack_sessions ADD COLUMN status_2 TEXT DEFAULT NULL");
+    db.exec("ALTER TABLE blackjack_sessions ADD COLUMN can_double_2 INTEGER NOT NULL DEFAULT 1");
+  }
+
   // Table des Demandes de Livraison Directe (remplace le système de code de retrait)
   db.exec(`
     CREATE TABLE IF NOT EXISTS delivery_orders (
@@ -192,6 +214,7 @@ function initDb() {
       first_name TEXT NOT NULL,
       room_location TEXT NOT NULL,
       phone TEXT DEFAULT NULL,
+      notes TEXT DEFAULT NULL,
       item_id TEXT NOT NULL,
       item_name TEXT NOT NULL,
       variant_name TEXT DEFAULT NULL,
@@ -209,6 +232,13 @@ function initDb() {
     CREATE INDEX IF NOT EXISTS idx_delivery_user ON delivery_orders(user_id, status);
     CREATE INDEX IF NOT EXISTS idx_delivery_status ON delivery_orders(status);
   `);
+
+  // Migration de la colonne notes si absente
+  const delivCols = db.prepare("PRAGMA table_info(delivery_orders)").all();
+  const hasNotes = delivCols.some(c => c.name === 'notes');
+  if (!hasNotes) {
+    db.exec("ALTER TABLE delivery_orders ADD COLUMN notes TEXT DEFAULT NULL");
+  }
 
   // Migration rétrocompatible des anciennes commandes vers delivery_orders si vide
   const deliveriesCount = db.prepare('SELECT COUNT(*) as count FROM delivery_orders').get().count;
@@ -237,6 +267,17 @@ function initDb() {
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     );
 
+    CREATE TABLE IF NOT EXISTS user_wheel_daily_spins (
+      user_id INTEGER NOT NULL,
+      wheel_id TEXT NOT NULL,
+      spin_date TEXT NOT NULL,
+      spins_count INTEGER NOT NULL DEFAULT 0,
+      PRIMARY KEY (user_id, wheel_id, spin_date),
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_wheel_daily_spins ON user_wheel_daily_spins(user_id, wheel_id, spin_date);
+
     CREATE TABLE IF NOT EXISTS promo_codes (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       code TEXT UNIQUE NOT NULL,
@@ -258,127 +299,26 @@ function initDb() {
       UNIQUE(code_id, user_id)
     );
 
+    CREATE TABLE IF NOT EXISTS wheel_configs (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      subtitle TEXT,
+      type TEXT NOT NULL,
+      cost INTEGER NOT NULL DEFAULT 0,
+      cooldown_hours INTEGER NOT NULL DEFAULT 24,
+      badge TEXT,
+      badge_class TEXT,
+      icon TEXT,
+      description TEXT,
+      segments_json TEXT NOT NULL,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
     CREATE INDEX IF NOT EXISTS idx_promo_code ON promo_codes(code);
     CREATE INDEX IF NOT EXISTS idx_code_util_user ON code_utilisations(user_id);
     CREATE INDEX IF NOT EXISTS idx_code_util_code ON code_utilisations(code_id);
   `);
 
-  // Initialisation du catalogue officiel BDE (Taux interne de calcul : 10 000 coins = 1,00 €)
-  const officialCatalog = [
-    // Sucreries
-    ['dragibus_40g', 'Bonbons Dragibus 40g', 'Sucreries', 10000, 50, 50, '🍬', 'Sachet de bonbons Dragibus Haribo 40g', null, 'Pièce'],
-    ['happy_life_40g', 'Bonbons Happy Life 40g', 'Sucreries', 10000, 50, 50, '🍬', 'Sachet Happy Life Haribo 40g', null, 'Pièce'],
-    ['bounty', 'Bounty', 'Sucreries', 10000, 50, 50, '🍫', 'Barre chocolatée Bounty à la noix de coco', null, 'Pièce'],
-    ['crunch', 'Crunch', 'Sucreries', 10000, 50, 50, '🍫', 'Barre Crunch chocolat au lait et riz soufflé', null, 'Pièce'],
-    ['kinder_bueno', 'Kinder Bueno', 'Sucreries', 10000, 50, 50, '🍫', 'Gaufrette croustillante enrobée de chocolat au lait', null, 'Pièce'],
-    ['kinder_bueno_white', 'Kinder Bueno White', 'Sucreries', 10000, 50, 50, '🍫', 'Gaufrette croustillante chocolat blanc', null, 'Pièce'],
-    ['kinder_country', 'Kinder Country', 'Sucreries', 10000, 50, 50, '🍫', 'Barre de céréales soufflées au chocolat au lait', null, 'Pièce'],
-    ['kinder_delice', 'Kinder Délice', 'Sucreries', 10000, 50, 50, '🍫', 'Génoise cacaotée avec cœur de lait', null, 'Pièce'],
-    ['kinder_delice_coco', 'Kinder Délice Coco', 'Sucreries', 10000, 50, 50, '🍫', 'Génoise cacaotée au cœur de coco', null, 'Pièce'],
-    ['kinder_maxi', 'Kinder Maxi', 'Sucreries', 10000, 50, 50, '🍫', 'Barre chocolatée Kinder Maxi', null, 'Pièce'],
-    ['kitkat', 'Kitkat', 'Sucreries', 10000, 50, 50, '🍫', 'Gaufrettes croustillantes enrobées de chocolat au lait', null, 'Pièce'],
-    ['kitkat_chunky', 'Kitkat Chunky', 'Sucreries', 10000, 50, 50, '🍫', 'Version Chunky ultra gourmande Kitkat', null, 'Pièce'],
-    ['lion', 'Lion', 'Sucreries', 10000, 50, 50, '🍫', 'Gaufrette, caramel et céréales enrobés de chocolat', null, 'Pièce'],
-    ['mars', 'Mars', 'Sucreries', 10000, 50, 50, '🍫', 'Barre de nougat tendre et caramel au chocolat au lait', null, 'Pièce'],
-    ['mms', 'M&M’s', 'Sucreries', 10000, 50, 50, '🍬', 'Sachet individuel de M&M’s cacahuètes', null, 'Pièce'],
-    ['pain_au_chocolat', 'Pain au chocolat', 'Sucreries', 5000, 40, 40, '🥐', 'Viennoiserie fraîche pour la pause', null, 'Pièce'],
-    ['smarties', 'Smarties', 'Sucreries', 10000, 50, 50, '🍬', 'Boîte de Smarties chocolatés colorés', null, 'Pièce'],
-    ['snickers', 'Snickers', 'Sucreries', 10000, 50, 50, '🍫', 'Nougat, cacahuètes grillées et caramel au chocolat', null, 'Pièce'],
-    ['twix', 'Twix', 'Sucreries', 10000, 50, 50, '🍫', 'Biscuit croustillant et caramel enrobés de chocolat', null, 'Pièce'],
-
-    // Boissons Fraîches
-    ['cacolac', 'Cacolac', 'Boissons Fraîches', 10000, 40, 40, '🥛', 'Boisson lactée cacaotée servie fraîche', null, 'Pièce'],
-    ['capri_sun', 'Capri-Sun', 'Boissons Fraîches', 5000, 60, 60, '🧃', 'Poche Capri-Sun multivitaminé 200ml', null, 'Pièce'],
-    ['coca', 'Coca', 'Boissons Fraîches', 10000, 60, 60, '🥤', 'Canette Coca-Cola 33cl fraîche', null, 'Pièce'],
-    ['coca_50cl', 'Coca 50cl', 'Boissons Fraîches', 15000, 40, 40, '🥤', 'Bouteille Coca-Cola 50cl fraîche', null, 'Pièce'],
-    ['coca_cherry', 'Coca Cherry', 'Boissons Fraîches', 10000, 40, 40, '🥤', 'Canette Coca-Cola Cherry 33cl fraîche', null, 'Pièce'],
-    ['coca_zero', 'Coca Zero', 'Boissons Fraîches', 10000, 40, 40, '🥤', 'Canette Coca-Cola Zero 33cl fraîche', null, 'Pièce'],
-    ['ice_tea_peche', 'Ice Tea Pêche', 'Boissons Fraîches', 10000, 50, 50, '🧋', 'Canette Lipton Ice Tea Pêche 33cl fraîche', null, 'Pièce'],
-    ['jus_de_banane', 'Jus de Banane', 'Boissons Fraîches', 10000, 30, 30, '🍌', 'Bouteille de jus de banane onctueux', null, 'Pièce'],
-    ['monster_mango_loco', 'Monster Mango Loco', 'Boissons Fraîches', 20000, 35, 35, '⚡', 'Canette Monster Energy Mango Loco 500ml', null, 'Pièce'],
-    ['oasis_pomme_cassis', 'Oasis Pomme Cassis Framboise', 'Boissons Fraîches', 10000, 40, 40, '🧃', 'Canette Oasis Pomme Cassis Framboise 33cl', null, 'Pièce'],
-    ['oasis_tropical', 'Oasis Tropical', 'Boissons Fraîches', 10000, 50, 50, '🧃', 'Canette Oasis Tropical 33cl fraîche', null, 'Pièce'],
-
-    // Chips
-    ['chips_barbecue', 'Chips Barbecue', 'Chips', 10000, 40, 40, '🥔', 'Paquet individuel de chips goût Barbecue', null, 'Pièce'],
-    ['chips_nature', 'Chips Nature', 'Chips', 10000, 40, 40, '🥔', 'Paquet individuel de chips goût Nature salé', null, 'Pièce'],
-    ['chips_poulet_roti', 'Chips Poulet Rôti', 'Chips', 10000, 40, 40, '🥔', 'Paquet individuel de chips au poulet rôti', null, 'Pièce'],
-    ['pringles_barbecue', 'Pringles Barbecue', 'Chips', 12000, 30, 30, '🥔', 'Tube Pringles saveur Barbecue', null, 'Pièce'],
-    ['pringles_original', 'Pringles Original', 'Chips', 12000, 30, 30, '🥔', 'Tube Pringles saveur Original', null, 'Pièce'],
-    ['pringles_sour_cream', 'Pringles Sour Cream and Onion 70g', 'Chips', 15000, 30, 30, '🥔', 'Tube Pringles Sour Cream and Onion 70g', null, 'Pièce'],
-
-    // Repas
-    ['crepes', 'Crêpes', 'Repas', 10000, 30, 30, '🥞', 'Crêpe sucrée préparée au stand BDE', null, 'Pièce'],
-    ['gaufres', 'Gaufres', 'Repas', 10000, 30, 30, '🧇', 'Gaufre moelleuse chaude', null, 'Pièce'],
-    [
-      'hot_dog_variantes',
-      'Hot-Dog',
-      'Repas',
-      25000,
-      35,
-      35,
-      '🌭',
-      'Hot-dog chaud préparé à la minute au stand BDE avec options de sauces et garnitures',
-      JSON.stringify([
-        { name: 'Hot-Dog Simple', price: 25000 },
-        { name: 'Hot-Dog Complet (Sauces + Oignons Frits)', price: 30000 },
-        { name: 'Hot-Dog Double Saucisse Gourmand', price: 35000 }
-      ]),
-      'Pièce'
-    ],
-    ['hot_dog_simple', 'Hot-dog (version simple)', 'Repas', 25000, 35, 35, '🌭', 'Hot-dog classique saucisse et pain moelleux', null, 'Pièce'],
-    [
-      'menu_hot_dog',
-      'Menu Hot-Dog',
-      'Repas',
-      35000,
-      25,
-      25,
-      '🌭',
-      'Menu complet repas BDE incluant boisson fraîche et accompagnement au choix',
-      JSON.stringify([
-        { name: 'Menu Classique (Hot-Dog + Boisson 33cl)', price: 35000 },
-        { name: 'Menu Complet (Hot-Dog + Boisson + Chips)', price: 40000 },
-        { name: 'Menu Maxi (Hot-Dog Double + Boisson + Chips + Snack)', price: 45000 }
-      ]),
-      'Pièce'
-    ],
-
-    // Red Bull
-    ['red_bull_classic', 'Red Bull', 'Red Bull', 10000, 45, 45, '⚡', 'Canette Red Bull Energy Drink 250ml', null, 'Pièce'],
-    ['red_bull_abricot_fraise', 'Redbull Abricot-Fraise', 'Red Bull', 15000, 30, 30, '⚡', 'Red Bull The Amber Edition Abricot-Fraise 250ml', null, 'Pièce'],
-    ['red_bull_coco_acai', 'Red Bull Coco Açaï', 'Red Bull', 15000, 30, 30, '⚡', 'Red Bull The White Edition Coco Açaï 250ml', null, 'Pièce'],
-    ['red_bull_juneberry', 'Red Bull Juneberry', 'Red Bull', 15000, 30, 30, '⚡', 'Red Bull The Sea Blue Edition Juneberry 250ml', null, 'Pièce'],
-    ['red_bull_mure_vanille', 'Redbull Mûre givrée & vanille', 'Red Bull', 15000, 30, 30, '⚡', 'Red Bull The Winter Edition Mûre givrée & vanille 250ml', null, 'Pièce'],
-    ['red_bull_myrtille', 'Redbull Myrtille', 'Red Bull', 15000, 30, 30, '⚡', 'Red Bull The Blue Edition Myrtille 250ml', null, 'Pièce'],
-    ['red_bull_peche_blanche', 'Redbull Pêche blanche', 'Red Bull', 15000, 30, 30, '⚡', 'Red Bull The Ruby Edition Pêche blanche 250ml', null, 'Pièce'],
-    ['red_bull_pomme_fuji', 'Red Bull Pomme Fuji & Gingembre', 'Red Bull', 15000, 30, 30, '⚡', 'Red Bull The Red Edition Pomme Fuji & Gingembre 250ml', null, 'Pièce'],
-    ['red_bull_zero', 'Redbull Zero', 'Red Bull', 13000, 35, 35, '⚡', 'Canette Red Bull Zero 250ml', null, 'Pièce']
-  ];
-
-  const insertItem = db.prepare(`
-    INSERT INTO shop_items (id, name, category, price, stock, initial_stock, icon, description, variants, unit, is_active)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
-    ON CONFLICT(id) DO UPDATE SET
-      name = excluded.name,
-      category = excluded.category,
-      price = excluded.price,
-      icon = excluded.icon,
-      description = excluded.description,
-      variants = excluded.variants,
-      unit = excluded.unit,
-      is_active = 1
-  `);
-
-  const insertAll = db.transaction((items) => {
-    for (const item of items) insertItem.run(...item);
-  });
-  insertAll(officialCatalog);
-
-  // Désactiver les anciens articles de test pour n'avoir que le catalogue officiel
-  const officialIds = officialCatalog.map(item => item[0]);
-  const placeholders = officialIds.map(() => '?').join(',');
-  db.prepare(`UPDATE shop_items SET is_active = 0 WHERE id NOT IN (${placeholders})`).run(...officialIds);
 
   // Création du compte admin BDE prédéfini pour l'accès facile aux membres du bureau
   const adminExists = db.prepare("SELECT id FROM users WHERE username = 'bde_admin'").get();

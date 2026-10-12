@@ -27,12 +27,40 @@ const CrashGame = {
         this.loadHistory();
     },
 
+    getUserBalance() {
+        if (window.State && window.State.user && typeof window.State.user.coins === 'number') {
+            return window.State.user.coins;
+        }
+        if (window.User && typeof window.User.balance === 'number') {
+            return window.User.balance;
+        }
+        return 0;
+    },
+
+    notify(msg, type = 'info') {
+        if (window.UI && typeof window.UI.showToast === 'function') {
+            window.UI.showToast(msg, type);
+        } else if (typeof window.showToast === 'function') {
+            window.showToast(msg, type);
+        } else {
+            console.log(`[CrashGame] [${type}] ${msg}`);
+        }
+    },
+
+    onShow() {
+        this.resizeCanvas();
+        this.drawIdleStage();
+        this.loadHistory();
+    },
+
     resizeCanvas() {
         if (!this.canvas) return;
         const rect = this.canvas.getBoundingClientRect();
+        const width = rect.width || this.canvas.parentElement?.clientWidth || 700;
+        const height = rect.height || this.canvas.parentElement?.clientHeight || 400;
         const dpr = window.devicePixelRatio || 1;
-        this.canvas.width = rect.width * dpr;
-        this.canvas.height = rect.height * dpr;
+        this.canvas.width = width * dpr;
+        this.canvas.height = height * dpr;
         if (this.ctx) {
             this.ctx.resetTransform();
             this.ctx.scale(dpr, dpr);
@@ -57,13 +85,16 @@ const CrashGame = {
         document.querySelectorAll('.crash-quick-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 const action = btn.dataset.action;
-                const userBalance = (window.User && window.User.balance) || 1000;
-                if (action === 'half') this.bet = Math.max(1, Math.floor(this.bet / 2));
+                const userBalance = this.getUserBalance() || 1000;
+                if (action === 'half') this.bet = Math.max(10, Math.floor(this.bet / 2));
                 else if (action === 'double') this.bet = Math.min(userBalance, this.bet * 2);
-                else if (action === 'min') this.bet = 5;
-                else if (action === 'max') this.bet = userBalance;
+                else if (action === 'min') this.bet = 10;
+                else if (action === 'max') this.bet = Math.max(10, userBalance);
 
                 if (betInput) betInput.value = this.bet;
+                if (window.sound && typeof window.sound.playChip === 'function') {
+                    window.sound.playChip();
+                }
                 this.updatePreviewPayout();
             });
         });
@@ -82,9 +113,10 @@ const CrashGame = {
 
     async loadHistory() {
         try {
-            const res = await API.getCrashHistory();
-            if (res.success && res.history) {
-                this.history = res.history;
+            const res = await window.API.getCrashHistory();
+            const history = res.history || res.data?.history || [];
+            if (Array.isArray(history)) {
+                this.history = history;
                 this.renderHistory();
             }
         } catch (e) {
@@ -124,11 +156,25 @@ const CrashGame = {
         const betInput = document.getElementById('crashBetInput');
         if (betInput) this.bet = parseInt(betInput.value, 10) || this.bet;
 
-        const userBalance = (window.User && window.User.balance) || 0;
-        if (this.bet <= 0 || this.bet > userBalance) {
-            if (window.showToast) window.showToast('Solde insuffisant pour cette mise.', 'error');
+        if (!window.State || !window.State.isAuthenticated) {
+            this.notify('Connecte-toi pour lancer une partie de Crash.', 'warning');
+            if (window.UI && typeof window.UI.openAuthModal === 'function') {
+                window.UI.openAuthModal('login');
+            }
             return;
         }
+
+        const userBalance = this.getUserBalance();
+        if (!Number.isInteger(this.bet) || this.bet < 10) {
+            this.notify('Mise invalide (minimum 10 coins).', 'error');
+            return;
+        }
+        if (this.bet > userBalance) {
+            this.notify(`Solde insuffisant pour miser ${this.bet} coins (solde actuel : ${userBalance} coins).`, 'error');
+            return;
+        }
+
+        this.resizeCanvas();
 
         const actionBtn = document.getElementById('crashActionBtn');
         if (actionBtn) {
@@ -137,27 +183,38 @@ const CrashGame = {
         }
 
         try {
-            const res = await API.startCrash({ bet: this.bet });
-            if (!res.success) {
-                if (window.showToast) window.showToast(res.message || 'Impossible de lancer la partie', 'error');
+            const res = await window.API.startCrash({ bet: this.bet });
+            const data = res.data || res;
+
+            if (!res.success && res.error) {
+                this.notify(res.error || res.message || 'Impossible de lancer la partie', 'error');
                 this.setIdleUI();
                 return;
             }
 
-            // Deduct user balance in UI
-            if (window.User && res.data.coins !== undefined) {
-                window.User.balance = res.data.coins;
-                if (window.updateUserUI) window.updateUserUI();
+            // Déduire la mise du solde dans l'interface et activer la protection d'animation
+            const newCoins = data.coins !== undefined ? data.coins : (res.coins !== undefined ? res.coins : userBalance - this.bet);
+            if (window.State && typeof window.State.deductBet === 'function') {
+                window.State.deductBet(this.bet);
+            } else if (window.State && typeof window.State.updateCoins === 'function') {
+                window.State.updateCoins(newCoins);
+            }
+            if (window.User) {
+                window.User.balance = newCoins;
             }
 
-            this.gameId = res.data.gameId;
-            this.targetCrashPoint = Number(res.data.crashPoint);
+            this.gameId = data.gameId || res.gameId;
+            this.targetCrashPoint = Number(data.crashPoint || res.crashPoint);
             this.currentMultiplier = 1.00;
             this.state = 'running';
             this.particles = [];
             this.startTime = performance.now();
 
-            // Set button to Cashout
+            if (window.sound && typeof window.sound.playSpinTick === 'function') {
+                window.sound.playSpinTick();
+            }
+
+            // Mettre à jour le bouton en "ENCAISSER"
             if (actionBtn) {
                 actionBtn.disabled = false;
                 actionBtn.className = 'btn-crash-action btn-cashout';
@@ -182,7 +239,7 @@ const CrashGame = {
 
         } catch (err) {
             console.error('Erreur startCrash:', err);
-            if (window.showToast) window.showToast('Erreur serveur au décollage', 'error');
+            this.notify('Erreur serveur au décollage : ' + (err.message || 'problème de connexion'), 'error');
             this.setIdleUI();
         }
     },
@@ -201,36 +258,49 @@ const CrashGame = {
         }
 
         try {
-            const res = await API.cashoutCrash({
+            const res = await window.API.cashoutCrash({
                 gameId: this.gameId,
                 multiplier: frozenMultiplier
             });
+            const data = res.data || res;
 
-            if (res.success && res.data.won) {
-                if (window.AudioController && window.AudioController.playWin) {
+            if (data.won) {
+                if (window.sound && typeof window.sound.playWin === 'function') {
+                    window.sound.playWin();
+                } else if (window.AudioController && window.AudioController.playWin) {
                     window.AudioController.playWin();
                 }
+                if (window.UI && typeof window.UI.launchConfetti === 'function') {
+                    window.UI.launchConfetti();
+                } else if (window.UI && typeof window.UI.triggerConfetti === 'function') {
+                    window.UI.triggerConfetti();
+                }
 
-                if (window.User && res.data.coins !== undefined) {
-                    window.User.balance = res.data.coins;
-                    if (window.updateUserUI) window.updateUserUI();
+                if (window.State && data.coins !== undefined) {
+                    if (typeof window.State.setGameAnimating === 'function') {
+                        window.State.setGameAnimating(false, data.coins);
+                    } else {
+                        window.State.updateCoins(data.coins);
+                    }
+                }
+                if (window.User && data.coins !== undefined) {
+                    window.User.balance = data.coins;
                 }
 
                 const statusLabel = document.getElementById('crashStatusLabel');
                 if (statusLabel) {
                     statusLabel.className = 'crash-status-label status-cashed';
-                    statusLabel.textContent = `ENCAISSÉ : +${res.data.payout} 🪙 (×${res.data.multiplier.toFixed(2)})`;
+                    statusLabel.textContent = `ENCAISSÉ : +${data.payout} 🪙 (×${Number(data.multiplier).toFixed(2)})`;
                 }
 
-                if (window.showToast) {
-                    window.showToast(`Félicitations ! Vous avez encaissé ${res.data.payout} jetons à ×${res.data.multiplier.toFixed(2)}`, 'success');
-                }
+                this.notify(`🎉 Félicitations ! Tu as encaissé ${data.payout} jetons à ×${Number(data.multiplier).toFixed(2)} !`, 'success');
             } else {
-                // Already crashed edge
+                // Déjà crashé côté serveur
                 this.handleCrash();
             }
         } catch (err) {
             console.error('Erreur cashout:', err);
+            this.notify(err.message || 'Erreur lors de l’encaissement', 'error');
         }
     },
 
@@ -286,7 +356,9 @@ const CrashGame = {
         if (this.animationFrameId) cancelAnimationFrame(this.animationFrameId);
 
         // Play crash sound
-        if (window.AudioController && window.AudioController.playCrash) {
+        if (window.sound && typeof window.sound.playLose === 'function') {
+            window.sound.playLose();
+        } else if (window.AudioController && window.AudioController.playCrash) {
             window.AudioController.playCrash();
         }
 
@@ -305,9 +377,13 @@ const CrashGame = {
         // Draw explosion on canvas
         this.renderExplosion();
 
+        if (window.State && typeof window.State.setGameAnimating === 'function') {
+            window.State.setGameAnimating(false);
+        }
+
         // Tell server round finished if not cashed
         try {
-            await API.finishCrash({ gameId: this.gameId });
+            await window.API.finishCrash({ gameId: this.gameId });
         } catch (e) {
             // Ignored
         }

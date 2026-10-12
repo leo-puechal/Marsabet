@@ -46,15 +46,19 @@ const DiceGame = {
 
     const input = document.getElementById('diceBetInput');
     if (input) {
+      input.addEventListener('input', (e) => {
+        const val = parseInt(e.target.value, 10);
+        if (!isNaN(val)) this.currentBet = val;
+      });
       input.addEventListener('change', (e) => {
-        const val = parseInt(e.target.value);
-        if (!isNaN(val) && val > 0) this.setBet(val);
+        const val = parseInt(e.target.value, 10);
+        this.setBet(isNaN(val) || val < 10 ? 10 : val);
       });
     }
   },
 
   setBet(val) {
-    this.currentBet = Math.max(1, val);
+    this.currentBet = Math.max(10, val);
     const input = document.getElementById('diceBetInput');
     if (input) input.value = this.currentBet;
   },
@@ -68,9 +72,24 @@ const DiceGame = {
       return;
     }
 
+    const input = document.getElementById('diceBetInput');
+    if (input) {
+      const val = parseInt(input.value, 10);
+      if (!isNaN(val)) this.currentBet = val;
+    }
+
+    if (!Number.isInteger(this.currentBet) || this.currentBet < 10) {
+      window.UI.showToast('Mise invalide (minimum 10 coins).', 'error');
+      return;
+    }
+
     if (window.State.user.coins < this.currentBet) {
       window.UI.showToast('Solde insuffisant pour cette mise.', 'error');
       return;
+    }
+
+    if (window.State && this.currentBet > 0) {
+      window.State.deductBet(this.currentBet);
     }
 
     this.isRolling = true;
@@ -100,8 +119,9 @@ const DiceGame = {
         die2.textContent = this.diceIcons[data.die2 || 6];
       }
 
-      if (data.coins !== undefined) {
-        window.State.updateCoins(data.coins);
+      // Mettre à jour le solde uniquement après l'arrêt des dés
+      if (window.State && data.coins !== undefined) {
+        window.State.setGameAnimating(false, data.coins);
       }
 
       if (banner) {
@@ -121,6 +141,7 @@ const DiceGame = {
     } catch (err) {
       if (die1) die1.classList.remove('rolling');
       if (die2) die2.classList.remove('rolling');
+      if (window.State) window.State.setGameAnimating(false);
       window.UI.showToast(err.message, 'error');
     } finally {
       this.isRolling = false;

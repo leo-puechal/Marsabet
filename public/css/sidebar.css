@@ -375,9 +375,27 @@
 
 /* Le footer reste strictement cantonné à l'espace de contenu principal */
 .footer {
-  width: 100%;
-  margin-left: 0;
   box-sizing: border-box;
   position: relative;
   z-index: 10;
+}
+
+.main-content-wrapper .footer {
+  width: 100%;
+  margin-left: 0;
+}
+
+/* Sécurité absolue : si le footer est placé directement sous .app-layout ou body */
+.app-layout > .footer,
+body > .footer {
+  margin-left: var(--sidebar-width, 270px);
+  width: calc(100% - var(--sidebar-width, 270px));
+}
+
+@media (max-width: 900px) {
+  .app-layout > .footer,
+  body > .footer {
+    margin-left: 0;
+    width: 100%;
+  }
 }

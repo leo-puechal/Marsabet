@@ -80,6 +80,105 @@ L'application est accessible sur :
 
 ---
 
+## 🌐 Accès Réseau Local (Wi-Fi / LAN Multi-Appareils)
+
+Marsabet est configuré pour écouter sur **`0.0.0.0`** avec **CORS dynamique**, ce qui permet à tous les smartphones, tablettes et ordinateurs connectés au même réseau Wi-Fi d'accéder au casino avec une **base de données 100% centralisée et synchronisée en temps réel**.
+
+### 1. Trouver l'IP locale de la machine hôte selon votre OS
+
+> ⚠️ **Important** : Ne choisissez **JAMAIS** une interface virtuelle ou Docker (comme `docker0`, `br-xxxx`, `vethxxxx`, ou la boucle locale `lo`). Cherchez uniquement l'interface Wi-Fi physique active.
+
+- **🐧 Linux** :
+  ```bash
+  ip -br addr
+  # ou
+  ip addr
+  ```
+  Repérez l'interface Wi-Fi active (généralement nommée `wlan0` ou `wlp0s20f3`) et notez l'adresse IPv4 (ex: `10.79.216.0` ou `192.168.1.42`).
+
+- **🍏 macOS** :
+  ```bash
+  ipconfig getifaddr en0
+  # ou
+  ifconfig
+  ```
+  L'interface Wi-Fi sur Mac est quasi toujours `en0`.
+
+- **🪟 Windows** :
+  ```powershell
+  ipconfig
+  ```
+  Faites défiler jusqu'à la section **Carte réseau sans fil Wi-Fi** et relevez la ligne **Adresse IPv4** (ex: `192.168.1.50`). *Ignorez les cartes WSL, Hyper-V ou VirtualBox.*
+
+---
+
+### 2. Lancement du serveur
+
+```bash
+npm start
+```
+Au démarrage, Marsabet affiche automatiquement dans le terminal :
+```text
+=============================================================
+🎰 MARSABET CASINO VIRTUEL DÉMARRÉ SUR LE PORT 3001
+🌐 Accès local (machine hôte) : http://localhost:3001
+📡 Accès Réseau Local (Wi-Fi / LAN - autres appareils) :
+   👉 http://10.79.216.0:3001 (interface wlp0s20f3)
+🛡️  Monnaie 100% fictive scolaire - Zéro argent réel
+=============================================================
+```
+
+---
+
+### 3. Format de l'URL à partager aux autres appareils
+
+Partagez simplement l'URL avec l'IP de la machine hôte et le port :
+```text
+http://<IP_LOCALE>:<PORT>
+```
+*Exemple :* `http://10.79.216.0:3001` ou `http://192.168.1.42:3001`.
+
+Tous les participants peuvent ouvrir cette adresse sur leur navigateur mobile (Safari iOS, Chrome Android, Firefox, Edge) sans rien installer !
+
+---
+
+### 4. Prérequis Wi-Fi
+
+- La machine serveur hôte et tous les appareils des élèves doivent impérativement être connectés au **même réseau Wi-Fi local** (ou au même partage de connexion 4G/5G mobile).
+
+---
+
+### 5. Vérification du Pare-feu (Firewall) si la connexion échoue
+
+Si un appareil du réseau affiche *"Délai d'attente dépassé"* ou *"Impossible de se connecter"*, le pare-feu de la machine hôte bloque probablement les connexions entrantes sur le port `3001` :
+
+- **Linux (UFW)** :
+  ```bash
+  sudo ufw allow 3001/tcp
+  sudo ufw reload
+  ```
+- **Windows (Pare-feu Windows Defender)** :
+  1. Ouvrez *Sécurité Windows* > *Pare-feu et protection du réseau*.
+  2. Cliquez sur *Autoriser une application via le pare-feu* et cochez **Node.js** pour les réseaux **Privés**.
+  3. Ou ouvrez un port entrant : `netsh advfirewall firewall add rule name="Marsabet Port 3001" dir=in action=allow protocol=TCP localport=3001 profile=private`.
+- **macOS** :
+  - Rendez-vous dans *Réglages Système* > *Réseau* > *Coupe-feu* et assurez-vous que Node.js est autorisé à recevoir des connexions entrantes.
+
+---
+
+### 6. Architecture Centralisée & Synchronisation Temps Réel
+
+- **Base de Données Unique & Centrale** :
+  Toutes les données (soldes en jetons, comptes, historique de jeu, stocks de la boutique BDE, demandes de livraison) sont stockées dans **une seule et unique instance SQLite** (`server/database/marsabet.db`) sur la machine serveur, opérée en mode WAL (Write-Ahead Logging). Aucun solde ni résultat de jeu n'est géré en local sur les téléphones des élèves.
+- **Validation 100% Côté Serveur** :
+  Chaque mise, gain, achat boutique, activation de code promo et tour de roue fait un aller-retour transactionnel complet vers le serveur avant la moindre mise à jour d'affichage.
+- **Synchronisation Hybride (Socket.io + Polling 6s)** :
+  - **Socket.io** : propagation instantanée (0 ms) dès qu'un joueur gagne (bandeau ticker animé en direct), qu'un achat décrémente un stock de la boutique, ou que le classement évolue.
+  - **Polling Périodique (Fallback)** : un cycle automatique toutes les 6 secondes (et au déverrouillage de l'écran du smartphone via l'événement `visibilitychange`) garantit qu'aucun appareil ne reste désynchronisé, même en cas de micro-coupure Wi-Fi.
+
+---
+
+
 ## 📁 Structure du Projet
 ```
 Marsabet/

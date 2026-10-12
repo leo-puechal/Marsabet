@@ -1,7 +1,7 @@
 // Marsabet API Client
 
 const API = {
-  baseUrl: '/api',
+  baseUrl: (typeof window !== 'undefined' && (window.REACT_APP_API_URL || window.MARSABET_API_URL)) || '/api',
 
   getToken() {
     return localStorage.getItem('marsabet_token');
@@ -82,26 +82,11 @@ const API = {
     return this.request('/user/profile');
   },
 
-  async getShopItems() {
-    return this.request('/user/shop');
-  },
-
-  async orderShopProduct(data) {
-    return this.request('/user/shop/order', {
-      method: 'POST',
-      body: JSON.stringify(data)
-    });
-  },
-
   async confirmWheelDelivery(data) {
     return this.request('/wheels/confirm-delivery', {
       method: 'POST',
       body: JSON.stringify(data)
     });
-  },
-
-  async getMyOrders() {
-    return this.request('/user/shop/my-orders');
   },
 
   // Fortune Wheels Endpoints
@@ -147,27 +132,15 @@ const API = {
     return this.adminGetDeliveries(status, search);
   },
 
-  async adminGetProducts() {
-    return this.request('/admin/products');
+  // Wheels Admin Endpoints
+  async adminGetWheels() {
+    return this.request('/admin/wheels');
   },
 
-  async adminCreateProduct(data) {
-    return this.request('/admin/products', {
-      method: 'POST',
-      body: JSON.stringify(data)
-    });
-  },
-
-  async adminUpdateProduct(id, data) {
-    return this.request(`/admin/products/${id}`, {
+  async adminUpdateWheelSegments(id, segments) {
+    return this.request(`/admin/wheels/${id}/segments`, {
       method: 'PUT',
-      body: JSON.stringify(data)
-    });
-  },
-
-  async adminDeleteProduct(id) {
-    return this.request(`/admin/products/${id}`, {
-      method: 'DELETE'
+      body: JSON.stringify({ segments })
     });
   },
 
@@ -261,6 +234,12 @@ const API = {
 
   async doubleBlackjack() {
     return this.request('/games/blackjack/double', {
+      method: 'POST'
+    });
+  },
+
+  async splitBlackjack() {
+    return this.request('/games/blackjack/split', {
       method: 'POST'
     });
   },

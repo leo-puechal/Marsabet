@@ -67,9 +67,15 @@ const PlinkoGame = {
     const betInput = document.getElementById('plinkoBetInput');
     if (betInput) {
       betInput.addEventListener('input', (e) => {
-        const val = parseInt(e.target.value) || 10;
-        this.currentBet = Math.max(10, val);
-        this.updateCostDisplay();
+        const val = parseInt(e.target.value, 10);
+        if (!isNaN(val)) {
+          this.currentBet = val;
+          this.updateCostDisplay();
+        }
+      });
+      betInput.addEventListener('change', (e) => {
+        const val = parseInt(e.target.value, 10);
+        this.setBet(isNaN(val) || val < 10 ? 10 : val);
       });
     }
 
@@ -230,10 +236,25 @@ const PlinkoGame = {
       return;
     }
 
+    const betInput = document.getElementById('plinkoBetInput');
+    if (betInput) {
+      const val = parseInt(betInput.value, 10);
+      if (!isNaN(val)) this.currentBet = val;
+    }
+
+    if (!Number.isInteger(this.currentBet) || this.currentBet < 10) {
+      window.UI.showToast('Mise invalide (minimum 10 coins par bille).', 'error');
+      return;
+    }
+
     const totalCost = this.currentBet * this.ballCount;
     if (window.State.user.coins < totalCost) {
-      window.UI.showToast(`Solde insuffisant pour miser ${totalCost.toLocaleString()} coins.`, 'error');
+      window.UI.showToast(`Solde insuffisant pour miser ${totalCost.toLocaleString()} coins (${this.ballCount} billes).`, 'error');
       return;
+    }
+
+    if (window.State && totalCost > 0) {
+      window.State.deductBet(totalCost);
     }
 
     this.isDropping = true;
@@ -368,8 +389,10 @@ const PlinkoGame = {
           this.isDropping = false;
           if (dropBtn) dropBtn.disabled = false;
 
-          // Mise à jour du solde utilisateur
-          window.State.updateCoins(data.coins);
+          // Mise à jour du solde utilisateur uniquement après l'atterrissage de toutes les billes
+          if (window.State && data.coins !== undefined) {
+            window.State.setGameAnimating(false, data.coins);
+          }
 
           // Affichage du résultat global
           const totalPayout = data.totalPayout !== undefined ? data.totalPayout : data.payout;
@@ -433,6 +456,7 @@ const PlinkoGame = {
     } catch (err) {
       this.isDropping = false;
       if (dropBtn) dropBtn.disabled = false;
+      if (window.State) window.State.setGameAnimating(false);
       window.UI.showToast(err.message || 'Erreur lors du lancer Plinko', 'error');
     }
   }

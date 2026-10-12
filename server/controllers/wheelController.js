@@ -37,7 +37,13 @@ exports.spin = (req, res) => {
     const result = fortuneWheelService.spinWheel(wheelId, userId);
     return res.json(result);
   } catch (err) {
-    const status = (err.message && (err.message.includes('Solde insuffisant') || err.message.includes('Patience'))) ? 400 : 500;
+    const isClientError = err.message && (
+      err.message.includes('Solde insuffisant') ||
+      err.message.includes('Patience') ||
+      err.message.includes('Limite quotidienne') ||
+      err.message.includes('introuvable')
+    );
+    const status = isClientError ? 400 : 500;
     return res.status(status).json({ error: err.message || 'Erreur lors du tour de roue.' });
   }
 };
@@ -46,7 +52,7 @@ exports.spin = (req, res) => {
 exports.confirmDelivery = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { orderId, lastName, firstName, roomLocation, phone } = req.body;
+    const { orderId, lastName, firstName, roomLocation, phone, notes } = req.body;
 
     if (!orderId) {
       return res.status(400).json({ error: 'Identifiant du lot manquant.' });
@@ -56,7 +62,8 @@ exports.confirmDelivery = async (req, res) => {
       lastName,
       firstName,
       roomLocation,
-      phone
+      phone,
+      notes
     });
 
     return res.json(result);
@@ -66,21 +73,36 @@ exports.confirmDelivery = async (req, res) => {
   }
 };
 
-// Récupère toutes les demandes de livraison (roues + boutique) par l'élève
+// Récupère toutes les demandes de livraison (roues de la fortune) par l'élève
 exports.getMyRewards = (req, res) => {
   try {
     const userId = req.user.id;
 
-    const rewards = db.prepare(`
-      SELECT d.id, d.last_name, d.first_name, d.room_location, d.phone,
-             d.item_name, d.variant_name, d.coins_paid, d.quantity, d.status,
-             d.source, d.email_status, d.delivered_at, d.created_at,
-             i.icon, i.category
+    const rawRewards = db.prepare(`
+      SELECT d.id, d.last_name, d.first_name, d.room_location, d.phone, d.notes,
+             d.item_id, d.item_name, d.variant_name, d.coins_paid, d.quantity, d.status,
+             d.source, d.email_status, d.delivered_at, d.created_at
       FROM delivery_orders d
-      LEFT JOIN shop_items i ON d.item_id = i.id
       WHERE d.user_id = ?
       ORDER BY d.created_at DESC
     `).all(userId);
+
+    const rewards = rawRewards.map(r => {
+      let icon = '🎁';
+      let category = 'snack';
+      const name = (r.item_name || '').toLowerCase();
+      if (name.includes('red bull') || name.includes('monster')) {
+        icon = '⚡';
+        category = 'energie';
+      } else if (name.includes('canette') || name.includes('coca') || name.includes('boisson') || name.includes('oasis') || name.includes('fuze')) {
+        icon = '🥤';
+        category = 'boisson';
+      } else if (name.includes('chocolat') || name.includes('kinder') || name.includes('kitkat')) {
+        icon = '🍫';
+        category = 'snack';
+      }
+      return { ...r, icon, category };
+    });
 
     return res.json({ rewards, deliveries: rewards });
   } catch (err) {

@@ -122,6 +122,10 @@ const UI = {
     if (target) {
       target.classList.add('active');
       window.scrollTo({ top: 0, behavior: 'smooth' });
+
+      if (viewName === 'crash' && window.CrashGame && typeof window.CrashGame.onShow === 'function') {
+        window.CrashGame.onShow();
+      }
     }
 
     if (updateUrl && window.Router && window.Router.viewToPath[viewName]) {

@@ -30,6 +30,7 @@ function playSlider(bet, target, condition = 'under') {
     winChance: Number(winChance.toFixed(2)),
     multiplier,
     won,
+    isWin: won,
     payout,
     profit
   };

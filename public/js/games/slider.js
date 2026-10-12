@@ -53,13 +53,18 @@ const SliderGame = {
         document.querySelectorAll('.slider-bet-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 const action = btn.dataset.action;
-                const userBalance = (window.User && window.User.balance) || 1000;
-                if (action === 'half') this.bet = Math.max(1, Math.floor(this.bet / 2));
+                const userBalance = (window.State?.user?.coins !== undefined) 
+                    ? window.State.user.coins 
+                    : ((window.User && window.User.balance) || 1000);
+                if (action === 'half') this.bet = Math.max(10, Math.floor(this.bet / 2));
                 else if (action === 'double') this.bet = Math.min(userBalance, this.bet * 2);
-                else if (action === 'min') this.bet = 5;
+                else if (action === 'min') this.bet = 10;
                 else if (action === 'max') this.bet = userBalance;
 
                 if (betInput) betInput.value = this.bet;
+                if (window.sound && typeof window.sound.playChip === 'function') {
+                    window.sound.playChip();
+                }
             });
         });
 
@@ -130,10 +135,23 @@ const SliderGame = {
         const betInput = document.getElementById('sliderBetInput');
         if (betInput) this.bet = parseInt(betInput.value, 10) || this.bet;
 
-        const userBalance = (window.User && window.User.balance) || 0;
-        if (this.bet <= 0 || this.bet > userBalance) {
-            if (window.showToast) window.showToast('Solde insuffisant pour cette mise', 'error');
+        const userBalance = (window.State?.user?.coins !== undefined) 
+            ? window.State.user.coins 
+            : ((window.User && window.User.balance) || 0);
+
+        const toastFn = (window.UI && window.UI.showToast) || window.showToast;
+        if (!Number.isInteger(this.bet) || this.bet < 10) {
+            if (toastFn) toastFn('Mise invalide (minimum 10 coins).', 'error');
             return;
+        }
+
+        if (this.bet > userBalance) {
+            if (toastFn) toastFn('Solde insuffisant pour cette mise.', 'error');
+            return;
+        }
+
+        if (window.State && this.bet > 0) {
+            window.State.deductBet(this.bet);
         }
 
         this.isRolling = true;
@@ -144,50 +162,69 @@ const SliderGame = {
         }
 
         try {
-            if (window.AudioController && window.AudioController.playSliderTick) {
+            if (window.sound && typeof window.sound.playSpinTick === 'function') {
+                window.sound.playSpinTick();
+            } else if (window.AudioController && window.AudioController.playSliderTick) {
                 window.AudioController.playSliderTick();
             }
 
-            const res = await API.playSlider({
+            const res = await window.API.playSlider({
                 bet: this.bet,
                 target: this.target,
                 mode: this.mode
             });
 
-            if (!res.success) {
-                if (window.showToast) window.showToast(res.message || 'Erreur lors du tirage', 'error');
+            if (!res.success && res.error) {
+                const toastFn = (window.UI && window.UI.showToast) || window.showToast;
+                if (toastFn) toastFn(res.error || res.message || 'Erreur lors du tirage', 'error');
+                if (window.State) window.State.setGameAnimating(false);
                 this.resetState();
                 return;
             }
 
-            // Animate puck to result
-            await this.animateResult(res.data);
+            const gameData = res.data || res;
 
-            // Update user balance
-            if (window.User && res.data.balance !== undefined) {
-                window.User.balance = res.data.balance;
-                if (window.updateUserUI) window.updateUserUI();
+            // Animate puck to result
+            await this.animateResult(gameData);
+
+            // Update user balance at end of puck animation
+            const newBalance = gameData.balance !== undefined ? gameData.balance : gameData.coins;
+            if (newBalance !== undefined) {
+                if (window.State && typeof window.State.setGameAnimating === 'function') {
+                    window.State.setGameAnimating(false, newBalance);
+                } else if (window.State && typeof window.State.updateCoins === 'function') {
+                    window.State.updateCoins(newBalance);
+                }
+                if (window.User) {
+                    window.User.balance = newBalance;
+                }
             }
 
             // Record to history
-            this.addToHistory(res.data);
+            this.addToHistory(gameData);
 
-            if (res.data.isWin) {
-                if (window.AudioController && window.AudioController.playWin) {
+            if (gameData.isWin) {
+                if (window.sound && typeof window.sound.playWin === 'function') {
+                    window.sound.playWin();
+                } else if (window.AudioController && window.AudioController.playWin) {
                     window.AudioController.playWin();
                 }
-                if (window.showToast) {
-                    window.showToast(`Victoire ! Vous avez gagné ${res.data.payout} coins (x${res.data.multiplier})`, 'success');
+                const toastFn = (window.UI && window.UI.showToast) || window.showToast;
+                if (toastFn) {
+                    toastFn(`Victoire ! Tu as gagné ${gameData.payout} coins (x${gameData.multiplier})`, 'success');
                 }
             } else {
-                if (window.AudioController && window.AudioController.playLoss) {
+                if (window.sound && typeof window.sound.playLose === 'function') {
+                    window.sound.playLose();
+                } else if (window.AudioController && window.AudioController.playLoss) {
                     window.AudioController.playLoss();
                 }
             }
 
         } catch (err) {
             console.error('Slider play error:', err);
-            if (window.showToast) window.showToast('Erreur serveur lors de la partie', 'error');
+            const toastFn = (window.UI && window.UI.showToast) || window.showToast;
+            if (toastFn) toastFn('Erreur serveur lors de la partie : ' + err.message, 'error');
         } finally {
             this.resetState();
         }

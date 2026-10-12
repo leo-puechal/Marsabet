@@ -27,13 +27,47 @@ const RouletteGame = {
     // Puces sélectionnées
     document.querySelectorAll('#view-roulette .casino-chip').forEach(chip => {
       chip.addEventListener('click', (e) => {
-        const val = parseInt(e.currentTarget.dataset.val);
-        this.selectedChip = val;
+        const val = parseInt(e.currentTarget.dataset.val, 10);
+        this.setChip(val);
         document.querySelectorAll('#view-roulette .casino-chip').forEach(c => c.style.transform = '');
         e.currentTarget.style.transform = 'translateY(-6px) scale(1.1)';
         window.sound.playChip();
       });
     });
+
+    // Champ de saisie personnalisé
+    const customChipInput = document.getElementById('rouletteCustomChipInput');
+    if (customChipInput) {
+      customChipInput.addEventListener('input', (e) => {
+        const val = parseInt(e.target.value, 10);
+        if (!isNaN(val) && val > 0) {
+          this.selectedChip = val;
+          document.querySelectorAll('#view-roulette .casino-chip').forEach(c => c.style.transform = '');
+        }
+      });
+      customChipInput.addEventListener('change', (e) => {
+        const val = parseInt(e.target.value, 10);
+        this.setChip(isNaN(val) || val <= 0 ? 10 : val);
+      });
+    }
+
+    // Multiplicateurs de jeton
+    document.querySelectorAll('#view-roulette .btn-mult').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const action = e.currentTarget.dataset.action;
+        if (action === 'half') this.setChip(Math.max(1, Math.floor(this.selectedChip / 2)));
+        if (action === 'double') this.setChip(this.selectedChip * 2);
+        if (action === 'max' && window.State.user) this.setChip(window.State.user.coins);
+        document.querySelectorAll('#view-roulette .casino-chip').forEach(c => c.style.transform = '');
+        window.sound.playChip();
+      });
+    });
+  },
+
+  setChip(val) {
+    this.selectedChip = Math.max(1, val);
+    const input = document.getElementById('rouletteCustomChipInput');
+    if (input) input.value = this.selectedChip;
   },
 
   renderBoard() {
@@ -209,6 +243,21 @@ const RouletteGame = {
       return;
     }
 
+    const totalBet = this.currentBets.reduce((acc, b) => acc + b.amount, 0);
+    if (totalBet < 10) {
+      window.UI.showToast('Mise totale minimale sur la roulette : 10 coins.', 'error');
+      return;
+    }
+
+    if (window.State && window.State.user && window.State.user.coins < totalBet) {
+      window.UI.showToast('Solde insuffisant pour placer ces paris.', 'error');
+      return;
+    }
+
+    if (window.State && totalBet > 0) {
+      window.State.deductBet(totalBet);
+    }
+
     this.isSpinning = true;
     const spinBtn = document.getElementById('rouletteSpinBtn');
     if (spinBtn) spinBtn.disabled = true;
@@ -290,7 +339,9 @@ const RouletteGame = {
           this.isSpinning = false;
           if (spinBtn) spinBtn.disabled = false;
 
-          window.State.updateCoins(data.coins);
+          if (window.State && data.coins !== undefined) {
+            window.State.setGameAnimating(false, data.coins);
+          }
 
           if (banner) {
             const colText = data.color === 'red' ? 'Rouge' : (data.color === 'black' ? 'Noir' : 'Vert');
@@ -314,6 +365,7 @@ const RouletteGame = {
     } catch (err) {
       this.isSpinning = false;
       if (spinBtn) spinBtn.disabled = false;
+      if (window.State) window.State.setGameAnimating(false);
       window.UI.showToast(err.message || 'Erreur lors du lancer de roulette', 'error');
     }
   }

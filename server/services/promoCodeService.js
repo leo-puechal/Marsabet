@@ -221,7 +221,15 @@ function redeemCode(codeStr, userId) {
     };
   });
 
-  return tx();
+  const res = tx();
+
+  try {
+    const socketService = require('./socketService');
+    socketService.notifyUserBalance(userId, res.newCoins);
+    socketService.notifyLeaderboardUpdated();
+  } catch (sockErr) {}
+
+  return res;
 }
 
 /**

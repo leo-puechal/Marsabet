@@ -24,7 +24,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.UI.switchView(view);
         if (view === 'leaderboard') loadLeaderboard();
         if (view === 'profile') loadProfile();
-        if (view === 'shop') loadShop();
         if (view === 'admin') {
           if (window.AdminBDE) window.AdminBDE.switchTab('orders');
         }
@@ -77,6 +76,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const data = await window.API.login(username, password);
         window.API.setToken(data.token);
         window.State.setUser(data.user);
+        if (window.SyncEngine) window.SyncEngine.authenticateSocket();
         window.UI.closeAuthModal();
         window.UI.showToast(data.message, 'success');
         window.sound.playWin();
@@ -98,6 +98,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const data = await window.API.register(username, password);
         window.API.setToken(data.token);
         window.State.setUser(data.user);
+        if (window.SyncEngine) window.SyncEngine.authenticateSocket();
         window.UI.closeAuthModal();
         window.UI.showToast(data.message, 'success');
         window.sound.playJackpot();
@@ -107,6 +108,25 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     });
   }
+
+  // Masquer / afficher le mot de passe (icône œil)
+  document.querySelectorAll('.btn-toggle-password').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const targetId = btn.dataset.target;
+      const input = document.getElementById(targetId);
+      if (!input) return;
+      if (input.type === 'password') {
+        input.type = 'text';
+        btn.textContent = '🙈';
+        btn.setAttribute('aria-label', 'Masquer le mot de passe');
+      } else {
+        input.type = 'password';
+        btn.textContent = '👁️';
+        btn.setAttribute('aria-label', 'Afficher le mot de passe');
+      }
+    });
+  });
 
   // Effets sonores dans la Navbar latérale
   const sidebarSoundBtn = document.getElementById('sidebarSoundBtn');
@@ -156,30 +176,67 @@ document.addEventListener('DOMContentLoaded', async () => {
           window.UI.switchView(view);
           if (view === 'leaderboard') loadLeaderboard();
           if (view === 'profile') loadProfile();
-          if (view === 'shop') loadShop();
           if (view === 'admin' && window.AdminBDE) window.AdminBDE.switchTab('orders');
         }
 
         // Fermer le tiroir mobile après sélection
-        const sidebar = document.getElementById('appSidebar');
-        if (sidebar) sidebar.classList.remove('mobile-open');
+        closeMobileDrawer();
       }
     });
   });
 
-  // Toggle Menu Mobile
+  // Gestion du Tiroir Mobile / Menu Hamburger & Backdrop
+  const sidebar = document.getElementById('appSidebar');
+  const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+  const sidebarCloseBtn = document.getElementById('sidebarCloseBtn');
   const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+
+  function openMobileDrawer() {
+    if (sidebar) sidebar.classList.add('mobile-open');
+    if (sidebarBackdrop) sidebarBackdrop.classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeMobileDrawer() {
+    if (sidebar) sidebar.classList.remove('mobile-open');
+    if (sidebarBackdrop) sidebarBackdrop.classList.remove('active');
+    document.body.style.overflow = '';
+  }
+
+  window.closeMobileDrawer = closeMobileDrawer;
+  window.openMobileDrawer = openMobileDrawer;
+
   if (mobileMenuToggle) {
     mobileMenuToggle.addEventListener('click', () => {
-      const sidebar = document.getElementById('appSidebar');
-      if (sidebar) sidebar.classList.toggle('mobile-open');
+      if (sidebar && sidebar.classList.contains('mobile-open')) {
+        closeMobileDrawer();
+      } else {
+        openMobileDrawer();
+      }
     });
   }
+
+  if (sidebarCloseBtn) {
+    sidebarCloseBtn.addEventListener('click', closeMobileDrawer);
+  }
+
+  if (sidebarBackdrop) {
+    sidebarBackdrop.addEventListener('click', closeMobileDrawer);
+  }
+
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && sidebar && sidebar.classList.contains('mobile-open')) {
+      closeMobileDrawer();
+    }
+  });
 
   // Connexion rapide depuis la navbar latérale
   const sidebarAuthBtn = document.getElementById('sidebarAuthBtn');
   if (sidebarAuthBtn) {
-    sidebarAuthBtn.addEventListener('click', () => window.UI.openAuthModal('login'));
+    sidebarAuthBtn.addEventListener('click', () => {
+      closeMobileDrawer();
+      window.UI.openAuthModal('login');
+    });
   }
 
   // Modale de Confirmation de Déconnexion
@@ -286,7 +343,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const becomeAdminBtn = document.getElementById('becomeAdminBtn');
   if (becomeAdminBtn) {
     becomeAdminBtn.addEventListener('click', async () => {
-      const secret = prompt('Entre le mot de passe secret BDE (ex: epitech2026) :');
+      const secret = prompt('Entre le mot de passe secret BDE');
       if (!secret) return;
       try {
         const res = await window.API.becomeAdmin(secret);
@@ -349,7 +406,7 @@ async function loadGlobalStats() {
 
     const totalPlayersEl = document.getElementById('statTotalPlayers');
     if (totalPlayersEl) totalPlayersEl.textContent = stats.totalPlayers.toLocaleString();
-  } catch (e) {}
+  } catch (e) { }
 }
 
 async function loadLeaderboard() {
@@ -389,6 +446,11 @@ async function loadLeaderboard() {
     if (podiumP3Score) podiumP3Score.textContent = p3 ? `${p3.coins.toLocaleString()} 🪙` : '-';
 
     // Remplir le tableau
+    if (leaders.length === 0) {
+      listEl.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 2.5rem; color:var(--text-muted); font-size:0.95rem;">Aucun joueur classé pour le moment.<br><span style="color:var(--gold-light);">Inscris-toi et lance une partie pour prendre la tête du podium !</span></td></tr>';
+      return;
+    }
+
     listEl.innerHTML = leaders.map((u, idx) => {
       const rank = idx + 1;
       let badge = `${rank}`;
@@ -420,20 +482,40 @@ async function loadLeaderboard() {
 }
 
 async function loadProfile() {
-  if (!window.State.isAuthenticated) {
-    window.UI.openAuthModal('login');
+  if (!window.State?.isAuthenticated) {
+    window.UI?.openAuthModal('login');
     return;
   }
 
+  const loadingState = document.getElementById('profileLoadingState');
+  const contentContainer = document.getElementById('profileContentContainer');
+
+  // Afficher l'état de chargement
+  if (loadingState) {
+    loadingState.style.display = 'block';
+    loadingState.innerHTML = `
+      <div style="width:50px; height:50px; border:4px solid rgba(212,175,55,0.2); border-top-color:var(--gold-primary); border-radius:50%; animation:spin 0.8s linear infinite; margin:0 auto 1.5rem;"></div>
+      <h3 style="color:#FFF; font-family:var(--font-display); font-size:1.3rem; margin-bottom:0.5rem;">
+        Chargement de ton profil cosmique...
+      </h3>
+      <p style="color:var(--text-muted); font-size:0.9rem;">
+        Récupération du solde, niveau VIP, historique et livraisons
+      </p>
+    `;
+  }
+  if (contentContainer) contentContainer.style.display = 'none';
+
   try {
     const data = await window.API.getProfile();
-    const u = data.user;
-    const vip = data.vipInfo || {
-      currentTier: { name: 'Bronze', icon: '🥉', color: '#CD7F32', badgeClass: 'vip-bronze', bonusMultiplier: 1.0, perks: ['Badge Bronze standard'] },
+    const u = data?.user || {};
+    const vip = data?.vipInfo || {
+      currentTier: { name: 'Bronze', icon: '🥉', color: '#CD7F32', badgeClass: 'vip-bronze', bonusMultiplier: 1.0, perk: 'Statut joueur de base', perks: ['Statut joueur de base'] },
       nextTier: { name: 'Argent', minWager: 50000 },
       wagerNeeded: 50000,
       progressPercent: 0
     };
+
+    const currentTier = vip?.currentTier || { name: 'Bronze', icon: '🥉', color: '#CD7F32', badgeClass: 'vip-bronze', bonusMultiplier: 1.0, perk: 'Statut standard' };
 
     const profileUsername = document.getElementById('profileUsername');
     const profileRank = document.getElementById('profileRank');
@@ -444,14 +526,15 @@ async function loadProfile() {
     const profileStreak = document.getElementById('profileStreak');
     const profileStatWager = document.getElementById('profileStatWager');
 
-    if (profileUsername) profileUsername.textContent = u.username;
-    if (profileRank) profileRank.textContent = `Rang #${u.rank || '-'}`;
-    if (profileCoins) profileCoins.textContent = `${u.coins.toLocaleString()} 🪙`;
-    if (profileGamesPlayed) profileGamesPlayed.textContent = u.games_played.toLocaleString();
-    if (profileBiggestWin) profileBiggestWin.textContent = `${u.biggest_win.toLocaleString()} 🪙`;
-    if (profileTotalWon) profileTotalWon.textContent = `${u.total_won.toLocaleString()} 🪙`;
-    if (profileStreak) profileStreak.textContent = `${u.daily_streak} jour${u.daily_streak > 1 ? 's' : ''}`;
-    if (profileStatWager) profileStatWager.textContent = `${(u.total_wagered || 0).toLocaleString()} 🪙`;
+    if (profileUsername) profileUsername.textContent = u?.username || 'Élève';
+    if (profileRank) profileRank.textContent = `Rang #${u?.rank || '-'}`;
+    if (profileCoins) profileCoins.textContent = `${(Number(u?.coins) || 0).toLocaleString('fr-FR')} 🪙`;
+    if (profileGamesPlayed) profileGamesPlayed.textContent = (Number(u?.games_played) || 0).toLocaleString('fr-FR');
+    if (profileBiggestWin) profileBiggestWin.textContent = `${(Number(u?.biggest_win) || 0).toLocaleString('fr-FR')} 🪙`;
+    if (profileTotalWon) profileTotalWon.textContent = `${(Number(u?.total_won) || 0).toLocaleString('fr-FR')} 🪙`;
+    const streak = Number(u?.daily_streak) || 0;
+    if (profileStreak) profileStreak.textContent = `${streak} jour${streak > 1 ? 's' : ''}`;
+    if (profileStatWager) profileStatWager.textContent = `${(Number(u?.total_wagered) || 0).toLocaleString('fr-FR')} 🪙`;
 
     // Progression VIP
     const totalWageredEl = document.getElementById('profileTotalWagered');
@@ -463,28 +546,31 @@ async function loadProfile() {
     const vipProgressPercent = document.getElementById('profileVipProgressPercent');
     const vipNextTierText = document.getElementById('profileVipNextTierText');
 
-    if (totalWageredEl) totalWageredEl.textContent = `${(u.total_wagered || 0).toLocaleString()} 🪙`;
-    if (vipTierNameEl) vipTierNameEl.textContent = `VIP ${vip.currentTier.name.toUpperCase()}`;
+    if (totalWageredEl) totalWageredEl.textContent = `${(Number(u?.total_wagered) || 0).toLocaleString('fr-FR')} 🪙`;
+    if (vipTierNameEl) vipTierNameEl.textContent = `VIP ${(currentTier?.name || 'BRONZE').toUpperCase()}`;
     if (vipBadgeEl) {
-      vipBadgeEl.className = `vip-badge ${vip.currentTier.badgeClass}`;
-      vipBadgeEl.textContent = `${vip.currentTier.icon} ${vip.currentTier.name.toUpperCase()}`;
+      vipBadgeEl.className = `vip-badge ${currentTier?.badgeClass || 'vip-bronze'}`;
+      vipBadgeEl.textContent = `${currentTier?.icon || '🥉'} ${(currentTier?.name || 'BRONZE').toUpperCase()}`;
     }
     if (vipAvatarEl) {
-      vipAvatarEl.textContent = vip.currentTier.icon;
-      vipAvatarEl.style.borderColor = vip.currentTier.color;
+      vipAvatarEl.textContent = currentTier?.icon || '🥉';
+      vipAvatarEl.style.borderColor = currentTier?.color || '#CD7F32';
     }
+    const perkText = currentTier?.perk || (Array.isArray(currentTier?.perks) ? currentTier.perks[0] : '') || 'Statut VIP standard';
     if (vipMultiplierEl) {
-      vipMultiplierEl.textContent = `Bonus Quotidien x${vip.currentTier.bonusMultiplier} (${vip.currentTier.perks[0] || ''})`;
+      vipMultiplierEl.textContent = `Bonus Quotidien x${currentTier?.bonusMultiplier ?? 1.0} (${perkText})`;
     }
+    const progress = Math.min(100, Math.max(0, Number(vip?.progressPercent) || 0));
     if (vipProgressFill) {
-      vipProgressFill.style.width = `${vip.progressPercent}%`;
+      vipProgressFill.style.width = `${progress}%`;
     }
     if (vipProgressPercent) {
-      vipProgressPercent.textContent = `Progression : ${vip.progressPercent}%`;
+      vipProgressPercent.textContent = `Progression : ${progress}%`;
     }
     if (vipNextTierText) {
-      if (vip.nextTier) {
-        vipNextTierText.textContent = `Encore ${vip.wagerNeeded.toLocaleString()} 🪙 de mises vers ${vip.nextTier.name}`;
+      if (vip?.nextTier?.name) {
+        const needed = (Number(vip?.wagerNeeded) || 0).toLocaleString('fr-FR');
+        vipNextTierText.textContent = `Encore ${needed} 🪙 de mises vers ${vip.nextTier.name}`;
       } else {
         vipNextTierText.textContent = '👑 Rang VIP Maximum Atteint !';
       }
@@ -493,7 +579,7 @@ async function loadProfile() {
     // Mise à jour de la roadmap VIP
     document.querySelectorAll('#profileVipRoadmap .vip-roadmap-tier').forEach(tierEl => {
       const tierName = tierEl.dataset.tier;
-      if (tierName === vip.currentTier.name) {
+      if (tierName && currentTier?.name && tierName.toLowerCase() === currentTier.name.toLowerCase()) {
         tierEl.classList.add('active');
       } else {
         tierEl.classList.remove('active');
@@ -501,28 +587,35 @@ async function loadProfile() {
     });
 
     // Rafraîchir le compte à rebours de la roue quotidienne
-    if (window.FreeWheelGame) {
-      window.FreeWheelGame.fetchStatus();
+    if (window.FreeWheelGame && typeof window.FreeWheelGame.fetchStatus === 'function') {
+      try { window.FreeWheelGame.fetchStatus(); } catch (e) { /* ignore */ }
     }
 
-    // Historique
+    // Historique des parties
     const histTable = document.getElementById('profileHistoryList');
     if (histTable) {
-      if (data.history.length === 0) {
-        histTable.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 1.5rem;">Aucune partie enregistrée pour le moment.</td></tr>';
+      const historyList = Array.isArray(data?.history) ? data.history : [];
+      if (historyList.length === 0) {
+        histTable.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 1.5rem; color:var(--text-muted);">Aucune partie enregistrée pour le moment.</td></tr>';
       } else {
-        histTable.innerHTML = data.history.map(h => {
-          const isWin = h.profit > 0;
-          const isTie = h.profit === 0;
+        histTable.innerHTML = historyList.map(h => {
+          const profit = Number(h?.profit) || 0;
+          const bet = Number(h?.bet) || 0;
+          const payout = Number(h?.payout) || 0;
+          const isWin = profit > 0;
+          const isTie = profit === 0;
+          const label = typeof gameLabel === 'function' ? gameLabel(h?.game_type) : (h?.game_type || 'Partie');
+          const dateStr = typeof formatDate === 'function' ? formatDate(h?.created_at) : (h?.created_at || '-');
+
           return `
             <tr>
-              <td><strong>${gameLabel(h.game_type)}</strong></td>
-              <td>${h.bet > 0 ? h.bet.toLocaleString() + ' 🪙' : '-'}</td>
-              <td>${h.payout.toLocaleString()} 🪙</td>
+              <td><strong>${label}</strong></td>
+              <td>${bet > 0 ? bet.toLocaleString('fr-FR') + ' 🪙' : '-'}</td>
+              <td>${payout.toLocaleString('fr-FR')} 🪙</td>
               <td style="color: ${isWin ? 'var(--win-green)' : (isTie ? 'var(--text-muted)' : 'var(--lose-red)')}; font-weight: bold;">
-                ${h.profit > 0 ? '+' : ''}${h.profit.toLocaleString()} 🪙
+                ${profit > 0 ? '+' : ''}${profit.toLocaleString('fr-FR')} 🪙
               </td>
-              <td style="font-size: 0.8rem; color: var(--text-muted);">${formatDate(h.created_at)}</td>
+              <td style="font-size: 0.8rem; color: var(--text-muted);">${dateStr}</td>
             </tr>
           `;
         }).join('');
@@ -531,29 +624,37 @@ async function loadProfile() {
 
     // Demandes de livraison directe et lots physiques
     if (window.FortuneWheels && typeof window.FortuneWheels.renderProfileRewardsList === 'function') {
-      window.FortuneWheels.renderProfileRewardsList();
+      try {
+        window.FortuneWheels.renderProfileRewardsList();
+      } catch (e) {
+        console.warn('Erreur FortuneWheels.renderProfileRewardsList:', e);
+      }
     } else {
       const ordersListEl = document.getElementById('profileOrdersList');
       if (ordersListEl) {
-        const deliveries = data.deliveries || data.orders || [];
+        const deliveries = Array.isArray(data?.deliveries) ? data.deliveries : (Array.isArray(data?.orders) ? data.orders : []);
         if (deliveries.length === 0) {
           ordersListEl.innerHTML = '<p style="color: var(--text-muted); padding:1rem;">Aucune demande de livraison pour l’instant.</p>';
         } else {
           ordersListEl.innerHTML = deliveries.map(o => {
-            const isDelivered = o.status === 'delivered';
+            const isDelivered = o?.status === 'delivered';
+            const icon = o?.icon || '🎁';
+            const itemName = typeof escapeHtml === 'function' ? escapeHtml(o?.item_name || 'Produit') : (o?.item_name || 'Produit');
+            const room = typeof escapeHtml === 'function' ? escapeHtml(o?.room_location || 'À préciser') : (o?.room_location || 'À préciser');
+
             return `
               <div class="reward-ticket-card ${isDelivered ? 'status-collected' : 'status-pending'}">
                 <div class="reward-ticket-header">
                   <div style="display:flex; align-items:center; gap:0.6rem;">
-                    <span class="reward-ticket-icon">${o.icon || '🎁'}</span>
-                    <div class="reward-ticket-title">${escapeHtml(o.item_name)}</div>
+                    <span class="reward-ticket-icon">${icon}</span>
+                    <div class="reward-ticket-title">${itemName}</div>
                   </div>
                   <span class="reward-status-pill ${isDelivered ? 'status-collected' : 'status-pending'}">
                     ${isDelivered ? '✅ Livré' : '⏳ À livrer'}
                   </span>
                 </div>
                 <div style="font-size:0.8rem; color:var(--gold-light); margin-top:0.4rem;">
-                  📍 Lieu : ${escapeHtml(o.room_location || 'À préciser')}
+                  📍 Lieu : ${room}
                 </div>
               </div>
             `;
@@ -563,9 +664,33 @@ async function loadProfile() {
     }
 
     // Charger les codes promo déjà activés par l'élève
-    loadMyPromoCodes();
+    try {
+      loadMyPromoCodes();
+    } catch (e) {
+      console.warn('Erreur loadMyPromoCodes:', e);
+    }
+
+    // Masquer le chargement et afficher le contenu
+    if (loadingState) loadingState.style.display = 'none';
+    if (contentContainer) contentContainer.style.display = 'flex';
+
   } catch (err) {
-    window.UI.showToast(err.message, 'error');
+    console.error('Erreur profil complète:', err);
+    if (loadingState) {
+      loadingState.style.display = 'block';
+      loadingState.innerHTML = `
+        <div style="font-size:3rem; margin-bottom:1rem;">⚠️</div>
+        <h3 style="color:#EF4444; font-family:var(--font-display); font-size:1.3rem; margin-bottom:0.5rem;">
+          Impossible de charger le profil
+        </h3>
+        <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:1.5rem;">
+          ${err.message || 'Une erreur est survenue lors de la communication avec le serveur.'}
+        </p>
+        <button class="btn btn-gold" onclick="loadProfile()">🔄 Réessayer</button>
+      `;
+    }
+    if (contentContainer) contentContainer.style.display = 'none';
+    window.UI?.showToast(err.message || 'Erreur chargement profil', 'error');
   }
 }
 
@@ -641,7 +766,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Mettre à jour le solde utilisateur
         if (window.State) {
-          window.State.updateUser({ coins: res.newCoins });
+          if (typeof window.State.updateUser === 'function') {
+            window.State.updateUser({ coins: res.newCoins });
+          } else if (typeof window.State.updateCoins === 'function') {
+            window.State.updateCoins(res.newCoins);
+          }
         }
 
         window.UI.showToast(`+${res.coinsAdded.toLocaleString()} 🪙 crédités sur ton solde !`, 'success');
@@ -662,178 +791,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-let currentShopCategory = 'all';
-let allShopProducts = [];
-
-async function loadShop() {
-  const shopGrid = document.getElementById('shopItemsGrid');
-  if (!shopGrid) return;
-
-  try {
-    const data = await window.API.getShopItems();
-    allShopProducts = data.products || [];
-
-    // Initialiser les écouteurs de filtres de catégorie
-    const filterContainer = document.getElementById('shopCategoryFilters');
-    if (filterContainer && !filterContainer.dataset.initialized) {
-      filterContainer.dataset.initialized = 'true';
-      filterContainer.querySelectorAll('.shop-filter-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          filterContainer.querySelectorAll('.shop-filter-btn').forEach(b => b.classList.remove('active'));
-          btn.classList.add('active');
-          currentShopCategory = btn.dataset.category || 'all';
-          renderShopProducts();
-        });
-      });
-    }
-
-    renderShopProducts();
-    loadShopMyOrders();
-  } catch (err) {
-    shopGrid.innerHTML = '<p style="color:var(--lose-red);">Erreur lors du chargement du catalogue BDE.</p>';
-  }
-}
-
-function renderShopProducts() {
-  const shopGrid = document.getElementById('shopItemsGrid');
-  if (!shopGrid) return;
-
-  const filtered = allShopProducts.filter(item => {
-    if (currentShopCategory === 'all') return true;
-    return item.category === currentShopCategory;
-  });
-
-  if (filtered.length === 0) {
-    shopGrid.innerHTML = '<div style="grid-column: 1/-1; text-align:center; padding: 2.5rem; color: var(--text-muted);">Aucun produit disponible dans cette catégorie pour le moment.</div>';
-    return;
-  }
-
-  shopGrid.innerHTML = filtered.map(item => {
-    const isOut = item.stock <= 0;
-    const isLow = item.stock > 0 && item.stock <= 5;
-    let badgeHtml = '';
-
-    if (isOut) {
-      badgeHtml = '<span class="stock-badge out-of-stock">Rupture de Stock (0)</span>';
-    } else if (isLow) {
-      badgeHtml = `<span class="stock-badge low-stock">Derniers articles (${item.stock})</span>`;
-    } else {
-      badgeHtml = `<span class="stock-badge in-stock">En Stock (${item.stock} restants)</span>`;
-    }
-
-    const hasVariants = Array.isArray(item.variants) && item.variants.length > 0;
-    const initialPrice = hasVariants ? item.variants[0].price : item.price;
-
-    let variantsHtml = '';
-    if (hasVariants) {
-      variantsHtml = `
-        <div style="margin: 0.5rem 0 0.25rem; text-align: left; width: 100%;">
-          <label class="form-label" style="font-size: 0.72rem; margin-bottom: 0.2rem; color: var(--text-secondary);">
-            Variante / Taille :
-          </label>
-          <select class="form-input shop-variant-select" data-item-id="${item.id}" id="variant-select-${item.id}">
-            ${item.variants.map(v => {
-              return `<option value="${escapeHtml(v.name)}" data-price="${v.price}">
-                ${escapeHtml(v.name)} — ${v.price.toLocaleString()} 🪙
-              </option>`;
-            }).join('')}
-          </select>
-        </div>
-      `;
-    }
-
-    return `
-      <div class="shop-item-card ${isOut ? 'is-empty' : ''}" id="card-product-${item.id}">
-        <div class="shop-item-icon">${item.icon}</div>
-        <div style="font-size:0.75rem; color:var(--gold-primary); font-weight:700; margin-bottom:0.2rem;">
-          ${escapeHtml(item.category)} • ${escapeHtml(item.unit || 'Pièce')}
-        </div>
-        <div class="shop-item-title">${escapeHtml(item.name)}</div>
-        <div class="shop-item-desc">${escapeHtml(item.description)}</div>
-        
-        ${variantsHtml}
-
-        <div style="margin: 0.35rem 0;">
-          ${badgeHtml}
-        </div>
-
-        <div class="shop-item-price" id="price-display-${item.id}">
-          ${initialPrice.toLocaleString()} 🪙
-        </div>
-
-        <button class="btn btn-gold btn-buy-shop" 
-          id="btn-buy-${item.id}"
-          data-id="${item.id}" 
-          data-name="${escapeHtml(item.name)}" 
-          data-price="${initialPrice}"
-          data-variant="${hasVariants ? escapeHtml(item.variants[0].name) : ''}"
-          ${isOut ? 'disabled' : ''} 
-          style="width: 100%; font-size: 0.85rem;">
-          ${isOut ? '❌ Épuisé' : 'Échanger mes Coins ▶'}
-        </button>
-      </div>
-    `;
-  }).join('');
-
-  // Gestion des sélecteurs de variantes (changement dynamique du prix)
-  shopGrid.querySelectorAll('.shop-variant-select').forEach(select => {
-    select.addEventListener('change', (e) => {
-      const itemId = e.target.dataset.itemId;
-      const selectedOption = e.target.selectedOptions[0];
-      const newPrice = parseInt(selectedOption.dataset.price);
-      const newVariant = e.target.value;
-
-      const priceDisplay = document.getElementById(`price-display-${itemId}`);
-      if (priceDisplay) {
-        priceDisplay.innerHTML = `${newPrice.toLocaleString()} 🪙`;
-      }
-
-      const buyBtn = document.getElementById(`btn-buy-${itemId}`);
-      if (buyBtn) {
-        buyBtn.dataset.price = newPrice;
-        buyBtn.dataset.variant = newVariant;
-      }
-    });
-  });
-
-  // Événements d'échange avec modale de demande de livraison directe
-  shopGrid.querySelectorAll('.btn-buy-shop:not(:disabled)').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      if (!window.State.isAuthenticated) {
-        window.UI.openAuthModal('login');
-        return;
-      }
-
-      const productId = e.currentTarget.dataset.id;
-      const productName = e.currentTarget.dataset.name;
-      const productPrice = parseInt(e.currentTarget.dataset.price);
-      const variantName = e.currentTarget.dataset.variant || null;
-
-      // Vérification solde côté client
-      if (window.State.user.coins < productPrice) {
-        window.UI.showToast(`Solde insuffisant ! Il te manque ${(productPrice - window.State.user.coins).toLocaleString()} coins pour cet échange.`, 'error');
-        return;
-      }
-
-      const card = e.currentTarget.closest('.shop-card');
-      const icon = card ? (card.querySelector('.item-icon')?.textContent || '🥤') : '🥤';
-
-      // Ouvre la modale de demande de livraison directe (aucun coin débité tant que ce n'est pas validé)
-      window.openDeliveryModal({
-        source: 'shop',
-        productId,
-        productName,
-        productPrice,
-        variantName,
-        icon,
-        quantity: 1
-      });
-    });
-  });
-}
-
-// Gestion globale de la modale de demande de livraison directe BDE
-window.openDeliveryModal = function(options) {
+// Gestion globale de la modale de demande de livraison directe BDE (Lots remportés aux roues)
+window.openDeliveryModal = function (options) {
   const modal = document.getElementById('deliveryRequestModal');
   if (!modal) return;
 
@@ -850,13 +809,13 @@ window.openDeliveryModal = function(options) {
   const qtyEl = document.getElementById('deliveryModalQuantity');
   const costEl = document.getElementById('deliveryModalCost');
 
-  if (srcInput) srcInput.value = options.source || 'shop';
+  if (srcInput) srcInput.value = options.source || 'wheel';
   if (prodIdInput) prodIdInput.value = options.productId || '';
   if (variantInput) variantInput.value = options.variantName || '';
   if (orderIdInput) orderIdInput.value = options.orderId || '';
 
-  if (iconEl) iconEl.textContent = options.icon || (options.source === 'wheel' ? '🎡' : '🛍️');
-  if (itemEl) itemEl.textContent = options.productName || 'Produit BDE';
+  if (iconEl) iconEl.textContent = options.icon || '🥤';
+  if (itemEl) itemEl.textContent = options.productName || 'Lot BDE';
   if (qtyEl) qtyEl.textContent = options.quantity || 1;
 
   if (varEl) {
@@ -868,21 +827,16 @@ window.openDeliveryModal = function(options) {
     }
   }
 
-  if (options.source === 'shop') {
-    if (titleEl) titleEl.textContent = 'Demande de Livraison Directe (Boutique)';
-    if (subtitleEl) subtitleEl.textContent = 'Renseigne ta salle pour être livré directement par le BDE !';
-    if (costEl) costEl.textContent = `${(options.productPrice || 0).toLocaleString()} 🪙`;
-  } else {
-    if (titleEl) titleEl.textContent = 'Demande de Livraison Directe (Gain Roue)';
-    if (subtitleEl) subtitleEl.textContent = 'Félicitations pour ton lot ! Indique ta salle pour que le BDE te l\'apporte.';
-    if (costEl) costEl.textContent = '🎉 Lot Gagné aux Roues !';
-  }
+  if (titleEl) titleEl.textContent = 'Demande de Livraison Directe (Lot Roue BDE)';
+  if (subtitleEl) subtitleEl.textContent = 'Félicitations pour ton lot ! Indique ta salle pour que le BDE te l\'apporte.';
+  if (costEl) costEl.textContent = '🎉 Lot Gagné aux Roues !';
 
   // Pré-remplir les champs depuis localStorage pour le confort de l'élève
   const lastNameInput = document.getElementById('deliveryLastName');
   const firstNameInput = document.getElementById('deliveryFirstName');
   const phoneInput = document.getElementById('deliveryPhone');
   const roomInput = document.getElementById('deliveryRoomLocation');
+  const notesInput = document.getElementById('deliveryNotes');
 
   if (lastNameInput && !lastNameInput.value) {
     lastNameInput.value = localStorage.getItem('marsabet_last_name') || '';
@@ -896,12 +850,17 @@ window.openDeliveryModal = function(options) {
   if (roomInput && !roomInput.value) {
     roomInput.value = localStorage.getItem('marsabet_last_room') || '';
   }
+  if (notesInput) {
+    notesInput.value = '';
+  }
 
   modal.classList.add('active');
 };
 
-window.closeDeliveryModal = function() {
+window.closeDeliveryModal = function () {
   const modal = document.getElementById('deliveryRequestModal');
+  const notesInput = document.getElementById('deliveryNotes');
+  if (notesInput) notesInput.value = '';
   if (modal) modal.classList.remove('active');
 };
 
@@ -925,15 +884,13 @@ document.addEventListener('DOMContentLoaded', () => {
       e.preventDefault();
 
       const submitBtn = document.getElementById('confirmDeliveryBtn');
-      const source = document.getElementById('deliverySource')?.value || 'shop';
-      const productId = document.getElementById('deliveryProductId')?.value;
-      const variantName = document.getElementById('deliveryVariantName')?.value || null;
       const orderId = document.getElementById('deliveryOrderId')?.value;
 
       const lastName = document.getElementById('deliveryLastName')?.value.trim();
       const firstName = document.getElementById('deliveryFirstName')?.value.trim();
       const roomLocation = document.getElementById('deliveryRoomLocation')?.value.trim();
       const phone = document.getElementById('deliveryPhone')?.value.trim();
+      const notes = document.getElementById('deliveryNotes')?.value.trim() || null;
 
       if (!lastName || !firstName || !roomLocation) {
         window.UI.showToast('Le nom, prénom et la salle sont obligatoires.', 'error');
@@ -952,48 +909,21 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       try {
-        if (source === 'shop') {
-          const res = await window.API.orderShopProduct({
-            productId,
-            variantName,
-            lastName,
-            firstName,
-            roomLocation,
-            phone
-          });
+        const res = await window.API.confirmWheelDelivery({
+          orderId,
+          lastName,
+          firstName,
+          roomLocation,
+          phone,
+          notes
+        });
 
-          if (window.State && res.coins !== undefined) {
-            window.State.updateCoins(res.coins);
-          }
+        window.closeDeliveryModal();
+        window.UI.showToast(res.message || 'Demande de livraison confirmée ! Un membre du BDE t\'apportera ton lot.', 'success', 5000);
+        if (window.sound && typeof window.sound.playWin === 'function') window.sound.playWin();
 
-          window.closeDeliveryModal();
-          window.UI.showToast(res.message || 'Demande de livraison envoyée au BDE !', 'success', 5000);
-          if (window.sound && typeof window.sound.playWin === 'function') window.sound.playWin();
-          if (window.UI && typeof window.UI.triggerConfetti === 'function') window.UI.triggerConfetti();
-
-          loadShop();
-          loadShopMyOrders();
-          if (window.FortuneWheels && typeof window.FortuneWheels.loadMyRewards === 'function') {
-            window.FortuneWheels.loadMyRewards();
-          }
-        } else {
-          // Source 'wheel'
-          const res = await window.API.confirmWheelDelivery({
-            orderId,
-            lastName,
-            firstName,
-            roomLocation,
-            phone
-          });
-
-          window.closeDeliveryModal();
-          window.UI.showToast(res.message || 'Demande de livraison confirmée !', 'success', 5000);
-          if (window.sound && typeof window.sound.playWin === 'function') window.sound.playWin();
-
-          loadShopMyOrders();
-          if (window.FortuneWheels && typeof window.FortuneWheels.loadMyRewards === 'function') {
-            window.FortuneWheels.loadMyRewards();
-          }
+        if (window.FortuneWheels && typeof window.FortuneWheels.loadMyRewards === 'function') {
+          window.FortuneWheels.loadMyRewards();
         }
       } catch (err) {
         console.error('Erreur confirmation livraison:', err);
@@ -1007,87 +937,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 });
-
-async function loadShopMyOrders() {
-  const container = document.getElementById('shopMyOrdersList');
-  if (!container) return;
-
-  if (!window.State.isAuthenticated) {
-    container.innerHTML = '<p style="color:var(--text-muted); padding:1rem;">Connecte-toi pour voir tes demandes de livraison actives.</p>';
-    return;
-  }
-
-  try {
-    const data = await window.API.getMyOrders();
-    const orders = data.orders || data.deliveries || [];
-
-    if (orders.length === 0) {
-      container.innerHTML = '<p style="color:var(--text-muted); padding:1rem;">Tu n’as aucune demande de livraison pour le moment.</p>';
-      return;
-    }
-
-    container.innerHTML = orders.map(o => {
-      const isDelivered = o.status === 'delivered';
-      const isPendingInfo = o.status === 'pending_info';
-
-      let statusBadge = '';
-      if (isDelivered) {
-        statusBadge = '<span style="color:#22C55E; font-weight:700; font-size:0.85rem;">✅ Livré</span>';
-      } else if (isPendingInfo) {
-        statusBadge = '<span style="color:#EF4444; font-weight:700; font-size:0.85rem;">⚠️ Infos manquantes</span>';
-      } else {
-        statusBadge = '<span style="color:#F59E0B; font-weight:700; font-size:0.85rem;">⏳ En cours de livraison</span>';
-      }
-
-      let emailBadge = '';
-      if (o.email_status === 'sent') {
-        emailBadge = '<span style="color:#22C55E; font-size:0.75rem;">✉️ BDE Notifié</span>';
-      } else if (o.email_status === 'not_configured') {
-        emailBadge = '<span style="color:var(--text-muted); font-size:0.75rem;">📋 Enregistré BDE</span>';
-      } else {
-        emailBadge = '<span style="color:var(--text-muted); font-size:0.75rem;">📋 En attente BDE</span>';
-      }
-
-      return `
-        <div style="background:rgba(4,12,28,0.7); border:1px solid ${isDelivered ? 'rgba(16,185,129,0.3)' : 'var(--gold-primary)'}; border-radius:var(--radius-md); padding:1rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
-          <div style="display:flex; align-items:center; gap:0.75rem;">
-            <span style="font-size:2rem;">${o.icon || '🎁'}</span>
-            <div>
-              <div style="font-weight:700; color:#FFF;">${escapeHtml(o.item_name)} ${o.variant_name ? `<small style="color:var(--text-muted);">(${escapeHtml(o.variant_name)})</small>` : ''}</div>
-              <div style="font-size:0.8rem; color:var(--gold-light); margin-top:2px;">📍 Salle : <strong>${escapeHtml(o.room_location || 'À préciser')}</strong></div>
-              <div style="font-size:0.75rem; color:var(--text-muted); margin-top:2px;">Demandé le ${formatDate(o.created_at)}</div>
-            </div>
-          </div>
-          <div style="text-align:right;">
-            <div>${statusBadge}</div>
-            <div style="margin-top:0.25rem;">${emailBadge}</div>
-            ${isPendingInfo ? `
-              <button class="btn btn-gold btn-complete-delivery" data-id="${o.id}" data-name="${escapeHtml(o.item_name)}" data-icon="${o.icon || '🎁'}" style="margin-top:0.4rem; padding:0.3rem 0.6rem; font-size:0.75rem;">
-                📦 Renseigner ma salle
-              </button>
-            ` : ''}
-          </div>
-        </div>
-      `;
-    }).join('');
-
-    container.querySelectorAll('.btn-complete-delivery').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const id = e.currentTarget.dataset.id;
-        const name = e.currentTarget.dataset.name;
-        const icon = e.currentTarget.dataset.icon;
-        window.openDeliveryModal({
-          source: 'wheel',
-          orderId: id,
-          productName: name,
-          icon: icon
-        });
-      });
-    });
-  } catch (e) {
-    console.warn('Erreur chargement commandes:', e);
-  }
-}
 
 function gameLabel(type) {
   const map = {
@@ -1111,13 +960,16 @@ function formatDate(dateStr) {
 
 function escapeHtml(str) {
   if (!str) return '';
-  return str.replace(/[&<>'"]/g, 
+  return str.replace(/[&<>'"]/g,
     tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
   );
 }
 
 window.loadLeaderboard = loadLeaderboard;
 window.loadProfile = loadProfile;
-window.loadShop = loadShop;
 window.loadGlobalStats = loadGlobalStats;
+window.gameLabel = gameLabel;
+window.formatDate = formatDate;
+window.escapeHtml = escapeHtml;
+
 

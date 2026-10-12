@@ -3,6 +3,8 @@
 const State = {
   user: null,
   isAuthenticated: false,
+  isGameAnimating: false,
+  pendingCoins: null,
 
   setUser(user) {
     this.user = user;
@@ -10,12 +12,68 @@ const State = {
     this.updateUI();
   },
 
-  updateCoins(newCoins) {
-    if (this.user) {
-      const oldCoins = this.user.coins;
-      this.user.coins = newCoins;
-      this.animateCoins(oldCoins, newCoins);
+  // Déduire immédiatement la mise du solde affiché dès le clic sur le jeu
+  deductBet(amount) {
+    if (!this.user || !amount || amount <= 0) return;
+    this.user.coins = Math.max(0, this.user.coins - amount);
+    this.isGameAnimating = true;
+    this.pendingCoins = null;
+    this.updateUI();
+  },
+
+  // Activer ou désactiver l'état d'animation d'un jeu
+  setGameAnimating(isAnimating, finalCoins = null) {
+    if (isAnimating) {
+      this.isGameAnimating = true;
+      if (finalCoins !== null && finalCoins !== undefined) {
+        this.pendingCoins = finalCoins;
+      }
+    } else {
+      this.isGameAnimating = false;
+      const target = (finalCoins !== null && finalCoins !== undefined) ? finalCoins : this.pendingCoins;
+      this.pendingCoins = null;
+      if (target !== null && target !== undefined && this.user) {
+        const oldCoins = this.user.coins;
+        this.user.coins = target;
+        this.animateCoins(oldCoins, target);
+        this.updateUI();
+      }
     }
+  },
+
+  updateUser(partialUser) {
+    if (!partialUser || typeof partialUser !== 'object') return;
+    if (!this.user) {
+      this.setUser(partialUser);
+      return;
+    }
+    const oldCoins = this.user.coins;
+    // Si une animation de jeu est en cours, ne pas spoiler le solde
+    if (this.isGameAnimating && partialUser.coins !== undefined) {
+      this.pendingCoins = partialUser.coins;
+      const clone = { ...partialUser };
+      delete clone.coins;
+      Object.assign(this.user, clone);
+      this.updateUI();
+      return;
+    }
+    Object.assign(this.user, partialUser);
+    if (partialUser.coins !== undefined && partialUser.coins !== oldCoins) {
+      this.animateCoins(oldCoins, partialUser.coins);
+    }
+    this.updateUI();
+  },
+
+  updateCoins(newCoins) {
+    if (!this.user) return;
+    // Si une animation est en cours, stocker le résultat pour la fin de séquence
+    if (this.isGameAnimating) {
+      this.pendingCoins = newCoins;
+      return;
+    }
+    const oldCoins = this.user.coins;
+    this.user.coins = newCoins;
+    this.animateCoins(oldCoins, newCoins);
   },
 
   animateCoins(from, to) {

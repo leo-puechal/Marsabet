@@ -18,6 +18,7 @@ router.post('/blackjack/deal', gameController.dealBlackjack);
 router.post('/blackjack/hit', gameController.hitBlackjack);
 router.post('/blackjack/stand', gameController.standBlackjack);
 router.post('/blackjack/double', gameController.doubleBlackjack);
+router.post('/blackjack/split', gameController.splitBlackjack);
 
 // Roulette
 router.post('/roulette/spin', gameController.playRoulette);
