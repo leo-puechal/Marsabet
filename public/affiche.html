@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Affiche Promotionnelle — Marsabet (BDE Epitech Marseille)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Outfit:wght@400;600;700;800;900&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --navy-deep: #050b14;
+      --navy-card: rgba(13, 27, 46, 0.75);
+      --navy-border: rgba(255, 215, 0, 0.28);
+      --gold-primary: #ffd700;
+      --gold-secondary: #f59e0b;
+      --gold-glow: rgba(255, 215, 0, 0.45);
+      --cyan-bright: #38bdf8;
+      --emerald-win: #10b981;
+      --white: #ffffff;
+      --text-muted: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: #02050b;
+      font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+      color: #f8fafc;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 30px 15px;
+    }
+
+    /* Actions bar on top (hidden in print) */
+    .poster-toolbar {
+      width: 100%;
+      max-width: 1200px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding: 12px 20px;
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(255, 215, 0, 0.3);
+      border-radius: 12px;
+      backdrop-filter: blur(10px);
+    }
+
+    .poster-toolbar .brand-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--gold-primary);
+    }
+
+    .poster-toolbar .actions-group {
+      display: flex;
+      gap: 12px;
+    }
+
+    .btn-action {
+      background: linear-gradient(135deg, #ffd700, #b8860b);
+      color: #050b14;
+      border: none;
+      font-family: inherit;
+      font-weight: 800;
+      padding: 8px 18px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      text-decoration: none;
+    }
+
+    .btn-action:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
+    }
+
+    .btn-action.outline {
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #fff;
+    }
+
+    .btn-action.outline:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: #ffd700;
+    }
+
+    /* ================= MAIN POSTER CANVAS ================= */
+    .poster-canvas {
+      width: 1200px;
+      min-height: 1720px;
+      background: radial-gradient(circle at 50% 0%, #1e293b 0%, #0c1524 35%, #050b14 75%, #020610 100%);
+      border: 3px solid rgba(255, 215, 0, 0.45);
+      border-radius: 28px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 25px 80px rgba(0, 0, 0, 0.9), 0 0 100px rgba(255, 215, 0, 0.15);
+      padding: 50px 60px 45px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    /* Cosmic Background Accents */
+    .bg-nebula {
+      position: absolute;
+      top: -150px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 900px;
+      height: 600px;
+      background: radial-gradient(circle, rgba(255, 215, 0, 0.12) 0%, rgba(56, 189, 248, 0.15) 40%, rgba(0,0,0,0) 70%);
+      filter: blur(60px);
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .bg-nebula-bottom {
+      position: absolute;
+      bottom: -100px;
+      right: -100px;
+      width: 700px;
+      height: 500px;
+      background: radial-gradient(circle, rgba(236, 72, 153, 0.1) 0%, rgba(56, 189, 248, 0.12) 40%, rgba(0,0,0,0) 70%);
+      filter: blur(70px);
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .stars-layer {
+      position: absolute;
+      inset: 0;
+      background-image: 
+        radial-gradient(1px 1px at 30px 40px, #ffffff, rgba(0,0,0,0)),
+        radial-gradient(1.5px 1.5px at 120px 80px, #ffd700, rgba(0,0,0,0)),
+        radial-gradient(1px 1px at 260px 180px, rgba(255,255,255,0.7), rgba(0,0,0,0)),
+        radial-gradient(2px 2px at 390px 240px, #38bdf8, rgba(0,0,0,0)),
+        radial-gradient(1px 1px at 520px 320px, #ffffff, rgba(0,0,0,0)),
+        radial-gradient(1.5px 1.5px at 680px 140px, #ffd700, rgba(0,0,0,0));
+      background-size: 350px 350px;
+      opacity: 0.45;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .poster-content {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      gap: 32px;
+    }
+
+    /* ================= HEADER SECTION ================= */
+    .poster-header {
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .bde-badge-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 215, 0, 0.5);
+      padding: 7px 22px;
+      border-radius: 30px;
+      font-size: 0.85rem;
+      font-weight: 800;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      color: #f1f5f9;
+      box-shadow: 0 0 20px rgba(255, 215, 0, 0.2);
+    }
+
+    .bde-badge-pill .epitech-tag {
+      color: #38bdf8;
+    }
+
+    .main-logo-group {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 18px;
+      margin-top: 4px;
+    }
+
+    .logo-saturn {
+      font-size: 4.8rem;
+      line-height: 1;
+      filter: drop-shadow(0 0 30px rgba(255, 215, 0, 0.6));
+      animation: floatPlanet 3s ease-in-out infinite alternate;
+    }
+
+    @keyframes floatPlanet {
+      0% { transform: translateY(0px) rotate(0deg); }
+      100% { transform: translateY(-8px) rotate(4deg); }
+    }
+
+    .logo-text-box h1 {
+      font-family: 'Cinzel', serif;
+      font-size: 5.2rem;
+      font-weight: 900;
+      letter-spacing: 8px;
+      line-height: 0.95;
+      background: linear-gradient(135deg, #ffffff 20%, #ffd700 65%, #f59e0b 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 4px 25px rgba(255, 215, 0, 0.5));
+    }
+
+    .logo-text-box .sub-logo {
+      font-size: 1.15rem;
+      font-weight: 800;
+      letter-spacing: 5px;
+      color: #94a3b8;
+      text-transform: uppercase;
+      margin-top: 4px;
+    }
+
+    .tagline-banner {
+      font-size: 1.65rem;
+      font-weight: 800;
+      color: #ffffff;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+      max-width: 900px;
+      line-height: 1.3;
+      margin-top: 4px;
+    }
+
+    .tagline-banner span.highlight-gold {
+      color: #ffd700;
+      text-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+    }
+
+    .tagline-banner span.highlight-cyan {
+      color: #38bdf8;
+    }
+
+    /* Ethical Safe Tag */
+    .ethical-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      padding: 8px 24px;
+      border-radius: 20px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #34d399;
+      box-shadow: 0 0 25px rgba(16, 185, 129, 0.2);
+    }
+
+    /* ================= MAIN SCREENSHOT SHOWCASE ================= */
+    .hero-mockup-wrapper {
+      position: relative;
+      margin: 10px 0 6px;
+    }
+
+    .hero-mockup-frame {
+      background: rgba(15, 23, 42, 0.9);
+      border: 2px solid rgba(255, 215, 0, 0.4);
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7), 0 0 40px rgba(56, 189, 248, 0.2);
+      position: relative;
+    }
+
+    .mockup-browser-header {
+      background: #090f1d;
+      padding: 10px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .mockup-dots {
+      display: flex;
+      gap: 7px;
+    }
+
+    .dot {
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+    }
+
+    .dot.red { background: #ef4444; }
+    .dot.yellow { background: #f59e0b; }
+    .dot.green { background: #10b981; }
+
+    .mockup-url-bar {
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 6px;
+      padding: 4px 20px;
+      font-size: 0.8rem;
+      color: #cbd5e1;
+      font-family: monospace;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .hero-screenshot-img {
+      width: 100%;
+      height: 380px;
+      object-fit: cover;
+      object-position: top;
+      display: block;
+      filter: contrast(1.05) brightness(1.02);
+    }
+
+    .mockup-floating-badge {
+      position: absolute;
+      bottom: -16px;
+      right: 30px;
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: #fff;
+      font-weight: 800;
+      padding: 8px 22px;
+      border-radius: 30px;
+      font-size: 1rem;
+      box-shadow: 0 6px 25px rgba(16, 185, 129, 0.5);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      z-index: 10;
+    }
+
+    /* ================= GAMES 4-TILES REAL SCREENS ================= */
+    .section-title-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(255, 215, 0, 0.25);
+      padding-bottom: 8px;
+      margin-top: 10px;
+    }
+
+    .section-title-wrap h2 {
+      font-size: 1.5rem;
+      font-weight: 900;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .section-title-wrap h2 .gold {
+      color: #ffd700;
+    }
+
+    .section-title-wrap .sub {
+      font-size: 0.95rem;
+      color: #94a3b8;
+      font-weight: 600;
+    }
+
+    .real-games-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+
+    .game-screen-card {
+      background: rgba(13, 27, 46, 0.85);
+      border: 1.5px solid rgba(255, 215, 0, 0.25);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      transition: all 0.3s;
+    }
+
+    .game-screen-card:hover {
+      border-color: rgba(255, 215, 0, 0.6);
+      transform: translateY(-4px);
+      box-shadow: 0 15px 40px rgba(255, 215, 0, 0.2);
+    }
+
+    .game-screen-media {
+      position: relative;
+      height: 190px;
+      overflow: hidden;
+      background: #000;
+    }
+
+    .game-screen-media img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+      display: block;
+      transition: transform 0.4s;
+    }
+
+    .game-screen-card:hover .game-screen-media img {
+      transform: scale(1.05);
+    }
+
+    .game-tag-badge {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      background: rgba(5, 11, 20, 0.85);
+      backdrop-filter: blur(8px);
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 800;
+      color: #ffd700;
+      border: 1px solid rgba(255, 215, 0, 0.4);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .game-multiplier-badge {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      background: linear-gradient(135deg, #10b981, #047857);
+      color: #fff;
+      font-size: 0.8rem;
+      font-weight: 800;
+      padding: 3px 10px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+    }
+
+    .game-screen-info {
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      background: rgba(10, 18, 32, 0.95);
+      flex-grow: 1;
+    }
+
+    .game-screen-info h3 {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .game-screen-info p {
+      font-size: 0.82rem;
+      color: #94a3b8;
+      line-height: 1.35;
+    }
+
+    /* ================= 4 PILLARS ADVANTAGES ================= */
+    .perks-strip {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin: 4px 0;
+    }
+
+    .perk-box {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 14px;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      position: relative;
+    }
+
+    .perk-box.featured {
+      background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(255, 215, 0, 0.02));
+      border-color: rgba(255, 215, 0, 0.4);
+    }
+
+    .perk-icon-head {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .perk-icon {
+      font-size: 1.6rem;
+    }
+
+    .perk-title {
+      font-size: 0.95rem;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .perk-desc {
+      font-size: 0.78rem;
+      color: #94a3b8;
+      line-height: 1.3;
+    }
+
+    /* ================= FOOTER CALL TO ACTION ================= */
+    .poster-footer-banner {
+      background: linear-gradient(135deg, rgba(23, 37, 84, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%);
+      border: 2px solid rgba(255, 215, 0, 0.5);
+      border-radius: 22px;
+      padding: 24px 34px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6), 0 0 30px rgba(255, 215, 0, 0.2);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .footer-glow-ring {
+      position: absolute;
+      top: -50px;
+      right: 150px;
+      width: 250px;
+      height: 250px;
+      background: radial-gradient(circle, rgba(255, 215, 0, 0.2) 0%, rgba(0,0,0,0) 70%);
+      filter: blur(40px);
+      pointer-events: none;
+    }
+
+    .footer-cta-text h3 {
+      font-size: 1.85rem;
+      font-weight: 900;
+      color: #ffffff;
+      margin-bottom: 6px;
+      letter-spacing: 0.5px;
+    }
+
+    .footer-cta-text h3 .gold {
+      color: #ffd700;
+    }
+
+    .footer-cta-text p {
+      font-size: 0.95rem;
+      color: #cbd5e1;
+      max-width: 620px;
+      line-height: 1.4;
+    }
+
+    .footer-url-box {
+      margin-top: 10px;
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      background: rgba(3, 7, 18, 0.85);
+      border: 1px solid rgba(255, 215, 0, 0.4);
+      padding: 8px 18px;
+      border-radius: 10px;
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: #38bdf8;
+      font-family: 'Space Grotesk', monospace;
+    }
+
+    .qr-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      background: #ffffff;
+      padding: 10px;
+      border-radius: 14px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+    }
+
+    .qr-code-svg {
+      width: 95px;
+      height: 95px;
+      display: block;
+    }
+
+    .qr-label {
+      font-size: 0.7rem;
+      font-weight: 800;
+      color: #0f172a;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    .legal-signature-strip {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      color: #64748b;
+      padding-top: 6px;
+    }
+
+    .legal-signature-strip strong {
+      color: #94a3b8;
+    }
+
+    /* Print Styles */
+    @media print {
+      body {
+        background: transparent;
+        padding: 0;
+      }
+      .poster-toolbar {
+        display: none !important;
+      }
+      .poster-canvas {
+        border: none;
+        box-shadow: none;
+        border-radius: 0;
+        width: 100%;
+        min-height: 100vh;
+        padding: 30px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Barre d'outils d'impression / export -->
+  <div class="poster-toolbar">
+    <div class="brand-info">
+      <span>🪐 Affiche Promotionnelle Officielle • Marsabet</span>
+      <span style="color:#64748b;">|</span>
+      <span style="color:#cbd5e1;">BDE Epitech Marseille 2026</span>
+    </div>
+    <div class="actions-group">
+      <a href="/screenshots/screen_lobby.png" target="_blank" class="btn-action outline">🖼️ Voir les captures</a>
+      <button class="btn-action" onclick="window.print()">🖨️ Imprimer / Sauvegarder en PDF</button>
+    </div>
+  </div>
+
+  <!-- AFFICHE PRINCIPALE HAUTE DÉFINITION -->
+  <div class="poster-canvas" id="posterCanvas">
+    <div class="bg-nebula"></div>
+    <div class="bg-nebula-bottom"></div>
+    <div class="stars-layer"></div>
+
+    <div class="poster-content">
+
+      <!-- EN-TÊTE / BRANDING & TITRE -->
+      <header class="poster-header">
+        <div class="bde-badge-pill">
+          <span>🚀 BDE <span class="epitech-tag">EPITECH MARSEILLE</span> PRÉSENTE</span>
+        </div>
+
+        <div class="main-logo-group">
+          <div class="logo-saturn">🪐</div>
+          <div class="logo-text-box">
+            <h1>MARSABET</h1>
+            <div class="sub-logo">LE CASINO VIRTUEL DE LA PROMO</div>
+          </div>
+        </div>
+
+        <div class="tagline-banner">
+          Mise tes jetons, défie tes potes de promo et décroche de <span class="highlight-gold">vrais lots & snacks</span> livrés directement en salle !
+        </div>
+
+        <div class="ethical-pill">
+          <span>🛡️ 100% FICTIF & GRATUIT • MONNAIE SCOLAIRE • ZÉRO ARGENT RÉEL</span>
+        </div>
+      </header>
+
+      <!-- HERO MOCKUP : CAPTURE RÉELLE DU LOBBY & DE LA PLATEFORME -->
+      <div class="hero-mockup-wrapper">
+        <div class="hero-mockup-frame">
+          <div class="mockup-browser-header">
+            <div class="mockup-dots">
+              <span class="dot red"></span>
+              <span class="dot yellow"></span>
+              <span class="dot green"></span>
+            </div>
+            <div class="mockup-url-bar">
+              <span>🔒</span> https://marsabet.bde-epitech.fr/lobby
+            </div>
+            <div style="font-size:0.75rem; color:#94a3b8; font-weight:700;">PROMO 2026</div>
+          </div>
+          <img src="/screenshots/screen_lobby.png" alt="Marsabet Lobby Officiel" class="hero-screenshot-img">
+        </div>
+        <div class="mockup-floating-badge">
+          <span>🪙</span> 1 000 Coins offerts dès l'inscription !
+        </div>
+      </div>
+
+      <!-- SECTION JEUX PHARES AVEC CAPTURES RÉELLES -->
+      <div>
+        <div class="section-title-wrap">
+          <h2><span>🎮</span> LES JEUX DISPONIBLES EN DIRECT SUR <span class="gold">MARSABET</span></h2>
+          <span class="sub">Certifiés équitables • Moteur de jeu temps réel</span>
+        </div>
+
+        <div class="real-games-grid" style="margin-top: 14px;">
+
+          <!-- Carte 1 : Crash Galactique -->
+          <div class="game-screen-card">
+            <div class="game-screen-media">
+              <img src="/screenshots/screen_crash.png" alt="Jeu Crash Galactique">
+              <div class="game-tag-badge"><span>🚀</span> Crash Galactique</div>
+              <div class="game-multiplier-badge">Jusqu'à x100+</div>
+            </div>
+            <div class="game-screen-info">
+              <h3>🚀 Crash en Temps Réel</h3>
+              <p>La fusée s'élève et le multiplicateur explose. Encaisse à temps avant le Crash fatal !</p>
+            </div>
+          </div>
+
+          <!-- Carte 2 : Machine à sous -->
+          <div class="game-screen-card">
+            <div class="game-screen-media">
+              <img src="/screenshots/screen_slots.png" alt="Machine à sous Cosmique">
+              <div class="game-tag-badge"><span>🎰</span> Machine à sous</div>
+              <div class="game-multiplier-badge">10 Lignes • Wilds</div>
+            </div>
+            <div class="game-screen-info">
+              <h3>🎰 Slots 5 Rouleaux</h3>
+              <p>Aligne les planètes et symboles BDE. Déclenche le mode Free Spins et le Jackpot x100 !</p>
+            </div>
+          </div>
+
+          <!-- Carte 3 : Blackjack Table -->
+          <div class="game-screen-card">
+            <div class="game-screen-media">
+              <img src="/screenshots/screen_blackjack.png" alt="Table de Blackjack">
+              <div class="game-tag-badge"><span>🃏</span> Blackjack VIP</div>
+              <div class="game-multiplier-badge">RTP 99.4%</div>
+            </div>
+            <div class="game-screen-info">
+              <h3>🃏 Blackjack Officiel</h3>
+              <p>Tire, reste ou double ta mise face au croupier. Cartes stylisées et jetons réalistes.</p>
+            </div>
+          </div>
+
+          <!-- Carte 4 : Slider Over/Under -->
+          <div class="game-screen-card">
+            <div class="game-screen-media">
+              <img src="/screenshots/screen_slider.png" alt="Slider Over/Under">
+              <div class="game-tag-badge"><span>🎯</span> Slider Cosmique</div>
+              <div class="game-multiplier-badge">Zone Réactive</div>
+            </div>
+            <div class="game-screen-info">
+              <h3>🎯 Slider Over / Under</h3>
+              <p>Ajuste ton seuil de pari et visualise ta probabilité de gain en direct jusqu'à x97 !</p>
+            </div>
+          </div>
+
+          <!-- Carte 5 : Roues de la Fortune -->
+          <div class="game-screen-card">
+            <div class="game-screen-media">
+              <img src="/screenshots/screen_wheels.png" alt="Roues de la Fortune">
+              <div class="game-tag-badge"><span>🎪</span> Stand des Roues</div>
+              <div class="game-multiplier-badge">100% Gagnant</div>
+            </div>
+            <div class="game-screen-info">
+              <h3>🎡 Roue Quotidienne Gratuite</h3>
+              <p>Un tour offert toutes les 24h pour récupérer des coins gratuits et des goodies BDE.</p>
+            </div>
+          </div>
+
+          <!-- Carte 6 : Boutique Récompenses BDE -->
+          <div class="game-screen-card">
+            <div class="game-screen-media">
+              <img src="/screenshots/screen_shop.png" alt="Boutique et Récompenses BDE">
+              <div class="game-tag-badge"><span>🍕</span> Boutique BDE</div>
+              <div class="game-multiplier-badge">Vrais Lots</div>
+            </div>
+            <div class="game-screen-info">
+              <h3>🎁 Récompenses Physiques</h3>
+              <p>Échange tes jetons virtuels contre canettes, barres chocolatées et goodies livrés en classe !</p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- LES 4 PILIERS DU JOUEUR -->
+      <div class="perks-strip">
+        <div class="perk-box featured">
+          <div class="perk-icon-head">
+            <span class="perk-icon">🪙</span>
+            <div class="perk-title">1 000 Coins Gratuits</div>
+          </div>
+          <div class="perk-desc">Crédités immédiatement dès ton inscription pour tester tous les jeux.</div>
+        </div>
+
+        <div class="perk-box">
+          <div class="perk-icon-head">
+            <span class="perk-icon">🎪</span>
+            <div class="perk-title">Roue Quotidienne</div>
+          </div>
+          <div class="perk-desc">Reviens chaque jour faire tourner la roue pour recharger ta réserve de coins.</div>
+        </div>
+
+        <div class="perk-box">
+          <div class="perk-icon-head">
+            <span class="perk-icon">📦</span>
+            <div class="perk-title">Livraison en Salle</div>
+          </div>
+          <div class="perk-desc">Indique ta salle et le BDE t'apporte directement ta commande en main propre.</div>
+        </div>
+
+        <div class="perk-box">
+          <div class="perk-icon-head">
+            <span class="perk-icon">🏆</span>
+            <div class="perk-title">Classement Promo</div>
+          </div>
+          <div class="perk-desc">Deviens le joueur le plus riche du campus et hisse-toi en tête du tableau d'honneur.</div>
+        </div>
+      </div>
+
+      <!-- FOOTER CALL TO ACTION & QR CODE -->
+      <footer class="poster-footer-banner">
+        <div class="footer-glow-ring"></div>
+
+        <div class="footer-cta-text">
+          <h3>PRÊT À TENTER TA CHANCE SUR <span class="gold">MARSABET</span> ?</h3>
+          <p>Ouvre ton navigateur sur ton PC ou smartphone, connecte-toi avec tes identifiants et commence à jouer gratuitement dès maintenant !</p>
+          
+          <div class="footer-url-box">
+            <span>🌐</span> http://localhost:3001
+          </div>
+        </div>
+
+        <div class="qr-container">
+          <!-- QR Code SVG stylisé vers le site -->
+          <svg class="qr-code-svg" viewBox="0 0 100 100" fill="#0f172a">
+            <!-- Corners -->
+            <rect x="5" y="5" width="28" height="28" fill="#0f172a" rx="4"/>
+            <rect x="11" y="11" width="16" height="16" fill="#ffffff" rx="2"/>
+            <rect x="15" y="15" width="8" height="8" fill="#ffd700" rx="1"/>
+
+            <rect x="67" y="5" width="28" height="28" fill="#0f172a" rx="4"/>
+            <rect x="73" y="11" width="16" height="16" fill="#ffffff" rx="2"/>
+            <rect x="77" y="15" width="8" height="8" fill="#ffd700" rx="1"/>
+
+            <rect x="5" y="67" width="28" height="28" fill="#0f172a" rx="4"/>
+            <rect x="11" y="73" width="16" height="16" fill="#ffffff" rx="2"/>
+            <rect x="15" y="77" width="8" height="8" fill="#ffd700" rx="1"/>
+
+            <!-- Pattern dots -->
+            <rect x="38" y="8" width="6" height="6" fill="#0f172a"/>
+            <rect x="48" y="14" width="6" height="6" fill="#0f172a"/>
+            <rect x="56" y="8" width="6" height="6" fill="#0f172a"/>
+            <rect x="40" y="24" width="6" height="6" fill="#0f172a"/>
+            <rect x="52" y="24" width="8" height="6" fill="#0f172a"/>
+
+            <rect x="8" y="38" width="6" height="6" fill="#0f172a"/>
+            <rect x="20" y="44" width="8" height="6" fill="#0f172a"/>
+            <rect x="14" y="54" width="6" height="6" fill="#0f172a"/>
+
+            <rect x="38" y="38" width="8" height="8" fill="#ffd700"/>
+            <rect x="50" y="38" width="6" height="6" fill="#0f172a"/>
+            <rect x="60" y="44" width="8" height="6" fill="#0f172a"/>
+            <rect x="42" y="50" width="6" height="8" fill="#0f172a"/>
+            <rect x="54" y="52" width="6" height="6" fill="#ffd700"/>
+
+            <rect x="72" y="38" width="6" height="6" fill="#0f172a"/>
+            <rect x="84" y="42" width="6" height="8" fill="#0f172a"/>
+            <rect x="74" y="52" width="8" height="6" fill="#0f172a"/>
+
+            <rect x="38" y="68" width="6" height="8" fill="#0f172a"/>
+            <rect x="50" y="68" width="8" height="6" fill="#0f172a"/>
+            <rect x="42" y="82" width="6" height="6" fill="#0f172a"/>
+            <rect x="54" y="80" width="8" height="8" fill="#0f172a"/>
+
+            <rect x="68" y="68" width="8" height="6" fill="#0f172a"/>
+            <rect x="82" y="70" width="6" height="6" fill="#ffd700"/>
+            <rect x="72" y="80" width="6" height="8" fill="#0f172a"/>
+            <rect x="84" y="82" width="8" height="6" fill="#0f172a"/>
+          </svg>
+          <span class="qr-label">SCANNE & JOUE</span>
+        </div>
+      </footer>
+
+      <div class="legal-signature-strip">
+        <span>Projet étudiant à vocation récréative • <strong>BDE Epitech Marseille</strong> • Plateforme sans valeur monétaire</span>
+        <span>Version 1.0 • Hébergé sur le réseau campus</span>
+      </div>
+
+    </div>
+  </div>
+
+</body>
+</html>
