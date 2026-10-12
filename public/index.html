@@ -1294,11 +1294,12 @@
               <div class="crash-control-panel">
                 <div>
                   <div class="crash-input-group">
-                    <label>Mise en jetons</label>
+                    <label>Mise en jetons <span style="font-size:0.75rem; color:var(--text-muted); font-weight:normal;">(max 1 000 🪙)</span></label>
                     <div class="crash-bet-box">
-                      <input type="number" id="crashBetInput" class="crash-bet-input" value="10" min="10" step="5">
+                      <input type="number" id="crashBetInput" class="crash-bet-input" value="10" min="10" max="1000" step="5" placeholder="10 - 1000">
                       <span class="crash-bet-coin">🪙</span>
                     </div>
+                    <div id="crashBetError" style="display:none; color:#ef4444; font-size:0.78rem; font-weight:600; margin-top:4px;"></div>
                     <div class="crash-quick-bets">
                       <button class="crash-quick-btn" data-action="min">MIN</button>
                       <button class="crash-quick-btn" data-action="half">½</button>

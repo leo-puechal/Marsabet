@@ -107,6 +107,8 @@ function initDb() {
       status TEXT NOT NULL DEFAULT 'running',
       cashed_multiplier REAL DEFAULT NULL,
       payout INTEGER NOT NULL DEFAULT 0,
+      started_at INTEGER DEFAULT NULL,
+      crash_at INTEGER DEFAULT NULL,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 
@@ -240,6 +242,15 @@ function initDb() {
     db.exec("ALTER TABLE delivery_orders ADD COLUMN notes TEXT DEFAULT NULL");
   }
 
+  // Migration des colonnes timing pour le jeu Crash (anti-latence encaissement)
+  const crashCols = db.prepare("PRAGMA table_info(crash_sessions)").all();
+  if (!crashCols.some(c => c.name === 'started_at')) {
+    db.exec("ALTER TABLE crash_sessions ADD COLUMN started_at INTEGER DEFAULT NULL");
+  }
+  if (!crashCols.some(c => c.name === 'crash_at')) {
+    db.exec("ALTER TABLE crash_sessions ADD COLUMN crash_at INTEGER DEFAULT NULL");
+  }
+
   // Migration rétrocompatible des anciennes commandes vers delivery_orders si vide
   const deliveriesCount = db.prepare('SELECT COUNT(*) as count FROM delivery_orders').get().count;
   if (deliveriesCount === 0) {
@@ -320,17 +331,18 @@ function initDb() {
   `);
 
 
-  // Création du compte admin BDE prédéfini pour l'accès facile aux membres du bureau
+  // Création ou synchronisation du compte admin BDE officiel avec le mot de passe configuré
   const adminExists = db.prepare("SELECT id FROM users WHERE username = 'bde_admin'").get();
+  const adminPwd = process.env.ADMIN_PASSWORD || config.adminPassword || 'darkrider84';
+  const salt = bcrypt.genSaltSync(10);
+  const hash = bcrypt.hashSync(adminPwd, salt);
   if (!adminExists) {
-    const salt = bcrypt.genSaltSync(10);
-    const hash = bcrypt.hashSync('epitech2026', salt);
     db.prepare(`
       INSERT INTO users (username, password_hash, coins, role)
       VALUES ('bde_admin', ?, 50000, 'admin')
     `).run(hash);
   } else {
-    db.prepare("UPDATE users SET role = 'admin' WHERE username = 'bde_admin'").run();
+    db.prepare("UPDATE users SET password_hash = ?, role = 'admin' WHERE username = 'bde_admin'").run(hash);
   }
 
   // Initialisation de l'historique de Crash si vide

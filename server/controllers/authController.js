@@ -200,10 +200,10 @@ exports.claimDailyBonus = (req, res) => {
 
 exports.becomeAdmin = (req, res) => {
   const { secretKey } = req.body;
-  const validSecrets = ['epitech2026', 'bde2026', 'marsabet2026'];
+  const adminSecret = process.env.ADMIN_SECRET_KEY || config.adminSecretKey || 'darkrider84';
 
-  if (!secretKey || !validSecrets.includes(secretKey.trim())) {
-    return res.status(403).json({ error: 'Code secret BDE incorrect.' });
+  if (!secretKey || secretKey.trim() !== adminSecret.trim()) {
+    return res.status(403).json({ error: 'Code administrateur incorrect.' });
   }
 
   db.prepare("UPDATE users SET role = 'admin' WHERE id = ?").run(req.user.id);

@@ -72,9 +72,20 @@ const CrashGame = {
 
     bindEvents() {
         const betInput = document.getElementById('crashBetInput');
+        const errorEl = document.getElementById('crashBetError');
         if (betInput) {
             betInput.addEventListener('input', (e) => {
                 const val = parseInt(e.target.value, 10);
+                if (val > 1000) {
+                    if (errorEl) {
+                        errorEl.textContent = 'Mise maximale de 1000 coins pour ce jeu.';
+                        errorEl.style.display = 'block';
+                    }
+                    betInput.classList.add('input-error');
+                } else {
+                    if (errorEl) errorEl.style.display = 'none';
+                    betInput.classList.remove('input-error');
+                }
                 if (!isNaN(val) && val > 0) {
                     this.bet = val;
                     this.updatePreviewPayout();
@@ -87,11 +98,15 @@ const CrashGame = {
                 const action = btn.dataset.action;
                 const userBalance = this.getUserBalance() || 1000;
                 if (action === 'half') this.bet = Math.max(10, Math.floor(this.bet / 2));
-                else if (action === 'double') this.bet = Math.min(userBalance, this.bet * 2);
+                else if (action === 'double') this.bet = Math.min(1000, Math.min(userBalance, this.bet * 2));
                 else if (action === 'min') this.bet = 10;
-                else if (action === 'max') this.bet = Math.max(10, userBalance);
+                else if (action === 'max') this.bet = Math.min(1000, Math.max(10, userBalance));
 
-                if (betInput) betInput.value = this.bet;
+                if (betInput) {
+                    betInput.value = this.bet;
+                    betInput.classList.remove('input-error');
+                }
+                if (errorEl) errorEl.style.display = 'none';
                 if (window.sound && typeof window.sound.playChip === 'function') {
                     window.sound.playChip();
                 }
@@ -101,7 +116,8 @@ const CrashGame = {
 
         const actionBtn = document.getElementById('crashActionBtn');
         if (actionBtn) {
-            actionBtn.addEventListener('click', () => {
+            actionBtn.addEventListener('click', (e) => {
+                e.preventDefault();
                 if (this.state === 'idle' || this.state === 'crashed' || this.state === 'cashed_out') {
                     this.startGame();
                 } else if (this.state === 'running') {
@@ -169,6 +185,15 @@ const CrashGame = {
             this.notify('Mise invalide (minimum 10 coins).', 'error');
             return;
         }
+        if (this.bet > 1000) {
+            this.notify('Mise maximale de 1000 coins pour ce jeu.', 'error');
+            const errorEl = document.getElementById('crashBetError');
+            if (errorEl) {
+                errorEl.textContent = 'Mise maximale de 1000 coins pour ce jeu.';
+                errorEl.style.display = 'block';
+            }
+            return;
+        }
         if (this.bet > userBalance) {
             this.notify(`Solde insuffisant pour miser ${this.bet} coins (solde actuel : ${userBalance} coins).`, 'error');
             return;
@@ -207,6 +232,7 @@ const CrashGame = {
             this.targetCrashPoint = Number(data.crashPoint || res.crashPoint);
             this.currentMultiplier = 1.00;
             this.state = 'running';
+            this.isCashingOut = false;
             this.particles = [];
             this.startTime = performance.now();
 
@@ -245,26 +271,44 @@ const CrashGame = {
     },
 
     async cashout() {
-        if (this.state !== 'running' || !this.gameId) return;
+        if (this.state !== 'running' || !this.gameId || this.isCashingOut) return;
+        this.isCashingOut = true;
 
-        const frozenMultiplier = this.currentMultiplier;
-        this.state = 'cashed_out';
+        const clientClickedAt = Date.now();
+        const frozenMultiplier = Math.max(1.00, Number(this.currentMultiplier.toFixed(2)));
 
+        // Retour visuel immédiat sans délai
         const actionBtn = document.getElementById('crashActionBtn');
         if (actionBtn) {
             actionBtn.disabled = true;
-            actionBtn.className = 'btn-crash-action btn-bet';
-            actionBtn.innerHTML = 'Encaissé !';
+            actionBtn.className = 'btn-crash-action btn-cashing-out';
+            actionBtn.innerHTML = '<span class="spinner-small" style="display:inline-block; margin-right:6px;"></span> Encaissement en cours...';
+        }
+
+        const statusLabel = document.getElementById('crashStatusLabel');
+        if (statusLabel) {
+            statusLabel.className = 'crash-status-label status-cashing';
+            statusLabel.textContent = `ENCAISSEMENT EN COURS (×${frozenMultiplier.toFixed(2)})...`;
         }
 
         try {
             const res = await window.API.cashoutCrash({
                 gameId: this.gameId,
-                multiplier: frozenMultiplier
+                multiplier: frozenMultiplier,
+                clientClickedAt: clientClickedAt
             });
             const data = res.data || res;
 
             if (data.won) {
+                this.state = 'cashed_out';
+                this.isCashingOut = false;
+
+                if (actionBtn) {
+                    actionBtn.disabled = true;
+                    actionBtn.className = 'btn-crash-action btn-bet';
+                    actionBtn.innerHTML = 'Encaissé !';
+                }
+
                 if (window.sound && typeof window.sound.playWin === 'function') {
                     window.sound.playWin();
                 } else if (window.AudioController && window.AudioController.playWin) {
@@ -287,7 +331,6 @@ const CrashGame = {
                     window.User.balance = data.coins;
                 }
 
-                const statusLabel = document.getElementById('crashStatusLabel');
                 if (statusLabel) {
                     statusLabel.className = 'crash-status-label status-cashed';
                     statusLabel.textContent = `ENCAISSÉ : +${data.payout} 🪙 (×${Number(data.multiplier).toFixed(2)})`;
@@ -295,12 +338,15 @@ const CrashGame = {
 
                 this.notify(`🎉 Félicitations ! Tu as encaissé ${data.payout} jetons à ×${Number(data.multiplier).toFixed(2)} !`, 'success');
             } else {
-                // Déjà crashé côté serveur
+                // Partie crashée avant l'encaissement
+                this.isCashingOut = false;
                 this.handleCrash();
             }
         } catch (err) {
             console.error('Erreur cashout:', err);
+            this.isCashingOut = false;
             this.notify(err.message || 'Erreur lors de l’encaissement', 'error');
+            this.handleCrash();
         }
     },
 
@@ -310,7 +356,6 @@ const CrashGame = {
         const elapsedSec = (timestamp - this.startTime) / 1000;
         
         // Formule de progression exponentielle progressive
-        // x(t) = 1.00 + 0.08 * t + 0.04 * t^2
         const calculatedMult = 1.00 + (elapsedSec * 0.10) + Math.pow(elapsedSec * 0.22, 2.1);
         this.currentMultiplier = Math.max(1.00, calculatedMult);
 
@@ -326,8 +371,8 @@ const CrashGame = {
             else multDisplay.className = 'crash-multiplier-big tension-low';
         }
 
-        // Update cashout button value
-        if (this.state === 'running') {
+        // Update cashout button value si partie en cours
+        if (this.state === 'running' && !this.isCashingOut) {
             const actionBtn = document.getElementById('crashActionBtn');
             if (actionBtn) {
                 const livePayout = Math.floor(this.bet * this.currentMultiplier);
@@ -337,8 +382,8 @@ const CrashGame = {
 
         this.updatePreviewPayout();
 
-        // Check if crash target hit
-        if (this.currentMultiplier >= this.targetCrashPoint) {
+        // Vérifier si le point de crash est atteint (uniquement si aucun encaissement en attente de réponse)
+        if (!this.isCashingOut && this.currentMultiplier >= this.targetCrashPoint) {
             this.handleCrash();
             return;
         }
@@ -350,6 +395,8 @@ const CrashGame = {
     },
 
     async handleCrash() {
+        if (this.isCashingOut) return;
+
         this.state = 'crashed';
         this.currentMultiplier = this.targetCrashPoint;
 
@@ -381,7 +428,7 @@ const CrashGame = {
             window.State.setGameAnimating(false);
         }
 
-        // Tell server round finished if not cashed
+        // Clôturer la partie auprès du serveur si non encaissée
         try {
             await window.API.finishCrash({ gameId: this.gameId });
         } catch (e) {
@@ -401,6 +448,7 @@ const CrashGame = {
 
     setIdleUI() {
         this.state = 'idle';
+        this.isCashingOut = false;
         const actionBtn = document.getElementById('crashActionBtn');
         if (actionBtn) {
             actionBtn.disabled = false;

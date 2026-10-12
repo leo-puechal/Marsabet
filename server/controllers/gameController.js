@@ -1547,21 +1547,30 @@ exports.startCrash = (req, res) => {
       return res.status(400).json({ error: 'Mise invalide (minimum 10 jetons).' });
     }
 
+    const MAX_CRASH_BET = 1000;
+    if (bet > MAX_CRASH_BET) {
+      return res.status(400).json({ error: 'Mise maximale de 1000 coins pour ce jeu.' });
+    }
+
     const user = db.prepare('SELECT coins FROM users WHERE id = ?').get(userId);
     if (!user || user.coins < bet) {
       return res.status(400).json({ error: 'Solde insuffisant pour cette mise.' });
     }
 
-    // Déduction immédiate de la mise
+    // Déduction immédiate de la mise et calcul des timestamps
     const gameId = crypto.randomUUID();
     const crashPoint = crashEngine.generateCrashPoint();
+    const startedAt = Date.now();
+    const durationSec = crashEngine.getDurationForMultiplier(crashPoint);
+    const durationMs = Math.round(durationSec * 1000);
+    const crashAt = startedAt + durationMs;
 
     const runTx = db.transaction(() => {
       db.prepare('UPDATE users SET coins = coins - ?, total_wagered = total_wagered + ?, games_played = games_played + 1 WHERE id = ?').run(bet, bet, userId);
       db.prepare(`
-        INSERT INTO crash_sessions (id, user_id, bet, crash_point, status)
-        VALUES (?, ?, ?, ?, 'running')
-      `).run(gameId, userId, bet, crashPoint);
+        INSERT INTO crash_sessions (id, user_id, bet, crash_point, status, started_at, crash_at)
+        VALUES (?, ?, ?, ?, 'running', ?, ?)
+      `).run(gameId, userId, bet, crashPoint, startedAt, crashAt);
       return db.prepare('SELECT coins FROM users WHERE id = ?').get(userId).coins;
     });
 
@@ -1572,11 +1581,17 @@ exports.startCrash = (req, res) => {
       gameId,
       bet,
       crashPoint,
+      startedAt,
+      crashAt,
+      durationMs,
       coins: updatedCoins,
       data: {
         gameId,
         bet,
         crashPoint,
+        startedAt,
+        crashAt,
+        durationMs,
         coins: updatedCoins
       }
     });
@@ -1587,9 +1602,12 @@ exports.startCrash = (req, res) => {
 };
 
 exports.cashoutCrash = (req, res) => {
+  // Enregistrer le timestamp exact de réception de la requête dès la première milliseconde
+  const requestReceivedAt = Date.now();
+
   try {
     const userId = req.user.id;
-    const { gameId, multiplier } = req.body;
+    const { gameId, multiplier, clientClickedAt } = req.body;
     const userMult = Math.max(1.00, Number(multiplier) || 1.00);
 
     const session = db.prepare('SELECT * FROM crash_sessions WHERE id = ? AND user_id = ?').get(gameId, userId);
@@ -1597,15 +1615,28 @@ exports.cashoutCrash = (req, res) => {
       return res.status(404).json({ error: 'Partie introuvable.' });
     }
 
-    if (session.status !== 'running') {
-      return res.status(400).json({ error: 'Cette partie est déjà terminée.' });
+    if (session.status === 'cashed_out') {
+      return res.status(400).json({ error: 'Cette partie a déjà été encaissée.' });
     }
 
     const crashPoint = session.crash_point;
+    const crashAt = session.crash_at || (session.started_at ? session.started_at + Math.round(crashEngine.getDurationForMultiplier(crashPoint) * 1000) : null);
 
-    // Vérifier si l'utilisateur a encaissé avant le point de crash
-    if (userMult <= crashPoint) {
-      const payout = Math.floor(session.bet * userMult);
+    // Déterminer le timestamp d'encaissement effectif (timestamp de réception ou clic client vérifié)
+    const effectiveClickTime = (clientClickedAt && typeof clientClickedAt === 'number' && clientClickedAt <= requestReceivedAt && (!session.started_at || clientClickedAt >= session.started_at - 100))
+      ? clientClickedAt
+      : requestReceivedAt;
+
+    // Vérifier si l'encaissement a eu lieu avant le crash :
+    // 1. Soit le multiplicateur au clic est inférieur ou égal au crashPoint
+    // 2. Soit le timestamp d'encaissement est intervenu avant le timestamp exact du crash déterminé pour ce tour
+    const isTimely = crashAt ? (effectiveClickTime <= crashAt || requestReceivedAt <= crashAt) : false;
+    const isMultiplierValid = userMult <= crashPoint;
+
+    if (isMultiplierValid || isTimely) {
+      // Gain valide : multiplicateur plafonné au crashPoint en cas de décalage minime
+      const finalMult = Math.min(userMult, crashPoint);
+      const payout = Math.floor(session.bet * finalMult);
       const profit = payout - session.bet;
 
       const runTx = db.transaction(() => {
@@ -1615,7 +1646,7 @@ exports.cashoutCrash = (req, res) => {
               cashed_multiplier = ?,
               payout = ?
           WHERE id = ?
-        `).run(userMult, payout, gameId);
+        `).run(finalMult, payout, gameId);
 
         db.prepare(`
           UPDATE users
@@ -1629,8 +1660,11 @@ exports.cashoutCrash = (req, res) => {
           INSERT INTO game_history (user_id, game_type, bet, payout, profit, details)
           VALUES (?, 'crash', ?, ?, ?, ?)
         `).run(userId, session.bet, payout, profit, JSON.stringify({
-          multiplier: userMult,
+          multiplier: finalMult,
           crashPoint,
+          clickTimestamp: effectiveClickTime,
+          requestReceivedAt,
+          crashAt,
           outcome: 'cashed_out'
         }));
 
@@ -1659,14 +1693,14 @@ exports.cashoutCrash = (req, res) => {
       return res.json({
         success: true,
         won: true,
-        multiplier: userMult,
+        multiplier: finalMult,
         payout,
         profit,
         crashPoint,
         coins: updatedCoins,
         data: {
           won: true,
-          multiplier: userMult,
+          multiplier: finalMult,
           payout,
           profit,
           crashPoint,
@@ -1674,7 +1708,7 @@ exports.cashoutCrash = (req, res) => {
         }
       });
     } else {
-      // Trop tard : partie crashée
+      // Trop tard : partie crashée avant l'encaissement
       db.transaction(() => {
         db.prepare(`
           UPDATE crash_sessions
@@ -1689,6 +1723,9 @@ exports.cashoutCrash = (req, res) => {
         `).run(userId, session.bet, -session.bet, JSON.stringify({
           multiplier: userMult,
           crashPoint,
+          clickTimestamp: effectiveClickTime,
+          requestReceivedAt,
+          crashAt,
           outcome: 'crashed'
         }));
 

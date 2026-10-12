@@ -375,6 +375,20 @@
     opacity: 0.95;
 }
 
+.btn-crash-action.btn-cashing-out {
+    background: linear-gradient(135deg, #059669, #047857) !important;
+    color: #ffffff !important;
+    opacity: 0.9 !important;
+    cursor: wait !important;
+    box-shadow: 0 4px 15px rgba(5, 150, 105, 0.4) !important;
+    filter: none !important;
+}
+
+.crash-bet-input.input-error {
+    border-color: #ef4444 !important;
+    background-color: rgba(239, 68, 68, 0.08) !important;
+}
+
 .btn-crash-action:disabled {
     opacity: 0.5;
     cursor: not-allowed;

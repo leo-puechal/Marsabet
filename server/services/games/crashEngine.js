@@ -18,6 +18,37 @@ function generateCrashPoint() {
   return Number(clamped.toFixed(2));
 }
 
+/**
+ * Formule standard d'accélération du multiplicateur Marsabet
+ * M(t) = 1.00 + (t * 0.10) + (t * 0.22)^2.1
+ */
+function getMultiplierAtTime(elapsedSec) {
+  if (elapsedSec <= 0) return 1.00;
+  const raw = 1.00 + (elapsedSec * 0.10) + Math.pow(elapsedSec * 0.22, 2.1);
+  return Number(raw.toFixed(2));
+}
+
+/**
+ * Calcule la durée exacte en secondes pour atteindre un multiplicateur donné
+ */
+function getDurationForMultiplier(targetMultiplier) {
+  if (targetMultiplier <= 1.00) return 0;
+  let low = 0;
+  let high = 120; // 120s est largement supérieur à 250x
+  for (let i = 0; i < 40; i++) {
+    const mid = (low + high) / 2;
+    const m = 1.00 + (mid * 0.10) + Math.pow(mid * 0.22, 2.1);
+    if (m < targetMultiplier) {
+      low = mid;
+    } else {
+      high = mid;
+    }
+  }
+  return (low + high) / 2;
+}
+
 module.exports = {
-  generateCrashPoint
+  generateCrashPoint,
+  getMultiplierAtTime,
+  getDurationForMultiplier
 };

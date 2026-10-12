@@ -1,5 +1,6 @@
 const path = require('path');
 const bcrypt = require('bcryptjs');
+const config = require('../config/config');
 const db = require('./db');
 
 console.log('🔄 Réinitialisation de la base de données Marsabet pour la production...');
@@ -36,8 +37,9 @@ const resetTx = db.transaction(() => {
   `);
 
   // 5. Créer UNIQUEMENT le compte administrateur officiel BDE
+  const adminPwd = process.env.ADMIN_PASSWORD || config.adminPassword || 'darkrider84';
   const salt = bcrypt.genSaltSync(10);
-  const hash = bcrypt.hashSync('epitech2026', salt);
+  const hash = bcrypt.hashSync(adminPwd, salt);
   db.prepare(`
     INSERT INTO users (username, password_hash, coins, role, total_wagered, total_won, games_played, biggest_win)
     VALUES ('bde_admin', ?, 50000, 'admin', 0, 0, 0, 0)
