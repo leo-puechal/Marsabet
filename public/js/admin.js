@@ -140,6 +140,35 @@ const AdminBDE = {
         this.submitUserCoins();
       });
     }
+
+    // Gestion des Concours BDE
+    const openContestBtn = document.getElementById('adminOpenCreateContestBtn');
+    if (openContestBtn) {
+      openContestBtn.addEventListener('click', () => this.openContestModal());
+    }
+
+    const closeContestModalBtn = document.getElementById('closeAdminContestModal');
+    if (closeContestModalBtn) {
+      closeContestModalBtn.addEventListener('click', () => {
+        const m = document.getElementById('adminContestModal');
+        if (m) m.classList.remove('active');
+      });
+    }
+
+    document.querySelectorAll('.contest-preset-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const preset = e.currentTarget.dataset.preset;
+        this.applyContestPreset(preset);
+      });
+    });
+
+    const formContest = document.getElementById('formAdminContest');
+    if (formContest) {
+      formContest.addEventListener('submit', (e) => {
+        e.preventDefault();
+        this.saveContest();
+      });
+    }
   },
 
   switchTab(tab) {
@@ -152,16 +181,19 @@ const AdminBDE = {
     const areaUsers = document.getElementById('adminTabUsers');
     const areaPromos = document.getElementById('adminTabPromos');
     const areaWheels = document.getElementById('adminTabWheels');
+    const areaContests = document.getElementById('adminTabContests');
 
     if (areaOrders) areaOrders.style.display = (tab === 'orders') ? 'block' : 'none';
     if (areaUsers) areaUsers.style.display = (tab === 'users') ? 'block' : 'none';
     if (areaPromos) areaPromos.style.display = (tab === 'promos') ? 'block' : 'none';
     if (areaWheels) areaWheels.style.display = (tab === 'wheels') ? 'block' : 'none';
+    if (areaContests) areaContests.style.display = (tab === 'contests') ? 'block' : 'none';
 
     if (tab === 'orders') this.loadOrders();
     if (tab === 'users') this.loadUsers();
     if (tab === 'promos') this.loadPromoCodes();
     if (tab === 'wheels') this.loadWheels();
+    if (tab === 'contests') this.loadContests();
   },
 
   // ==========================================
@@ -1108,6 +1140,277 @@ const AdminBDE = {
     };
 
     requestAnimationFrame(animate);
+  },
+
+  // ==========================================
+  // GESTION DES CONCOURS & DÉFIS BDE (ADMIN)
+  // ==========================================
+  openContestModal() {
+    const modal = document.getElementById('adminContestModal');
+    if (!modal) return;
+
+    // Réinitialiser le formulaire
+    const form = document.getElementById('formAdminContest');
+    if (form) form.reset();
+
+    // Date de fin par défaut (+3 jours)
+    const endInput = document.getElementById('contestInputEndDate');
+    if (endInput) {
+      const d = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
+      d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+      endInput.value = d.toISOString().slice(0, 16);
+    }
+
+    modal.classList.add('active');
+  },
+
+  applyContestPreset(preset) {
+    const titleInput = document.getElementById('contestInputTitle');
+    const descInput = document.getElementById('contestInputDesc');
+    const gameSelect = document.getElementById('contestSelectGame');
+    const critSelect = document.getElementById('contestSelectCriterion');
+    const minBetInput = document.getElementById('contestInputMinBet');
+    const prizeInput = document.getElementById('contestInputPrizePool');
+
+    switch (preset) {
+      case 'crash_mult':
+        if (titleInput) titleInput.value = '🚀 Défi Crash : Plus Gros Multiplicateur';
+        if (descInput) descInput.value = 'Encaisse avec le multiplicateur le plus élevé possible avant le crash du vaisseau !';
+        if (gameSelect) gameSelect.value = 'crash';
+        if (critSelect) critSelect.value = 'highest_multiplier';
+        if (minBetInput) minBetInput.value = 20;
+        if (prizeInput) prizeInput.value = 25000;
+        break;
+      case 'bj_profit':
+        if (titleInput) titleInput.value = '🃏 Tournoi Blackjack : Roi des Gains';
+        if (descInput) descInput.value = 'Bats le croupier et accumule le plus gros profit net sur les tables !';
+        if (gameSelect) gameSelect.value = 'blackjack';
+        if (critSelect) critSelect.value = 'total_profit';
+        if (minBetInput) minBetInput.value = 50;
+        if (prizeInput) prizeInput.value = 30000;
+        break;
+      case 'slots_win':
+        if (titleInput) titleInput.value = '🎰 Jackpot Slots : Plus Gros Gain Unique';
+        if (descInput) descInput.value = 'Décroche la combinaison légendaire ou les Free Spins les plus rémunérateurs en un seul tour !';
+        if (gameSelect) gameSelect.value = 'slots';
+        if (critSelect) critSelect.value = 'highest_win';
+        if (minBetInput) minBetInput.value = 20;
+        if (prizeInput) prizeInput.value = 20000;
+        break;
+      case 'dragon_summit':
+        if (titleInput) titleInput.value = '🐉 Ascension Dragon Tower : Plus Haut Sommet';
+        if (descInput) descInput.value = 'Gravis le plus grand nombre d\'étages sans tomber sur un œuf piégé !';
+        if (gameSelect) gameSelect.value = 'dragon-tower';
+        if (critSelect) critSelect.value = 'highest_multiplier';
+        if (minBetInput) minBetInput.value = 20;
+        if (prizeInput) prizeInput.value = 20000;
+        break;
+      case 'all_wager':
+        if (titleInput) titleInput.value = '👑 Casino Master : Plus Gros Joueur';
+        if (descInput) descInput.value = 'Celui qui brasse le plus de jetons sur l\'ensemble des jeux du casino !';
+        if (gameSelect) gameSelect.value = 'all';
+        if (critSelect) critSelect.value = 'total_wagered';
+        if (minBetInput) minBetInput.value = 10;
+        if (prizeInput) prizeInput.value = 40000;
+        break;
+    }
+
+    if (window.UI?.showToast) {
+      window.UI.showToast('Modèle appliqué au formulaire !', 'info', 1500);
+    }
+  },
+
+  async saveContest() {
+    const title = document.getElementById('contestInputTitle')?.value;
+    const description = document.getElementById('contestInputDesc')?.value;
+    const gameType = document.getElementById('contestSelectGame')?.value;
+    const criterion = document.getElementById('contestSelectCriterion')?.value;
+    const minBet = parseInt(document.getElementById('contestInputMinBet')?.value, 10) || 10;
+    const prizePool = parseInt(document.getElementById('contestInputPrizePool')?.value, 10) || 10000;
+    const endDateRaw = document.getElementById('contestInputEndDate')?.value;
+
+    if (!title || !title.trim()) {
+      window.UI?.showToast('Veuillez renseigner le titre du concours.', 'error');
+      return;
+    }
+
+    const endDate = endDateRaw ? new Date(endDateRaw).toISOString() : null;
+
+    try {
+      await window.API.adminCreateContest({
+        title,
+        description,
+        gameType,
+        criterion,
+        minBet,
+        prizePool,
+        endDate
+      });
+
+      window.UI?.showToast('🏆 Concours créé et publié avec succès !', 'success');
+      const modal = document.getElementById('adminContestModal');
+      if (modal) modal.classList.remove('active');
+
+      this.loadContests();
+    } catch (err) {
+      window.UI?.showToast(err.message || 'Erreur lors de la création du concours.', 'error');
+    }
+  },
+
+  async loadContests() {
+    const tbody = document.getElementById('adminContestsTableBody');
+    if (!tbody) return;
+
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="8" style="text-align:center; padding:2rem; color:var(--text-muted);">
+          Chargement des concours en cours...
+        </td>
+      </tr>
+    `;
+
+    try {
+      const res = await window.API.getContests(true);
+      const contests = res.contests || [];
+
+      if (contests.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="8" style="text-align:center; padding:2rem; color:var(--text-muted);">
+              Aucun concours créé pour le moment. Clique sur "➕ Créer un Concours" pour lancer un premier événement !
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      const getGameIcon = (g) => {
+        const icons = {
+          'crash': '🚀 Crash',
+          'blackjack': '🃏 Blackjack',
+          'slots': '🎰 Slots',
+          'roulette': '🔴 Roulette',
+          'dice': '🎲 Dés',
+          'slider': '🎯 Slider',
+          'plinko': '💧 Plinko',
+          'video-poker': '🎴 Vidéo Poker',
+          'dragon-tower': '🐉 Dragon Tower',
+          'all': '🌐 Tous'
+        };
+        return icons[g] || g;
+      };
+
+      const getCritName = (c) => {
+        const crits = {
+          'highest_multiplier': '🎯 Plus Gros Mult',
+          'highest_win': '💰 Plus Gros Gain',
+          'total_profit': '📈 Gains Cumulés (Profit)',
+          'total_wins': '🏆 Nb Victoires',
+          'total_wagered': '🔥 Volume Misé'
+        };
+        return crits[c] || c;
+      };
+
+      tbody.innerHTML = contests.map((c, i) => {
+        const isEnded = c.status === 'ended';
+        const top1 = c.top3 && c.top3[0];
+        let leaderText = '-';
+        if (top1) {
+          leaderText = `<strong>${top1.username}</strong> (${c.criterion === 'highest_multiplier' ? 'x' + Number(top1.score).toFixed(2) : Number(top1.score).toLocaleString('fr-FR')})`;
+        }
+
+        return `
+          <tr>
+            <td style="color:var(--text-muted); font-weight:700;">${i + 1}</td>
+            <td>
+              <div style="font-weight:700; color:#FFF;">${c.title}</div>
+              <div style="font-size:0.75rem; color:var(--gold-light);">${getGameIcon(c.gameType)} • Min: ${c.minBet || 10} 🪙</div>
+            </td>
+            <td><span style="font-size:0.8rem; color:#cbd5e1;">${getCritName(c.criterion)}</span></td>
+            <td><strong style="color:var(--gold-light);">${Number(c.prizePool).toLocaleString('fr-FR')} 🪙</strong></td>
+            <td style="text-align:center;"><span style="background:rgba(255,255,255,0.06); padding:2px 8px; border-radius:10px; font-size:0.8rem;">👥 ${c.participantsCount || 0}</span></td>
+            <td><span style="font-size:0.8rem;">${leaderText}</span></td>
+            <td>
+              ${isEnded
+                ? `<span class="badge" style="background:rgba(148,163,184,0.15); border:1px solid #94a3b8; color:#94a3b8; padding:2px 8px; border-radius:6px; font-size:0.72rem;">🏁 Terminé</span>`
+                : `<span class="badge" style="background:rgba(16,185,129,0.15); border:1px solid #10b981; color:#34d399; padding:2px 8px; border-radius:6px; font-size:0.72rem;">🔥 En cours</span>`
+              }
+            </td>
+            <td style="text-align:right;">
+              <div style="display:inline-flex; gap:6px;">
+                ${!isEnded ? `
+                  <button class="btn btn-gold btn-sm btn-distribute-contest" data-id="${c.id}" data-title="${encodeURIComponent(c.title)}" title="Clôturer le concours et verser les gains aux gagnants">
+                    🎁 Clôturer & Payer
+                  </button>
+                ` : `
+                  <span style="font-size:0.75rem; color:var(--text-muted); align-self:center; margin-right:4px;">
+                    ${c.prizesDistributed ? '✓ Payé' : 'Clos'}
+                  </span>
+                `}
+                <button class="btn btn-outline btn-sm btn-delete-contest" data-id="${c.id}" data-title="${encodeURIComponent(c.title)}" style="color:#ef4444; border-color:rgba(239,68,68,0.4);" title="Supprimer définitivement ce concours">
+                  🗑️
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      // Attacher événements d'actions
+      tbody.querySelectorAll('.btn-distribute-contest').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = parseInt(btn.dataset.id, 10);
+          const title = decodeURIComponent(btn.dataset.title || '');
+          this.distributeContestPrizes(id, title);
+        });
+      });
+
+      tbody.querySelectorAll('.btn-delete-contest').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = parseInt(btn.dataset.id, 10);
+          const title = decodeURIComponent(btn.dataset.title || '');
+          this.deleteContest(id, title);
+        });
+      });
+
+    } catch (err) {
+      console.error('Erreur loadContests admin:', err);
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="8" style="text-align:center; padding:2rem; color:#fca5a5;">
+            ⚠️ Erreur lors du chargement des concours.
+          </td>
+        </tr>
+      `;
+    }
+  },
+
+  async distributeContestPrizes(id, title) {
+    if (!confirm(`Es-tu sûr de vouloir clôturer le concours "${title}" et distribuer les récompenses aux 3 meilleurs élèves ?`)) {
+      return;
+    }
+
+    try {
+      const res = await window.API.adminDistributeContestPrizes(id);
+      window.UI?.showToast(res.message || 'Récompenses distribuées avec succès !', 'success');
+      this.loadContests();
+    } catch (err) {
+      window.UI?.showToast(err.message || 'Erreur lors de la distribution des gains.', 'error');
+    }
+  },
+
+  async deleteContest(id, title) {
+    if (!confirm(`Es-tu sûr de vouloir supprimer définitivement le concours "${title}" ? Cette action est irréversible.`)) {
+      return;
+    }
+
+    try {
+      await window.API.adminDeleteContest(id);
+      window.UI?.showToast('Concours supprimé.', 'info');
+      this.loadContests();
+    } catch (err) {
+      window.UI?.showToast(err.message || 'Erreur lors de la suppression.', 'error');
+    }
   }
 };
 

@@ -388,6 +388,34 @@ const API = {
     return this.request('/games/dragon-tower/cashout', {
       method: 'POST'
     });
+  },
+
+  // Contests & Tournois
+  async getContests(includeEnded = false) {
+    return this.request(`/contests?includeEnded=${includeEnded}`);
+  },
+
+  async getContest(id) {
+    return this.request(`/contests/${id}`);
+  },
+
+  async adminCreateContest(data) {
+    return this.request('/contests', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  },
+
+  async adminDistributeContestPrizes(id) {
+    return this.request(`/contests/${id}/distribute`, {
+      method: 'POST'
+    });
+  },
+
+  async adminDeleteContest(id) {
+    return this.request(`/contests/${id}`, {
+      method: 'DELETE'
+    });
   }
 };
 

@@ -374,6 +374,41 @@ function initDb() {
     CREATE INDEX IF NOT EXISTS idx_promo_code ON promo_codes(code);
     CREATE INDEX IF NOT EXISTS idx_code_util_user ON code_utilisations(user_id);
     CREATE INDEX IF NOT EXISTS idx_code_util_code ON code_utilisations(code_id);
+    CREATE TABLE IF NOT EXISTS contests (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      title TEXT NOT NULL,
+      description TEXT,
+      game_type TEXT NOT NULL DEFAULT 'all',
+      criterion TEXT NOT NULL DEFAULT 'highest_multiplier',
+      min_bet INTEGER NOT NULL DEFAULT 10,
+      prize_pool INTEGER NOT NULL DEFAULT 10000,
+      prize_distribution TEXT DEFAULT '{"first": 50, "second": 30, "third": 20}',
+      start_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+      end_date DATETIME DEFAULT NULL,
+      status TEXT NOT NULL DEFAULT 'active',
+      prizes_distributed INTEGER NOT NULL DEFAULT 0,
+      created_by INTEGER REFERENCES users(id),
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS contest_participants (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      contest_id INTEGER NOT NULL REFERENCES contests(id) ON DELETE CASCADE,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      score REAL NOT NULL DEFAULT 0,
+      best_multiplier REAL NOT NULL DEFAULT 0,
+      best_win INTEGER NOT NULL DEFAULT 0,
+      total_profit INTEGER NOT NULL DEFAULT 0,
+      total_wins INTEGER NOT NULL DEFAULT 0,
+      total_wagered INTEGER NOT NULL DEFAULT 0,
+      games_played INTEGER NOT NULL DEFAULT 0,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(contest_id, user_id)
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_contest_status ON contests(status);
+    CREATE INDEX IF NOT EXISTS idx_contest_part_score ON contest_participants(contest_id, score DESC);
+    CREATE INDEX IF NOT EXISTS idx_contest_part_user ON contest_participants(user_id);
   `);
 
 
@@ -397,6 +432,55 @@ function initDb() {
     const seedPoints = [1.25, 2.14, 1.05, 5.82, 1.88, 3.40, 1.12, 12.45, 1.95, 2.70, 1.01, 4.10, 8.20, 1.45, 1.76];
     const insertHistory = db.prepare('INSERT INTO crash_history (crash_point) VALUES (?)');
     seedPoints.forEach(p => insertHistory.run(p));
+  }
+
+  // Initialisation des concours par défaut si la table est vide
+  const contestCount = db.prepare('SELECT COUNT(*) as count FROM contests').get().count;
+  if (contestCount === 0) {
+    const adminUser = db.prepare("SELECT id FROM users WHERE username = 'bde_admin'").get();
+    const adminId = adminUser ? adminUser.id : null;
+    const futureDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+
+    const insertContest = db.prepare(`
+      INSERT INTO contests (title, description, game_type, criterion, min_bet, prize_pool, prize_distribution, end_date, status, created_by)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'active', ?)
+    `);
+
+    insertContest.run(
+      '🚀 Défi Crash : Plus Gros Multiplicateur',
+      'Encaisse avec le multiplicateur le plus élevé avant le crash pour décrocher la 1ère place du podium !',
+      'crash',
+      'highest_multiplier',
+      20,
+      25000,
+      JSON.stringify({ first: 50, second: 30, third: 20 }),
+      futureDate,
+      adminId
+    );
+
+    insertContest.run(
+      '🃏 Grand Tournoi Blackjack : Roi des Gains',
+      'Affronte le croupier et cumule le maximum de profit net sur les tables de Blackjack !',
+      'blackjack',
+      'total_profit',
+      50,
+      30000,
+      JSON.stringify({ first: 50, second: 30, third: 20 }),
+      futureDate,
+      adminId
+    );
+
+    insertContest.run(
+      '🎰 Jackpot Slots : Plus Gros Gain Unique',
+      'Décroche le plus gros gain en un seul spin sur la machine à sous (spins réguliers ou Free Spins) !',
+      'slots',
+      'highest_win',
+      20,
+      15000,
+      JSON.stringify({ first: 50, second: 30, third: 20 }),
+      futureDate,
+      adminId
+    );
   }
 }
 

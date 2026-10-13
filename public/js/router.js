@@ -11,6 +11,9 @@ const Router = {
     '/profil': 'profile',
     '/codes': 'profile',
     '/recompenses': 'rewards',
+    '/evenements': 'events',
+    '/concours': 'events',
+    '/tournois': 'events',
     '/jeux/machine-a-sous': 'slots',
     '/jeux/blackjack': 'blackjack',
     '/jeux/roulette': 'roulette',
@@ -31,6 +34,7 @@ const Router = {
     'wheels': '/roues',
     'wheel-arena': '/roues',
     'rewards': '/recompenses',
+    'events': '/evenements',
     'leaderboard': '/classement',
     'shop': '/roues',
     'profile': '/profil',
@@ -181,6 +185,8 @@ const Router = {
       window.VideoPokerGame.init();
     } else if (viewName === 'dragon-tower' && window.DragonTowerGame) {
       window.DragonTowerGame.init();
+    } else if (viewName === 'events' && window.EventsManager) {
+      window.EventsManager.init();
     } else if (viewName === 'admin' && window.AdminBDE) {
       window.AdminBDE.switchTab('orders');
     }
@@ -205,6 +211,7 @@ const Router = {
       'wheels': 'Roues de la Fortune — Marsabet',
       'wheel-arena': param ? `Roue ${param.toUpperCase()} — Marsabet` : 'Roue de la Fortune — Marsabet',
       'rewards': 'Mes Récompenses BDE — Marsabet',
+      'events': 'Concours & Tournois BDE — Marsabet',
       'leaderboard': 'Classement des Joueurs — Marsabet',
       'profile': 'Mon Profil & Statut VIP — Marsabet',
       'blackjack': 'Table de Blackjack — Marsabet',

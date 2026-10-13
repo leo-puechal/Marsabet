@@ -11,6 +11,7 @@ const freeWheelEngine = require('../services/games/freeWheelEngine');
 const sliderEngine = require('../services/games/sliderEngine');
 const crashEngine = require('../services/games/crashEngine');
 const vipService = require('../services/vipService');
+const contestService = require('../services/contestService');
 
 // Helper transactionnel pour mettre à jour le joueur, wager, rang VIP et l'historique
 function recordGameResult(userId, gameType, bet, payout, details, alreadyDeducted = false) {
@@ -59,6 +60,12 @@ function recordGameResult(userId, gameType, bet, payout, details, alreadyDeducte
   });
 
   const txRes = runTx();
+
+  try {
+    contestService.recordGameProgress(userId, gameType, bet, payout, details);
+  } catch (cErr) {
+    console.warn('Erreur contest tracking non bloquante:', cErr);
+  }
 
   try {
     socketService.notifyUserBalance(userId, txRes.newCoins, { wager: txRes.newWager, vipInfo: txRes.vipInfo });
@@ -850,6 +857,14 @@ exports.cashoutCrash = (req, res) => {
       const updatedCoins = runTx();
 
       try {
+        contestService.recordGameProgress(userId, 'crash', session.bet, payout, {
+          multiplier: finalMult,
+          crashPoint,
+          isWin: true
+        });
+      } catch (cErr) {}
+
+      try {
         socketService.notifyUserBalance(userId, updatedCoins);
         socketService.notifyLeaderboardUpdated();
         if (profit > 0) {
@@ -905,6 +920,14 @@ exports.cashoutCrash = (req, res) => {
 
         db.prepare('INSERT INTO crash_history (crash_point) VALUES (?)').run(crashPoint);
       })();
+
+      try {
+        contestService.recordGameProgress(userId, 'crash', session.bet, 0, {
+          multiplier: 0,
+          crashPoint,
+          isWin: false
+        });
+      } catch (cErr) {}
 
       const currentCoins = db.prepare('SELECT coins FROM users WHERE id = ?').get(userId).coins;
 

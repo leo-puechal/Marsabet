@@ -38,6 +38,7 @@
   <link rel="stylesheet" href="/css/sidebar.css?v=candyluxe1">
   <link rel="stylesheet" href="/css/videopoker.css?v=candyluxe1">
   <link rel="stylesheet" href="/css/dragontower.css?v=candyluxe1">
+  <link rel="stylesheet" href="/css/events.css?v=candyluxe1">
   <link rel="stylesheet" href="/css/mobile-responsive.css?v=candyluxe1">
 </head>
 
@@ -121,6 +122,11 @@
           <li>
             <a class="sidebar-link" data-view="wheels">
               <span class="icon">🎡</span> Roues
+            </a>
+          </li>
+          <li>
+            <a class="sidebar-link" data-view="events">
+              <span class="icon">⚔️</span> Concours & Défis
             </a>
           </li>
           <li>
@@ -224,6 +230,9 @@
             <span id="landingEquivalentDisplay"></span>
             <span id="landingVipDisplay">Bronze</span>
           </div>
+
+          <!-- Encart Concours Actif en Direct -->
+          <div id="lobbyContestHighlight" style="display:none; margin-bottom:1.5rem;"></div>
 
           <!-- Bannières Promo Horizontales Style Stake -->
           <div class="stake-promo-grid">
@@ -1842,6 +1851,32 @@
           </div>
         </section>
 
+        <!-- ==================== VUE ÉVÉNEMENTS & CONCOURS ==================== -->
+        <section id="view-events" class="section-view">
+          <div class="events-page-wrapper">
+            <!-- Hero Banner -->
+            <div class="events-hero">
+              <span class="events-hero-tag">⚔️ Événements & Tournois BDE</span>
+              <h1 class="events-hero-title">Défis & Concours Marsabet</h1>
+              <p class="events-hero-desc">
+                Affronte les autres élèves sur des objectifs précis : plus gros multiplicateur au Crash, roi des gains au Blackjack, jackpots Slots... Grimpe sur le podium et remporte des milliers de jetons !
+              </p>
+            </div>
+
+            <!-- Filtres par catégorie -->
+            <div class="events-tabs-bar">
+              <button class="events-tab-btn active" data-filter="all">🌟 Tous les Concours</button>
+              <button class="events-tab-btn" data-filter="active">🔥 En Cours</button>
+              <button class="events-tab-btn" data-filter="ended">🏆 Archives & Gagnants</button>
+            </div>
+
+            <!-- Grille des concours -->
+            <div class="events-grid" id="eventsListContainer">
+              <!-- Rempli dynamiquement par EventsManager -->
+            </div>
+          </div>
+        </section>
+
         <!-- ==================== VUE CLASSEMENT ==================== -->
         <section id="view-leaderboard" class="section-view">
           <div class="leaderboard-container">
@@ -2201,6 +2236,7 @@
               <button class="admin-tab-btn" data-tab="users">👥 Utilisateurs & Soldes</button>
               <button class="admin-tab-btn" data-tab="promos">🎟️ Codes Promo BDE</button>
               <button class="admin-tab-btn" data-tab="wheels">🎡 Récompenses des Roues</button>
+              <button class="admin-tab-btn" data-tab="contests">🏆 Concours & Défis</button>
             </div>
 
             <!-- Onglet 1 : Suivi et Gestion des Livraisons Directes -->
@@ -2523,6 +2559,45 @@
               </div>
             </div>
 
+            <!-- Onglet 5 : Suivi et Gestion des Concours BDE -->
+            <div id="adminTabContests" style="display:none;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem; flex-wrap:wrap; gap:1rem;">
+                <div>
+                  <h3 style="font-family:var(--font-display); font-size:1.3rem; color:#FFF;">🏆 Concours & Défis BDE</h3>
+                  <p style="font-size:0.85rem; color:var(--text-muted);">
+                    Organise des compétitions (record Crash, profits Blackjack, gains Slots...), suis les scores en direct et distribue les récompenses.
+                  </p>
+                </div>
+                <button class="btn btn-gold" id="adminOpenCreateContestBtn" style="font-weight:700;">
+                  ➕ Créer un Concours
+                </button>
+              </div>
+
+              <div class="admin-table-container">
+                <table class="leader-table">
+                  <thead>
+                    <tr>
+                      <th style="width:36px;">#</th>
+                      <th>Événement & Jeu</th>
+                      <th>Objectif / Critère</th>
+                      <th>Dotation</th>
+                      <th>Participants</th>
+                      <th>Leader Actuel</th>
+                      <th>Statut</th>
+                      <th style="text-align:right;">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="adminContestsTableBody">
+                    <tr>
+                      <td colspan="8" style="text-align:center; padding:2rem; color:var(--text-muted);">
+                        Chargement des concours...
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
           </div>
         </section>
 
@@ -2654,6 +2729,103 @@
             Confirmer la demande 🚀
           </button>
         </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modale : Classement Détaillé du Concours -->
+  <div class="modal-overlay" id="contestLeaderboardModal">
+    <div class="modal-content contest-modal-content">
+      <button class="modal-close" id="closeContestLeaderboardModal">&times;</button>
+      <div id="contestLeaderboardContent">
+        <!-- Rempli dynamiquement par EventsManager -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Modale Admin : Création de Concours / Événement BDE -->
+  <div class="modal-overlay" id="adminContestModal">
+    <div class="modal-content" style="max-width:560px; max-height:90vh; overflow-y:auto;">
+      <button class="modal-close" id="closeAdminContestModal">&times;</button>
+      <h3 style="font-family:var(--font-display); font-size:1.3rem; color:var(--gold-light); margin-bottom:0.75rem;">
+        🏆 Créer un Nouveau Concours BDE
+      </h3>
+      <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:1.25rem;">
+        Organise un tournoi compétitif pour les étudiants avec dotation en coins et suivi de score automatisé.
+      </p>
+
+      <!-- Boutons de Modèles Rapides (Presets) -->
+      <div style="margin-bottom:1.2rem;">
+        <label class="form-label" style="margin-bottom:0.4rem;">⚡ Modèles Rapides (1 Clic) :</label>
+        <div style="display:flex; flex-wrap:wrap; gap:6px;">
+          <button type="button" class="btn btn-outline btn-sm contest-preset-btn" data-preset="crash_mult">🚀 Crash : Record Mult</button>
+          <button type="button" class="btn btn-outline btn-sm contest-preset-btn" data-preset="bj_profit">🃏 Blackjack : Roi des Gains</button>
+          <button type="button" class="btn btn-outline btn-sm contest-preset-btn" data-preset="slots_win">🎰 Slots : Plus Gros Gain</button>
+          <button type="button" class="btn btn-outline btn-sm contest-preset-btn" data-preset="dragon_summit">🐉 Dragon : Plus Haut Sommet</button>
+          <button type="button" class="btn btn-outline btn-sm contest-preset-btn" data-preset="all_wager">👑 Casino : Plus Gros Joueur</button>
+        </div>
+      </div>
+
+      <form id="formAdminContest">
+        <div class="form-group">
+          <label class="form-label" for="contestInputTitle">Titre de l'Événement</label>
+          <input type="text" id="contestInputTitle" class="form-input" placeholder="ex: 🚀 Défi Crash Galactique" required maxlength="80">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="contestInputDesc">Description & Règle</label>
+          <textarea id="contestInputDesc" class="form-input" rows="2" placeholder="Explique brièvement le principe du concours aux étudiants..." style="resize:vertical;"></textarea>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;">
+          <div class="form-group">
+            <label class="form-label" for="contestSelectGame">Jeu Concerné</label>
+            <select id="contestSelectGame" class="form-input">
+              <option value="crash">🚀 Crash Galactique</option>
+              <option value="blackjack">🃏 Blackjack</option>
+              <option value="slots">🎰 Machine à Sous</option>
+              <option value="video-poker">🎴 Vidéo Poker</option>
+              <option value="dragon-tower">🐉 Dragon Tower</option>
+              <option value="roulette">🔴 Roulette</option>
+              <option value="dice">🎲 Dés (Craps)</option>
+              <option value="slider">🎯 Slider Over/Under</option>
+              <option value="plinko">💧 Plinko</option>
+              <option value="all">🌐 Tous les Jeux</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="contestSelectCriterion">Critère de Classement</label>
+            <select id="contestSelectCriterion" class="form-input">
+              <option value="highest_multiplier">🎯 Plus Gros Multiplicateur (ex: x42.50)</option>
+              <option value="highest_win">💰 Plus Gros Gain en 1 manche</option>
+              <option value="total_profit">📈 Plus de Gains Cumulés (Profit net)</option>
+              <option value="total_wins">🏆 Nombre de Victoires</option>
+              <option value="total_wagered">🔥 Volume de Mises Cumulées</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;">
+          <div class="form-group">
+            <label class="form-label" for="contestInputMinBet">Mise Min. Qualifiante</label>
+            <input type="number" id="contestInputMinBet" class="form-input" min="10" step="5" value="20" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="contestInputPrizePool">Dotation Totale (Coins)</label>
+            <input type="number" id="contestInputPrizePool" class="form-input" min="100" step="500" value="25000" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="contestInputEndDate">Date & Heure de Fin</label>
+          <input type="datetime-local" id="contestInputEndDate" class="form-input" required>
+        </div>
+
+        <button type="submit" class="btn btn-gold" style="width:100%; padding:0.85rem; font-weight:800; margin-top:0.5rem;">
+          ✨ Lancer et Publier le Concours
+        </button>
       </form>
     </div>
   </div>
@@ -3141,6 +3313,10 @@
       <span class="nav-icon">🎡</span>
       <span class="nav-label">Roues</span>
     </a>
+    <a class="bottom-nav-item" data-view="events">
+      <span class="nav-icon">⚔️</span>
+      <span class="nav-label">Défis</span>
+    </a>
     <a class="bottom-nav-item" data-view="leaderboard">
       <span class="nav-icon">🏆</span>
       <span class="nav-label">Classement</span>
@@ -3170,6 +3346,7 @@
   <script src="/js/games/fortuneWheels.js"></script>
   <script src="/js/games/videoPoker.js"></script>
   <script src="/js/games/dragonTower.js"></script>
+  <script src="/js/events.js"></script>
   <script src="/js/admin.js"></script>
   <script src="/js/router.js"></script>
   <script src="/js/app.js"></script>

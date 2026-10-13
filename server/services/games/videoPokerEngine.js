@@ -36,6 +36,13 @@ const PAYTABLE = [
   { id: 'none', name: 'Perdu', multiplier: 0, desc: 'Aucune combinaison payante' }
 ];
 
+const SUIT_SYMBOLS = {
+  'S': '♠', 's': '♠', '♠': '♠',
+  'H': '♥', 'h': '♥', '♥': '♥',
+  'D': '♦', 'd': '♦', '♦': '♦',
+  'C': '♣', 'c': '♣', '♣': '♣'
+};
+
 function createShuffledDeck() {
   const deck = [];
   for (const s of SUITS) {
@@ -44,7 +51,8 @@ function createShuffledDeck() {
         code: `${r.rank}${s.suit}`,
         rank: r.rank,
         value: r.value,
-        suit: s.suit,
+        suit: s.symbol,
+        suitCode: s.suit,
         symbol: s.symbol,
         color: s.color,
         name: `${r.label} de ${s.name}`
@@ -74,7 +82,7 @@ function evaluateHand(cards) {
   // Tri par valeur croissante
   const sorted = [...cards].sort((a, b) => a.value - b.value);
   const values = sorted.map(c => c.value);
-  const suits = sorted.map(c => c.suit);
+  const suits = sorted.map(c => SUIT_SYMBOLS[c.suit] || c.suit);
 
   // 1. Couleur (Flush)
   const isFlush = suits.every(s => s === suits[0]);

@@ -141,6 +141,8 @@ const UI = {
         window.VideoPokerGame.init();
       } else if (viewName === 'dragon-tower' && window.DragonTowerGame) {
         window.DragonTowerGame.init();
+      } else if (viewName === 'events' && window.EventsManager) {
+        window.EventsManager.init();
       }
     }
 

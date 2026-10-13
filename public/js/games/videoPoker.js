@@ -182,31 +182,53 @@ const VideoPokerGame = {
     `).join('');
   },
 
+  getSuitSymbol(card) {
+    if (!card) return '♠';
+    if (card.symbol) return card.symbol;
+    const suit = card.suit || card;
+    const map = {
+      'S': '♠', 's': '♠', '♠': '♠', 'pique': '♠',
+      'H': '♥', 'h': '♥', '♥': '♥', 'coeur': '♥',
+      'D': '♦', 'd': '♦', '♦': '♦', 'carreau': '♦',
+      'C': '♣', 'c': '♣', '♣': '♣', 'trefle': '♣'
+    };
+    return map[suit] || suit || '♠';
+  },
+
+  isRedSuit(card) {
+    if (!card) return false;
+    if (card.color === 'red') return true;
+    const sym = this.getSuitSymbol(card);
+    const suit = card.suit;
+    return sym === '♥' || sym === '♦' || suit === 'H' || suit === 'D' || suit === 'h' || suit === 'd';
+  },
+
   renderCards(cards, animateIndices = []) {
     const container = document.getElementById('vpCardsContainer');
     if (!container) return;
 
     container.innerHTML = cards.map((card, i) => {
       const isHeld = this.holds.has(i);
-      const isRed = (card.suit === '♥' || card.suit === '♦');
+      const suitSymbol = this.getSuitSymbol(card);
+      const isRed = this.isRedSuit(card);
       const isAnimated = Array.isArray(animateIndices) && animateIndices.includes(i);
 
-      let centerContent = card.suit;
+      let centerContent = suitSymbol;
       if (['J', 'Q', 'K'].includes(card.rank)) {
         const avatars = { 'K': '👑', 'Q': '👸', 'J': '⚔️' };
         centerContent = `
           <div class="figure-illustration">
             <span class="figure-avatar">${avatars[card.rank] || '👑'}</span>
-            <span class="figure-suit-mini">${card.suit}</span>
+            <span class="figure-suit-mini">${suitSymbol}</span>
           </div>
         `;
       } else if (card.rank === 'A') {
-        centerContent = `<div class="ace-center">${card.suit}</div>`;
+        centerContent = `<div class="ace-center">${suitSymbol}</div>`;
       } else {
         centerContent = `
           <div class="number-center">
             <span class="pip-val">${card.rank}</span>
-            <span class="pip-suit">${card.suit}</span>
+            <span class="pip-suit">${suitSymbol}</span>
           </div>
         `;
       }
@@ -219,12 +241,12 @@ const VideoPokerGame = {
               <div class="vp-card-front ${isRed ? 'red' : 'black'}">
                 <div class="card-corner card-top-left">
                   <span class="card-rank">${card.rank}</span>
-                  <span class="card-suit">${card.suit}</span>
+                  <span class="card-suit">${suitSymbol}</span>
                 </div>
                 <div class="card-center">${centerContent}</div>
                 <div class="card-corner card-bottom-right">
                   <span class="card-rank">${card.rank}</span>
-                  <span class="card-suit">${card.suit}</span>
+                  <span class="card-suit">${suitSymbol}</span>
                 </div>
               </div>
               <div class="vp-card-back">

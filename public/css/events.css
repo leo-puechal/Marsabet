@@ -1,0 +1,584 @@
+/* ==========================================================================
+   MARSABET CASINO — ÉVÉNEMENTS & CONCOURS (TOURNOIS ÉTUDIANTS BDE)
+   Direction Artistique : Deep Navy (#06142B, #0A1E40) + Candy Gold (#D4AF37)
+   ========================================================================== */
+
+/* Page View Container */
+.events-page-wrapper {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 3rem;
+}
+
+/* En-tête de section */
+.events-hero {
+  background: radial-gradient(circle at 50% 20%, #0d2246 0%, #06142b 90%);
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  border-radius: 16px;
+  padding: 2.25rem 1.75rem;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 2rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+}
+
+.events-hero::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle at center, rgba(212, 175, 55, 0.08) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+.events-hero-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(212, 175, 55, 0.15);
+  border: 1px solid rgba(212, 175, 55, 0.4);
+  color: var(--gold-light, #ffe680);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  margin-bottom: 0.8rem;
+}
+
+.events-hero-title {
+  font-family: var(--font-display, sans-serif);
+  font-size: 2.2rem;
+  font-weight: 900;
+  color: #ffffff;
+  margin-bottom: 0.6rem;
+  letter-spacing: -0.5px;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+}
+
+.events-hero-desc {
+  font-size: 0.98rem;
+  color: #cbd5e1;
+  max-width: 680px;
+  margin: 0 auto;
+  line-height: 1.5;
+}
+
+/* Onglets de filtrage */
+.events-tabs-bar {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+
+.events-tab-btn {
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #94a3b8;
+  padding: 0.65rem 1.4rem;
+  border-radius: 30px;
+  font-weight: 700;
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  backdrop-filter: blur(8px);
+}
+
+.events-tab-btn:hover {
+  border-color: rgba(212, 175, 55, 0.5);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.events-tab-btn.active {
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.3) 0%, rgba(212, 175, 55, 0.1) 100%);
+  border-color: #d4af37;
+  color: #ffe680;
+  box-shadow: 0 0 16px rgba(212, 175, 55, 0.25);
+}
+
+/* Grille des concours */
+.events-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: 1.5rem;
+}
+
+@media (max-width: 480px) {
+  .events-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Carte de concours */
+.contest-card {
+  background: radial-gradient(circle at 50% 10%, #0e2448 0%, #06152d 100%);
+  border: 1.5px solid rgba(212, 175, 55, 0.25);
+  border-radius: 14px;
+  padding: 1.4rem;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+  transition: all 0.3s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.contest-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(212, 175, 55, 0.6);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.5), 0 0 15px rgba(212, 175, 55, 0.15);
+}
+
+.contest-card.ended {
+  opacity: 0.82;
+  border-color: rgba(255, 255, 255, 0.1);
+  background: radial-gradient(circle at 50% 10%, #0c182c 0%, #040d1c 100%);
+}
+
+/* En-tête de la carte */
+.contest-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.9rem;
+}
+
+.contest-game-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(15, 23, 42, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #cbd5e1;
+}
+
+.contest-status-badge {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.contest-status-badge.live {
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  color: #34d399;
+}
+
+.contest-status-badge.ended {
+  background: rgba(148, 163, 184, 0.15);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  color: #94a3b8;
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  background: #34d399;
+  border-radius: 50%;
+  animation: vpPulseGlow 1.2s infinite alternate;
+}
+
+/* Titre & Description */
+.contest-card-title {
+  font-family: var(--font-display, sans-serif);
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #ffffff;
+  margin-bottom: 0.35rem;
+  line-height: 1.3;
+}
+
+.contest-card-desc {
+  font-size: 0.84rem;
+  color: #94a3b8;
+  margin-bottom: 1rem;
+  line-height: 1.45;
+  min-height: 38px;
+}
+
+/* Objectif Box */
+.contest-objective-box {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 0.65rem 0.85rem;
+  margin-bottom: 0.9rem;
+  font-size: 0.82rem;
+  color: #cbd5e1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.contest-objective-box strong {
+  color: #f8fafc;
+}
+
+/* Dotation Box */
+.contest-prize-box {
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.16) 0%, rgba(212, 175, 55, 0.04) 100%);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  border-radius: 10px;
+  padding: 0.75rem 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.prize-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px dashed rgba(212, 175, 55, 0.25);
+}
+
+.prize-label {
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  color: var(--gold-light, #ffe680);
+}
+
+.prize-amount {
+  font-family: var(--font-display, sans-serif);
+  font-size: 1.2rem;
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow: 0 0 10px rgba(212, 175, 55, 0.4);
+}
+
+.prize-breakdown {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.prize-pill {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #e2e8f0;
+}
+
+.prize-pill.first { border-color: rgba(255, 215, 0, 0.4); color: #ffe680; }
+.prize-pill.second { border-color: rgba(192, 192, 192, 0.4); color: #e2e8f0; }
+.prize-pill.third { border-color: rgba(205, 127, 50, 0.4); color: #fca5a5; }
+
+/* Timer Bar */
+.contest-timer-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.78rem;
+  color: #cbd5e1;
+  background: rgba(10, 25, 50, 0.6);
+  padding: 0.45rem 0.75rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+}
+
+.timer-text {
+  font-family: var(--font-display, sans-serif);
+  font-weight: 700;
+  color: var(--gold-light, #ffe680);
+}
+
+/* Podium Preview */
+.contest-podium-preview {
+  background: rgba(6, 17, 36, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 0.65rem 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.contest-podium-title {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  color: var(--gold-light, #ffe680);
+  margin-bottom: 0.4rem;
+}
+
+.contest-podium-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.podium-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 3px 6px;
+  border-radius: 5px;
+  font-size: 0.78rem;
+  background: rgba(15, 23, 42, 0.5);
+}
+
+.podium-row.rank-1 { background: rgba(212, 175, 55, 0.12); border: 1px solid rgba(212, 175, 55, 0.25); }
+.podium-username { flex: 1; margin: 0 8px; font-weight: 600; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.podium-score { font-family: var(--font-display, sans-serif); font-weight: 800; color: var(--gold-light, #ffe680); }
+
+.contest-podium-empty {
+  font-size: 0.78rem;
+  color: #94a3b8;
+  padding: 0.7rem;
+  background: rgba(15, 23, 42, 0.5);
+  border-radius: 6px;
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+/* Ma position */
+.contest-my-rank {
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 8px;
+  padding: 0.6rem 0.8rem;
+  margin-bottom: 1rem;
+  font-size: 0.8rem;
+}
+
+.contest-my-rank.in-prize {
+  background: rgba(212, 175, 55, 0.15);
+  border-color: #d4af37;
+  box-shadow: 0 0 10px rgba(212, 175, 55, 0.2);
+}
+
+.contest-my-rank.not-played {
+  background: rgba(148, 163, 184, 0.08);
+  border-color: rgba(148, 163, 184, 0.15);
+  color: #94a3b8;
+}
+
+.my-rank-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2px;
+}
+
+.my-rank-score {
+  font-family: var(--font-display, sans-serif);
+  font-weight: 800;
+  color: var(--gold-light, #ffe680);
+}
+
+.my-rank-sub {
+  font-size: 0.72rem;
+  color: #cbd5e1;
+}
+
+/* Actions */
+.contest-card-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: auto;
+}
+
+/* Empty State */
+.events-empty-state {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 4rem 1.5rem;
+  background: rgba(15, 23, 42, 0.5);
+  border: 1px dashed rgba(255, 255, 255, 0.15);
+  border-radius: 16px;
+  color: #94a3b8;
+}
+
+.events-empty-state h3 {
+  font-family: var(--font-display, sans-serif);
+  color: #ffffff;
+  font-size: 1.3rem;
+  margin: 0.8rem 0 0.4rem;
+}
+
+/* MODAL DE CLASSEMENT */
+.contest-modal-content {
+  max-width: 780px !important;
+  max-height: 85vh;
+  overflow-y: auto;
+  padding: 1.75rem !important;
+}
+
+.leaderboard-modal-header {
+  text-align: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+}
+
+.modal-contest-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(212, 175, 55, 0.15);
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  color: var(--gold-light, #ffe680);
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 0.5rem;
+}
+
+.modal-contest-title {
+  font-family: var(--font-display, sans-serif);
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #ffffff;
+  margin-bottom: 0.3rem;
+}
+
+.modal-contest-sub {
+  font-size: 0.86rem;
+  color: #94a3b8;
+  margin-bottom: 0.8rem;
+}
+
+.modal-rules-pill {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 0.82rem;
+  color: #cbd5e1;
+}
+
+/* Tableau de classement */
+.leaderboard-table-responsive {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.contest-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.86rem;
+}
+
+.contest-table th {
+  text-align: left;
+  padding: 8px 12px;
+  font-size: 0.74rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--gold-light, #ffe680);
+  border-bottom: 1.5px solid rgba(212, 175, 55, 0.25);
+}
+
+.contest-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  color: #cbd5e1;
+}
+
+.contest-table tr.leader-podium.rank-1 {
+  background: rgba(212, 175, 55, 0.12);
+  color: #ffffff;
+}
+
+.contest-table tr.leader-podium.rank-2 {
+  background: rgba(192, 192, 192, 0.08);
+}
+
+.contest-table tr.leader-podium.rank-3 {
+  background: rgba(205, 127, 50, 0.08);
+}
+
+.col-rank { width: 50px; text-align: center; }
+.col-user { display: flex; align-items: center; gap: 8px; }
+.col-score { font-family: var(--font-display, sans-serif); color: #ffe680; }
+.col-games { width: 80px; text-align: center; }
+.col-prize { width: 140px; text-align: right; }
+
+.leader-prize-tag {
+  background: rgba(212, 175, 55, 0.2);
+  border: 1px solid rgba(212, 175, 55, 0.4);
+  color: #ffe680;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 0.78rem;
+}
+
+/* LOBBY BANNER */
+.lobby-contest-banner {
+  background: radial-gradient(circle at 30% 20%, #102e5b 0%, #06152d 100%);
+  border: 1.5px solid #d4af37;
+  border-radius: 12px;
+  padding: 0.9rem 1.25rem;
+  margin-bottom: 1.5rem;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(212, 175, 55, 0.25);
+  transition: all 0.25s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.lobby-contest-banner:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 26px rgba(212, 175, 55, 0.4);
+}
+
+.lobby-contest-banner .banner-badge {
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: var(--gold-light, #ffe680);
+  letter-spacing: 0.8px;
+  margin-bottom: 4px;
+}
+
+.lobby-contest-banner .banner-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.lobby-contest-banner .banner-icon {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.lobby-contest-banner .banner-info {
+  flex: 1;
+}
+
+.lobby-contest-banner .banner-title {
+  font-family: var(--font-display, sans-serif);
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #ffffff;
+  margin-bottom: 2px;
+}
+
+.lobby-contest-banner .banner-sub {
+  font-size: 0.8rem;
+  color: #cbd5e1;
+}
+
+.lobby-contest-banner .banner-cta {
+  flex-shrink: 0;
+}
