@@ -32,22 +32,24 @@
   justify-content: center;
   font-size: 1.6rem;
   margin-bottom: 0.55rem;
-  background: #213743;
-  border: 2px solid #2f4553;
+  background: #1b1328;
+  border: 2px solid #261b38;
   position: relative;
 }
 
 .podium-place.first .podium-avatar {
-  width: 80px;
-  height: 80px;
-  font-size: 1.95rem;
-  border-color: #00e701;
+  width: 84px;
+  height: 84px;
+  font-size: 2.1rem;
+  border-color: #ffd152;
+  box-shadow: 0 0 25px rgba(255, 209, 82, 0.35);
 }
 
 .crown-icon {
   position: absolute;
-  top: -22px;
-  font-size: 1.65rem;
+  top: -24px;
+  font-size: 1.8rem;
+  filter: drop-shadow(0 2px 8px rgba(255, 209, 82, 0.6));
 }
 
 .podium-name {
@@ -58,48 +60,55 @@
 }
 
 .podium-score {
-  font-family: var(--font-mono);
+  font-family: var(--font-body);
   font-weight: 800;
-  color: #00e701;
+  color: #ffd152;
   font-size: 1.05rem;
   margin-bottom: 0.65rem;
 }
 
 .podium-pedestal {
   width: 145px;
-  border-radius: 8px 8px 0 0;
+  border-radius: 12px 12px 0 0;
   display: flex;
   align-items: center;
   justify-content: center;
   font-family: var(--font-display);
-  font-size: 2rem;
+  font-size: 2.2rem;
   font-weight: 800;
   color: #ffffff;
-  background: #213743;
-  border: 1px solid #2f4553;
+  background: #1b1328;
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-bottom: none;
+  backdrop-filter: blur(8px);
 }
 
 .podium-place.first .podium-pedestal {
   height: 140px;
-  background: linear-gradient(180deg, rgba(0, 231, 1, 0.2) 0%, #213743 100%);
-  border-top: 3px solid #00e701;
+  background: linear-gradient(180deg, rgba(255, 209, 82, 0.25) 0%, rgba(27, 19, 40, 0.95) 100%);
+  border-top: 3px solid #ffd152;
+  color: #ffd152;
+  box-shadow: 0 -4px 20px rgba(255, 209, 82, 0.15);
 }
 
 .podium-place.second .podium-pedestal {
   height: 105px;
-  border-top: 3px solid #38bdf8;
+  background: linear-gradient(180deg, rgba(148, 163, 184, 0.2) 0%, rgba(27, 19, 40, 0.95) 100%);
+  border-top: 3px solid #cbd5e1;
+  color: #e2e8f0;
 }
 
 .podium-place.third .podium-pedestal {
   height: 80px;
+  background: linear-gradient(180deg, rgba(245, 158, 11, 0.2) 0%, rgba(27, 19, 40, 0.95) 100%);
   border-top: 3px solid #f59e0b;
+  color: #fbbf24;
 }
 
 /* Stake Leaderboard Table */
 .leaderboard-table-card {
-  background: #213743;
-  border: 1px solid #2f4553;
+  background: #1b1328;
+  border: 1px solid #261b38;
   border-radius: 10px;
   overflow: hidden;
 }
@@ -116,14 +125,14 @@
 }
 
 .leader-table th {
-  background: #0f212e;
+  background: #0e091a;
   font-family: var(--font-display);
   font-size: 0.75rem;
   font-weight: 700;
   color: #b1bad3;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  border-bottom: 1px solid #2f4553;
+  border-bottom: 1px solid #261b38;
 }
 
 .leader-table tbody tr {
@@ -132,7 +141,7 @@
 }
 
 .leader-table tbody tr:hover {
-  background: #2f4553;
+  background: #261b38;
 }
 
 .leader-rank-badge {
@@ -145,8 +154,8 @@
   font-family: var(--font-mono);
   font-weight: 800;
   font-size: 0.82rem;
-  background: #0f212e;
-  border: 1px solid #2f4553;
+  background: #0e091a;
+  border: 1px solid #261b38;
   color: #b1bad3;
 }
 
@@ -154,5 +163,5 @@
   font-family: var(--font-mono);
   font-weight: 800;
   font-size: 0.98rem;
-  color: #00e701;
+  color: #05e6b4;
 }

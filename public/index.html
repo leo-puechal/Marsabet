@@ -8,35 +8,35 @@
   <meta name="description"
     content="Marsabet : Casino virtuel récréatif étudiant à monnaie 100% fictive. Jouez aux machines à sous, blackjack, roulette, dés, roue de la fortune et plinko.">
 
-  <!-- Polices Google Fonts : Outfit & JetBrains Mono (100% Sans-Serif & Monospace) -->
+  <!-- Polices Google Fonts : Syne (Display), Plus Jakarta Sans & Outfit (Interface & Données) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
-    href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Syne:wght@600;700;800&display=swap"
     rel="stylesheet">
 
-  <!-- CSS Modulaire (Stake / Rollbit Dark Slate Redesign) -->
-  <link rel="stylesheet" href="/css/variables.css?v=stake2">
-  <link rel="stylesheet" href="/css/components.css?v=stake2">
-  <link rel="stylesheet" href="/css/main.css?v=stake2">
-  <link rel="stylesheet" href="/css/lobby.css?v=stake2">
-  <link rel="stylesheet" href="/css/games.css?v=stake2">
-  <link rel="stylesheet" href="/css/slots.css?v=stake2">
-  <link rel="stylesheet" href="/css/blackjack.css?v=stake2">
-  <link rel="stylesheet" href="/css/roulette.css?v=stake2">
-  <link rel="stylesheet" href="/css/dice.css?v=stake2">
-  <link rel="stylesheet" href="/css/slider.css?v=stake2">
-  <link rel="stylesheet" href="/css/crash.css?v=stake2">
-  <link rel="stylesheet" href="/css/wheel.css?v=stake2">
-  <link rel="stylesheet" href="/css/plinko.css?v=stake2">
-  <link rel="stylesheet" href="/css/leaderboard.css?v=stake2">
-  <link rel="stylesheet" href="/css/profile.css?v=stake2">
-  <link rel="stylesheet" href="/css/admin.css?v=stake2">
-  <link rel="stylesheet" href="/css/vip.css?v=stake2">
-  <link rel="stylesheet" href="/css/free-wheel.css?v=stake2">
-  <link rel="stylesheet" href="/css/wheels.css?v=stake2">
-  <link rel="stylesheet" href="/css/sidebar.css?v=stake2">
-  <link rel="stylesheet" href="/css/mobile-responsive.css?v=stake2">
+  <!-- CSS Modulaire (Direction Artistique Candy Luxe BDE) -->
+  <link rel="stylesheet" href="/css/variables.css?v=candyluxe1">
+  <link rel="stylesheet" href="/css/components.css?v=candyluxe1">
+  <link rel="stylesheet" href="/css/main.css?v=candyluxe1">
+  <link rel="stylesheet" href="/css/lobby.css?v=candyluxe1">
+  <link rel="stylesheet" href="/css/games.css?v=candyluxe1">
+  <link rel="stylesheet" href="/css/slots.css?v=candyluxe1">
+  <link rel="stylesheet" href="/css/blackjack.css?v=candyluxe1">
+  <link rel="stylesheet" href="/css/roulette.css?v=candyluxe1">
+  <link rel="stylesheet" href="/css/dice.css?v=candyluxe1">
+  <link rel="stylesheet" href="/css/slider.css?v=candyluxe1">
+  <link rel="stylesheet" href="/css/crash.css?v=candyluxe1">
+  <link rel="stylesheet" href="/css/wheel.css?v=candyluxe1">
+  <link rel="stylesheet" href="/css/plinko.css?v=candyluxe1">
+  <link rel="stylesheet" href="/css/leaderboard.css?v=candyluxe1">
+  <link rel="stylesheet" href="/css/profile.css?v=candyluxe1">
+  <link rel="stylesheet" href="/css/admin.css?v=candyluxe1">
+  <link rel="stylesheet" href="/css/vip.css?v=candyluxe1">
+  <link rel="stylesheet" href="/css/free-wheel.css?v=candyluxe1">
+  <link rel="stylesheet" href="/css/wheels.css?v=candyluxe1">
+  <link rel="stylesheet" href="/css/sidebar.css?v=candyluxe1">
+  <link rel="stylesheet" href="/css/mobile-responsive.css?v=candyluxe1">
 </head>
 
 <body>
@@ -170,19 +170,22 @@
       <header class="header" style="position:relative; z-index:50;">
         <div class="header-container">
           <div class="header-actions">
-            <!-- Espaceur gauche pour centrer le Wallet -->
-            <div style="width:120px; display:flex; align-items:center;">
-              <span style="font-size:0.78rem; font-weight:700; color:#7f8ea3; text-transform:uppercase; letter-spacing:0.5px;">Casino BDE</span>
+            <!-- Statut Campus à gauche -->
+            <div style="display:flex; align-items:center;">
+              <div class="header-status-pill">
+                <span class="pulse-dot"></span>
+                <span>BDE Marseille</span>
+              </div>
             </div>
 
-            <!-- Portefeuille Central Style Stake -->
-            <div style="display:flex; align-items:center; margin:0 auto;">
-              <div class="coins-badge" id="headerCoinsBadge" title="Ton solde de jetons virtuels" style="border-radius:6px 0 0 6px; border-right:none; margin:0;">
-                <span class="coins-amount" id="userCoinsDisplay">1 000</span>
+            <!-- Portefeuille Central Candy Luxe -->
+            <div class="header-wallet-group" id="headerWalletGroup">
+              <div class="coins-badge" id="headerCoinsBadge" title="Ton solde de jetons virtuels">
                 <span class="coins-icon">🪙</span>
+                <span class="coins-amount" id="userCoinsDisplay">1 000</span>
               </div>
-              <button class="btn" onclick="window.Router ? window.Router.navigate('/roues') : window.UI.switchView('wheels')" style="background:#1475e1; color:#fff; border-radius:0 6px 6px 0; height:40px; padding:0 0.9rem; font-size:0.82rem; font-weight:700;">
-                Boutique / Roues
+              <button class="btn-wallet-action" onclick="window.Router ? window.Router.navigate('/roues') : window.UI.switchView('wheels')">
+                <span>🎡</span> Roues BDE
               </button>
             </div>
 
@@ -243,8 +246,8 @@
             <div class="stake-promo-card promo-bonus">
               <div>
                 <div style="display:flex; justify-content:space-between; align-items:center;">
-                  <span class="promo-tag" style="background:rgba(0,231,1,0.18); color:#00e701;">Bonus Quotidien</span>
-                  <span id="lobbyFreeWheelCountdown" style="font-size:0.75rem; font-weight:700; color:#00e701;">🎁 Tour gratuit dispo</span>
+                  <span class="promo-tag" style="background:rgba(5,230,180,0.18); color:var(--candy-mint);">Bonus Quotidien</span>
+                  <span id="lobbyFreeWheelCountdown" style="font-size:0.75rem; font-weight:700; color:var(--candy-mint);">🎁 Tour gratuit dispo</span>
                 </div>
                 <h2 class="promo-title">Recharge Gratuite & Streak 7 Jours</h2>
                 <div class="streak-indicator">
@@ -863,7 +866,7 @@
               <div class="bet-panel" id="bjBetPanel">
                 <div class="bj-panel-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.4rem;">
                   <h3 class="panel-title" style="margin:0;">Mises & Jetons</h3>
-                  <button type="button" class="btn btn-outline" id="bjClearAllBetsBtn" style="font-size:0.75rem; padding:0.25rem 0.55rem; border-color:#2f4553; color:#b1bad3;">
+                  <button type="button" class="btn btn-outline" id="bjClearAllBetsBtn" style="font-size:0.75rem; padding:0.25rem 0.55rem; border-color:var(--bg-glass-border); color:var(--text-secondary);">
                     🗑️ Tout effacer
                   </button>
                 </div>
@@ -890,9 +893,9 @@
 
                 <!-- Sélecteur Multi-mains (1 à 3 mains simultanées) -->
                 <div class="bj-hands-selector-group" style="margin: 0.5rem 0;">
-                  <div style="font-size:0.75rem; font-weight:700; color:#b1bad3; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:0.35rem; display:flex; justify-content:space-between;">
+                  <div style="font-size:0.75rem; font-weight:700; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:0.35rem; display:flex; justify-content:space-between;">
                     <span>Mains en parallèle</span>
-                    <span id="bjHandsCountBadge" style="color:#00e701;">1 main</span>
+                    <span id="bjHandsCountBadge" style="color:var(--candy-mint);">1 main</span>
                   </div>
                   <div class="bj-hands-pill-selector" id="bjHandsSelector">
                     <button type="button" class="bj-hand-pill-btn active" data-hands="1">1 Main</button>
@@ -902,7 +905,7 @@
                 </div>
 
                 <!-- Rack de Jetons de Casino Visuels (10, 50, 100, 500, 1000) -->
-                <div style="font-size:0.75rem; font-weight:700; color:#b1bad3; text-transform:uppercase; letter-spacing:0.05em; margin:0.4rem 0 0.3rem 0;">
+                <div style="font-size:0.75rem; font-weight:700; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.05em; margin:0.4rem 0 0.3rem 0;">
                   Clique pour ajouter :
                 </div>
                 <div class="bj-chips-rack" id="bjChipsRack">
@@ -937,26 +940,26 @@
                 </div>
 
                 <!-- Récapitulatif détaillé du coût total calculé -->
-                <div class="bj-cost-breakdown" id="bjCostBreakdown" style="margin-top:0.5rem; padding:0.55rem; background:#0f212e; border:1px solid #2f4553; border-radius:8px; font-size:0.78rem;">
-                  <div style="display:flex; justify-content:space-between; margin-bottom:2px; color:#b1bad3;">
+                <div class="bj-cost-breakdown" id="bjCostBreakdown" style="margin-top:0.5rem; padding:0.55rem; background:var(--bg-secondary); border:1px solid var(--bg-glass-border); border-radius:var(--radius-md); font-size:0.78rem;">
+                  <div style="display:flex; justify-content:space-between; margin-bottom:2px; color:var(--text-secondary);">
                     <span>Principale :</span>
                     <span id="bjBreakdownMain">50 🪙 × 1 = 50 🪙</span>
                   </div>
-                  <div id="bjBreakdownPPWrapper" style="display:none; justify-content:space-between; margin-bottom:2px; color:#b1bad3;">
+                  <div id="bjBreakdownPPWrapper" style="display:none; justify-content:space-between; margin-bottom:2px; color:var(--text-secondary);">
                     <span>Perfect Pairs :</span>
                     <span id="bjBreakdownPP">0 🪙</span>
                   </div>
-                  <div id="bjBreakdownPlus3Wrapper" style="display:none; justify-content:space-between; margin-bottom:2px; color:#b1bad3;">
+                  <div id="bjBreakdownPlus3Wrapper" style="display:none; justify-content:space-between; margin-bottom:2px; color:var(--text-secondary);">
                     <span>21+3 :</span>
                     <span id="bjBreakdownPlus3">0 🪙</span>
                   </div>
-                  <div id="bjBreakdownInsWrapper" style="display:none; justify-content:space-between; margin-bottom:2px; color:#b1bad3;">
+                  <div id="bjBreakdownInsWrapper" style="display:none; justify-content:space-between; margin-bottom:2px; color:var(--text-secondary);">
                     <span>Assurance :</span>
                     <span id="bjBreakdownIns">0 🪙</span>
                   </div>
-                  <div style="border-top:1px solid #2f4553; margin-top:4px; padding-top:4px; display:flex; justify-content:space-between; align-items:center;">
+                  <div style="border-top:1px solid var(--bg-glass-border); margin-top:4px; padding-top:4px; display:flex; justify-content:space-between; align-items:center;">
                     <strong style="color:#ffffff;">Mise totale :</strong>
-                    <strong id="bjTotalBetDisplay" style="color:var(--gold-light); font-size:1.05rem; font-family:var(--font-mono);">50 🪙</strong>
+                    <strong id="bjTotalBetDisplay" style="color:var(--candy-gold-light); font-size:1.05rem; font-family:var(--font-body);">50 🪙</strong>
                   </div>
                 </div>
 
@@ -2800,6 +2803,30 @@
 
   <!-- Conteneur Toasts -->
   <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Barre de Navigation Mobile Inférieure (Candy Bottom Nav) -->
+  <nav class="mobile-bottom-nav" id="mobileBottomNav">
+    <a class="bottom-nav-item active" data-view="lobby">
+      <span class="nav-icon">🏠</span>
+      <span class="nav-label">Accueil</span>
+    </a>
+    <a class="bottom-nav-item" data-view="games">
+      <span class="nav-icon">🎰</span>
+      <span class="nav-label">Jeux</span>
+    </a>
+    <a class="bottom-nav-item" data-view="wheels">
+      <span class="nav-icon">🎡</span>
+      <span class="nav-label">Roues</span>
+    </a>
+    <a class="bottom-nav-item" data-view="leaderboard">
+      <span class="nav-icon">🏆</span>
+      <span class="nav-label">Classement</span>
+    </a>
+    <a class="bottom-nav-item" data-view="profile">
+      <span class="nav-icon">👤</span>
+      <span class="nav-label">Profil</span>
+    </a>
+  </nav>
 
   <!-- Scripts JavaScript Modulaires -->
   <script src="/socket.io/socket.io.js"></script>

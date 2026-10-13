@@ -1,63 +1,73 @@
 /* ==========================================================================
-   Marsabet — Stake Dark Slate VIP Status & Wager Progression
+   Marsabet — Candy Luxe VIP Status & Sweet Wager Progression
    ========================================================================== */
 
 .vip-badge {
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
-  padding: 0.18rem 0.55rem;
-  border-radius: 4px;
-  font-family: var(--font-display);
-  font-size: 0.68rem;
+  gap: 0.35rem;
+  padding: 0.22rem 0.65rem;
+  border-radius: var(--radius-full);
+  font-family: var(--font-body);
+  font-size: 0.72rem;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.04em;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
 
 .vip-badge.vip-bronze {
-  background: rgba(180, 83, 9, 0.25);
+  background: rgba(205, 127, 50, 0.2);
   color: #fdba74;
-  border: 1px solid rgba(251, 146, 60, 0.35);
+  border: 1px solid rgba(251, 146, 60, 0.4);
 }
 
-.vip-badge.vip-argent {
-  background: rgba(148, 163, 184, 0.2);
-  color: #e2e8f0;
-  border: 1px solid rgba(203, 213, 225, 0.35);
+.vip-badge.vip-argent,
+.vip-badge.vip-silver {
+  background: rgba(203, 213, 225, 0.2);
+  color: #f1f5f9;
+  border: 1px solid rgba(203, 213, 225, 0.4);
 }
 
-.vip-badge.vip-or {
-  background: rgba(245, 158, 11, 0.2);
-  color: #fcd34d;
-  border: 1px solid rgba(245, 158, 11, 0.4);
+.vip-badge.vip-or,
+.vip-badge.vip-gold {
+  background: rgba(255, 159, 67, 0.2);
+  color: #ffd152;
+  border: 1px solid rgba(255, 159, 67, 0.45);
+  box-shadow: 0 0 12px rgba(255, 159, 67, 0.25);
 }
 
-.vip-badge.vip-platine {
-  background: rgba(56, 189, 248, 0.2);
-  color: #7dd3fc;
-  border: 1px solid rgba(56, 189, 248, 0.4);
+.vip-badge.vip-platine,
+.vip-badge.vip-platinum {
+  background: rgba(5, 230, 180, 0.18);
+  color: #05e6b4;
+  border: 1px solid rgba(5, 230, 180, 0.45);
+  box-shadow: 0 0 12px rgba(5, 230, 180, 0.25);
 }
 
-.vip-badge.vip-diamant {
-  background: rgba(168, 85, 247, 0.2);
-  color: #d8b4fe;
-  border: 1px solid rgba(168, 85, 247, 0.45);
+.vip-badge.vip-diamant,
+.vip-badge.vip-diamond {
+  background: rgba(255, 45, 135, 0.2);
+  color: #ff409f;
+  border: 1px solid rgba(255, 45, 135, 0.45);
+  box-shadow: 0 0 14px rgba(255, 45, 135, 0.3);
 }
 
 .vip-badge.vip-mars {
-  background: rgba(0, 231, 1, 0.16);
-  color: #00e701;
-  border: 1px solid rgba(0, 231, 1, 0.45);
+  background: linear-gradient(135deg, rgba(244, 63, 94, 0.3) 0%, rgba(255, 45, 135, 0.3) 100%);
+  color: #fdf8f5;
+  border: 1px solid #f43f5e;
+  box-shadow: 0 0 16px rgba(244, 63, 94, 0.4);
 }
 
 /* VIP Progression Card in Profile */
 .vip-progress-card {
-  background: #213743;
-  border: 1px solid #2f4553;
-  border-radius: 10px;
-  padding: 1.5rem;
-  margin-bottom: 1.25rem;
+  background: var(--bg-card);
+  border: 1px solid var(--bg-glass-border);
+  border-radius: var(--radius-2xl);
+  padding: 1.75rem;
+  margin-bottom: 1.5rem;
+  box-shadow: var(--shadow-card);
 }
 
 .vip-header-row {
@@ -65,70 +75,77 @@
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
-  gap: 1rem;
-  margin-bottom: 1rem;
+  gap: 1.15rem;
+  margin-bottom: 1.15rem;
 }
 
 .vip-current-info {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 1.15rem;
 }
 
 .vip-current-avatar {
-  width: 56px;
-  height: 56px;
+  width: 60px;
+  height: 60px;
   border-radius: 50%;
-  background: #0f212e;
-  border: 1px solid #2f4553;
+  background: var(--bg-secondary);
+  border: 2px solid var(--candy-pink);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.75rem;
+  font-size: 1.85rem;
+  box-shadow: 0 4px 16px rgba(255, 45, 135, 0.35);
 }
 
 .vip-progress-bar-container {
-  background: #0f212e;
-  border: 1px solid #2f4553;
-  border-radius: 999px;
-  height: 14px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--bg-glass-border);
+  border-radius: var(--radius-full);
+  height: 16px;
   position: relative;
   overflow: hidden;
-  margin: 0.65rem 0;
+  margin: 0.75rem 0;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.4);
 }
 
 .vip-progress-bar-fill {
   height: 100%;
-  border-radius: 999px;
-  background: #00e701;
+  border-radius: var(--radius-full);
+  background: linear-gradient(135deg, #ff409f 0%, #ff2d87 100%);
+  box-shadow: 0 0 12px rgba(255, 45, 135, 0.5);
   transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .vip-progress-stats {
   display: flex;
   justify-content: space-between;
-  font-size: 0.8rem;
-  color: #b1bad3;
+  font-size: 0.84rem;
+  color: var(--text-secondary);
+  font-weight: 700;
 }
 
 .vip-tiers-roadmap {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(125px, 1fr));
-  gap: 0.65rem;
-  margin-top: 1.25rem;
-  padding-top: 1rem;
-  border-top: 1px solid #2f4553;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 0.75rem;
+  margin-top: 1.4rem;
+  padding-top: 1.15rem;
+  border-top: 1px solid var(--bg-glass-border);
 }
 
 .vip-roadmap-tier {
-  background: #0f212e;
-  border: 1px solid #2f4553;
-  border-radius: 8px;
-  padding: 0.65rem 0.5rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--bg-glass-border);
+  border-radius: var(--radius-md);
+  padding: 0.75rem 0.6rem;
   text-align: center;
+  transition: var(--transition-fast);
 }
 
 .vip-roadmap-tier.active {
-  border-color: #00e701;
-  background: rgba(0, 231, 1, 0.08);
+  border-color: var(--candy-pink);
+  background: rgba(255, 45, 135, 0.14);
+  box-shadow: 0 0 14px rgba(255, 45, 135, 0.25);
+  transform: translateY(-2px);
 }

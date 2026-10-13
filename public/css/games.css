@@ -15,8 +15,8 @@
   align-items: center;
   flex-wrap: wrap;
   gap: 1rem;
-  background: #0f212e;
-  border: 1px solid #2f4553;
+  background: #0e091a;
+  border: 1px solid #261b38;
   border-radius: 10px;
   padding: 0.75rem 1.25rem;
 }
@@ -43,8 +43,8 @@
 .game-layout {
   display: flex;
   align-items: stretch;
-  background: #0f212e;
-  border: 1px solid #2f4553;
+  background: #0e091a;
+  border: 1px solid #261b38;
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
@@ -56,8 +56,8 @@
   order: 1;
   width: 320px;
   flex-shrink: 0;
-  background: #213743;
-  border-right: 1px solid #2f4553;
+  background: #1b1328;
+  border-right: 1px solid #261b38;
   padding: 1.35rem;
   display: flex;
   flex-direction: column;
@@ -70,7 +70,7 @@
   order: 2;
   flex: 1;
   min-width: 0;
-  background: #0f212e;
+  background: #0e091a;
   padding: 2rem;
   min-height: 540px;
   display: flex;
@@ -89,7 +89,7 @@
     order: 2;
     width: 100%;
     border-right: none;
-    border-top: 1px solid #2f4553;
+    border-top: 1px solid #261b38;
   }
   .game-stage {
     order: 1;
@@ -105,7 +105,7 @@
   color: #b1bad3;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  border-bottom: 1px solid #2f4553;
+  border-bottom: 1px solid #261b38;
   padding-bottom: 0.65rem;
   display: flex;
   align-items: center;
@@ -121,8 +121,8 @@
 .bet-input {
   width: 100%;
   padding: 0.7rem 0.9rem 0.7rem 2.5rem;
-  background: #0f212e;
-  border: 2px solid #2f4553;
+  background: #0e091a;
+  border: 2px solid #261b38;
   border-radius: 6px;
   color: #ffffff;
   font-family: var(--font-mono);
@@ -160,7 +160,7 @@
   width: 100%;
   height: 36px;
   border-radius: 6px;
-  background: #2f4553;
+  background: #261b38;
   border: 1px solid #3d5564;
   display: flex;
   align-items: center;
@@ -186,7 +186,7 @@
 
 .casino-chip.chip-1000 {
   background: rgba(0, 231, 1, 0.14);
-  color: #00e701;
+  color: #05e6b4;
   border-color: rgba(0, 231, 1, 0.35);
 }
 
@@ -201,7 +201,7 @@
   font-size: 0.78rem;
   font-family: var(--font-mono);
   font-weight: 700;
-  background: #2f4553;
+  background: #261b38;
   border: 1px solid #3d5564;
   border-radius: 6px;
   color: #ffffff;
@@ -220,8 +220,8 @@
   top: 1.15rem;
   left: 50%;
   transform: translateX(-50%);
-  background: #213743;
-  border: 2px solid #2f4553;
+  background: #1b1328;
+  border: 2px solid #261b38;
   border-radius: 8px;
   padding: 0.55rem 1.35rem;
   font-family: var(--font-display);
@@ -237,8 +237,8 @@
 
 .result-banner.win {
   background: rgba(15, 33, 46, 0.96);
-  border-color: #00e701;
-  color: #00e701;
+  border-color: #05e6b4;
+  color: #05e6b4;
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.7), 0 0 20px rgba(0, 231, 1, 0.25);
   display: block;
 }

@@ -18,8 +18,8 @@
   height: 260px;
   padding: 8px;
   border-radius: 50%;
-  background: #213743;
-  border: 2px solid #2f4553;
+  background: #1b1328;
+  border: 2px solid #261b38;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
 }
 
@@ -37,7 +37,7 @@
   transform: translate(-50%, -50%);
   width: 56px;
   height: 56px;
-  background: #2f4553;
+  background: #261b38;
   border-radius: 50%;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
   display: flex;
@@ -49,8 +49,8 @@
 
 /* Stake Matte Slate Betting Board */
 .roulette-board {
-  background: #1a2c38;
-  border: 1px solid #2f4553;
+  background: #161121;
+  border: 1px solid #261b38;
   border-radius: 10px;
   padding: 1rem;
   width: 100%;
@@ -66,7 +66,7 @@
 
 .board-cell-zero {
   flex: 1;
-  background: #00e701;
+  background: #05e6b4;
   color: #05080a;
   font-family: var(--font-mono);
   font-weight: 800;
@@ -117,7 +117,7 @@
 }
 
 .num-cell.black {
-  background: #2f4553;
+  background: #261b38;
 }
 
 .board-outside-row {
@@ -134,8 +134,8 @@
 }
 
 .outside-btn {
-  background: #213743;
-  border: 1px solid #2f4553;
+  background: #1b1328;
+  border: 1px solid #261b38;
   color: #ffffff;
   padding: 0.55rem 0.3rem;
   font-family: var(--font-display);
@@ -149,7 +149,7 @@
 }
 
 .outside-btn:hover {
-  background: #2f4553;
+  background: #261b38;
 }
 
 .outside-btn.red-opt {
@@ -158,7 +158,7 @@
 }
 
 .outside-btn.black-opt {
-  background: #2f4553;
+  background: #261b38;
   border-color: #3d5564;
 }
 
@@ -166,7 +166,7 @@
   position: absolute;
   top: -6px;
   right: -6px;
-  background: #00e701;
+  background: #05e6b4;
   color: #05080a;
   font-family: var(--font-mono);
   font-size: 0.65rem;
@@ -174,6 +174,6 @@
   padding: 2px 6px;
   border-radius: 999px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
-  border: 1.5px solid #0f212e;
+  border: 1.5px solid #0e091a;
   z-index: 6;
 }

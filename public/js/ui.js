@@ -161,6 +161,15 @@ const UI = {
         l.classList.remove('active');
       }
     });
+
+    // Mettre à jour la barre inférieure mobile (Bottom Nav)
+    document.querySelectorAll('.bottom-nav-item').forEach(b => {
+      if (b.dataset.view === viewName || (b.dataset.view === 'games' && gameViews.includes(viewName))) {
+        b.classList.add('active');
+      } else {
+        b.classList.remove('active');
+      }
+    });
   }
 };
 

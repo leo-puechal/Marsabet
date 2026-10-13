@@ -9,8 +9,8 @@
 }
 
 .profile-header-card {
-  background: #213743;
-  border: 1px solid #2f4553;
+  background: #1b1328;
+  border: 1px solid #261b38;
   border-radius: 10px;
   padding: 1.75rem 2rem;
   display: flex;
@@ -30,8 +30,8 @@
   width: 72px;
   height: 72px;
   border-radius: 50%;
-  background: #0f212e;
-  border: 2px solid #00e701;
+  background: #0e091a;
+  border: 2px solid #05e6b4;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -54,7 +54,7 @@
   padding: 0.2rem 0.75rem;
   font-size: 0.75rem;
   font-weight: 700;
-  color: #00e701;
+  color: #05e6b4;
   margin-top: 0.3rem;
 }
 
@@ -66,8 +66,8 @@
 }
 
 .stat-box {
-  background: #213743;
-  border: 1px solid #2f4553;
+  background: #1b1328;
+  border: 1px solid #261b38;
   border-radius: 10px;
   padding: 1.25rem;
   display: flex;
@@ -92,13 +92,13 @@
 
 .stat-val.gold,
 .stat-val.green {
-  color: #00e701;
+  color: #05e6b4;
 }
 
 /* History Table Card */
 .history-card {
-  background: #213743;
-  border: 1px solid #2f4553;
+  background: #1b1328;
+  border: 1px solid #261b38;
   border-radius: 10px;
   padding: 1.5rem;
 }
@@ -111,8 +111,8 @@
 }
 
 .shop-item-card {
-  background: #213743;
-  border: 1px solid #2f4553;
+  background: #1b1328;
+  border: 1px solid #261b38;
   border-radius: 10px;
   padding: 1.35rem;
   display: flex;
@@ -150,5 +150,5 @@
   font-family: var(--font-mono);
   font-size: 1.15rem;
   font-weight: 800;
-  color: #00e701;
+  color: #05e6b4;
 }

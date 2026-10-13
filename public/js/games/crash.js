@@ -489,10 +489,10 @@ const CrashGame = {
         this.ctx.moveTo(startX, startY);
         this.ctx.quadraticCurveTo((startX + currentX) / 2, startY, currentX, currentY);
 
-        let strokeColor = '#38bdf8';
-        if (this.currentMultiplier >= 10.0) strokeColor = '#ec4899';
-        else if (this.currentMultiplier >= 4.0) strokeColor = '#ffd700';
-        else if (this.currentMultiplier >= 2.0) strokeColor = '#10b981';
+        let strokeColor = '#05e6b4';
+        if (this.currentMultiplier >= 10.0) strokeColor = '#ff2d87';
+        else if (this.currentMultiplier >= 4.0) strokeColor = '#ff409f';
+        else if (this.currentMultiplier >= 2.0) strokeColor = '#ffd152';
 
         this.ctx.strokeStyle = strokeColor;
         this.ctx.lineWidth = 4;

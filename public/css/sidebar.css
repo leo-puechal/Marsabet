@@ -1,9 +1,9 @@
 /* ==========================================================================
-   Marsabet — Stake-Style Left Sidebar Navigation (#0f212e)
+   Marsabet — Candy Luxe Sidebar Navigation (Velours Cassis #161121)
    ========================================================================== */
 
 :root {
-  --sidebar-width: 240px;
+  --sidebar-width: 250px;
 }
 
 .app-layout {
@@ -11,6 +11,7 @@
   width: 100%;
   position: relative;
   display: flex;
+  background: var(--bg-primary);
 }
 
 .main-content-wrapper {
@@ -31,79 +32,76 @@
   bottom: 0;
   width: var(--sidebar-width);
   height: 100vh;
-  background: #0f212e;
-  border-right: 1px solid #213743;
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--bg-glass-border);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   z-index: 1000;
-  box-shadow: 4px 0 15px rgba(0, 0, 0, 0.25);
+  box-shadow: 6px 0 24px rgba(0, 0, 0, 0.35);
   user-select: none;
   overflow-y: auto;
   overflow-x: hidden;
   scrollbar-width: thin;
-  scrollbar-color: #2f4553 transparent;
+  scrollbar-color: rgba(255, 45, 135, 0.25) transparent;
 }
 
 /* Header Logo inside Sidebar */
 .sidebar-header {
-  height: 64px;
+  height: var(--header-height);
   padding: 0 1.25rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid #213743;
-  background: #0f212e;
+  border-bottom: 1px solid var(--bg-glass-border);
+  background: var(--bg-secondary);
   flex-shrink: 0;
 }
 
 .sidebar-brand {
   display: flex;
   align-items: center;
-  gap: 0.7rem;
+  gap: 0.75rem;
   text-decoration: none;
   cursor: pointer;
 }
 
 .sidebar-logo-icon {
-  width: 34px;
-  height: 34px;
-  border-radius: 8px;
-  background: #00e701;
-  color: #05080a;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(135deg, #ff409f 0%, #ff2d87 100%);
+  color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.2rem;
+  font-size: 1.3rem;
   font-weight: 900;
   flex-shrink: 0;
-}
-
-.sidebar-logo-icon::after {
-  display: none;
+  box-shadow: 0 4px 14px rgba(255, 45, 135, 0.35);
 }
 
 .sidebar-brand-name {
   font-family: var(--font-display);
-  font-size: 1.35rem;
-  font-weight: 900;
-  letter-spacing: -0.5px;
-  color: #ffffff;
-  background: none;
-  -webkit-text-fill-color: #ffffff;
-  text-shadow: none;
-  line-height: 1;
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  background: linear-gradient(135deg, #ffffff 60%, var(--candy-gold-light) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  line-height: 1.1;
+  display: block;
 }
 
 .sidebar-brand-tag {
-  font-size: 0.65rem;
-  letter-spacing: 0.5px;
-  color: #7f8ea3;
-  font-weight: 600;
-  margin-top: 2px;
+  font-size: 0.68rem;
+  letter-spacing: 0.4px;
+  color: var(--candy-pink);
+  font-weight: 700;
+  margin-top: 3px;
 }
 
-/* Masquer les doublons de carte profil/solde dans la sidebar (affichés dans le Header) */
+/* Masquer les doublons de carte profil/solde dans la sidebar */
 .sidebar-user-card,
 #sidebarGuestCard {
   display: none !important;
@@ -112,7 +110,7 @@
 /* Navigation Links */
 .sidebar-nav {
   flex: 1;
-  padding: 0.85rem 0.65rem;
+  padding: 1rem 0.75rem;
   display: flex;
   flex-direction: column;
 }
@@ -121,7 +119,7 @@
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.35rem;
   margin: 0;
   padding: 0;
 }
@@ -129,90 +127,98 @@
 .sidebar-link {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.68rem 0.85rem;
-  color: #b1bad3;
-  border-radius: var(--radius-sm);
+  gap: 0.8rem;
+  padding: 0.72rem 0.95rem;
+  color: var(--text-secondary);
+  border-radius: var(--radius-md);
   text-decoration: none;
-  font-weight: 600;
-  font-size: 0.9rem;
-  transition: var(--transition-fast);
+  font-weight: 700;
+  font-size: 0.92rem;
+  transition: var(--transition-bounce);
   cursor: pointer;
-  border: none;
+  border: 1px solid transparent;
 }
 
 .sidebar-link span.icon {
-  font-size: 1.1rem;
+  font-size: 1.15rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  opacity: 0.85;
+  width: 24px;
+  transition: transform 0.2s ease;
 }
 
 .sidebar-link:hover {
-  color: #ffffff;
-  background: #1a2c38;
+  color: var(--text-primary);
+  background: var(--bg-card-hover);
+  border-color: rgba(255, 45, 135, 0.15);
+  transform: translateX(3px);
+}
+
+.sidebar-link:hover span.icon {
+  transform: scale(1.15);
 }
 
 .sidebar-link.active {
   color: #ffffff;
-  background: #213743;
-  font-weight: 700;
-  box-shadow: none;
+  background: linear-gradient(135deg, rgba(255, 45, 135, 0.22) 0%, rgba(38, 27, 56, 0.9) 100%);
+  border: 1px solid rgba(255, 45, 135, 0.35);
+  font-weight: 800;
+  box-shadow: 0 4px 14px rgba(255, 45, 135, 0.2);
 }
 
 .sidebar-link .chevron {
   margin-left: auto;
-  font-size: 0.7rem;
-  color: #7f8ea3;
-  transition: transform 0.2s ease;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  transition: transform 0.25s ease;
 }
 
 /* Submenu for Games */
 .sidebar-submenu {
   list-style: none;
-  padding: 0.35rem 0 0.35rem 0.75rem;
-  margin: 0.2rem 0 0.2rem 1.1rem;
+  padding: 0.4rem 0 0.4rem 0.85rem;
+  margin: 0.25rem 0 0.25rem 1.2rem;
   display: flex;
   flex-direction: column;
-  gap: 0.15rem;
-  border-left: 2px solid #213743;
+  gap: 0.2rem;
+  border-left: 2px solid rgba(255, 45, 135, 0.25);
 }
 
 .sidebar-sublink {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
-  padding: 0.5rem 0.75rem;
-  color: #b1bad3;
-  border-radius: var(--radius-xs);
+  gap: 0.65rem;
+  padding: 0.52rem 0.8rem;
+  color: var(--text-secondary);
+  border-radius: var(--radius-sm);
   text-decoration: none;
-  font-size: 0.84rem;
+  font-size: 0.86rem;
   font-weight: 600;
   transition: var(--transition-fast);
   cursor: pointer;
 }
 
 .sidebar-sublink:hover {
-  color: #ffffff;
-  background: #1a2c38;
+  color: var(--text-primary);
+  background: var(--bg-card-hover);
+  transform: translateX(2px);
 }
 
 .sidebar-sublink.active {
-  color: #00e701;
-  background: #1a2c38;
-  font-weight: 700;
+  color: var(--candy-pink);
+  background: rgba(255, 45, 135, 0.12);
+  font-weight: 800;
 }
 
 /* Footer Section */
 .sidebar-footer {
-  padding: 0.75rem;
-  border-top: 1px solid #213743;
+  padding: 0.85rem;
+  border-top: 1px solid var(--bg-glass-border);
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
-  background: #0f212e;
+  gap: 0.45rem;
+  background: var(--bg-secondary);
 }
 
 .sidebar-sound-btn,
@@ -220,34 +226,35 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
+  gap: 0.55rem;
   width: 100%;
-  padding: 0.55rem;
-  border-radius: var(--radius-xs);
-  font-size: 0.82rem;
-  font-weight: 600;
+  padding: 0.6rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.84rem;
+  font-weight: 700;
   cursor: pointer;
   transition: var(--transition-fast);
 }
 
 .sidebar-sound-btn {
-  background: #1a2c38;
-  border: 1px solid #2f4553;
-  color: #b1bad3;
+  background: var(--bg-card);
+  border: 1px solid var(--bg-glass-border);
+  color: var(--text-secondary);
 }
 
 .sidebar-sound-btn:hover {
-  background: #213743;
-  color: #ffffff;
+  background: var(--bg-card-hover);
+  color: var(--text-primary);
+  border-color: rgba(255, 45, 135, 0.3);
 }
 
 .sidebar-logout-btn {
-  background: rgba(237, 65, 99, 0.12);
-  border: 1px solid rgba(237, 65, 99, 0.25);
-  color: #ff5c7c;
+  background: rgba(244, 63, 94, 0.12);
+  border: 1px solid rgba(244, 63, 94, 0.3);
+  color: #fb7185;
 }
 
 .sidebar-logout-btn:hover {
-  background: rgba(237, 65, 99, 0.22);
+  background: rgba(244, 63, 94, 0.22);
   color: #ffffff;
 }

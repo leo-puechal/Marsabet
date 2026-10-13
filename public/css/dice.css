@@ -15,10 +15,10 @@
 .dice-mode-selector {
   display: flex;
   gap: 0.35rem;
-  background: #1a2c38;
+  background: #161121;
   padding: 0.3rem;
   border-radius: 999px;
-  border: 1px solid #2f4553;
+  border: 1px solid #261b38;
 }
 
 .dice-mode-tab {
@@ -36,7 +36,7 @@
 }
 
 .dice-mode-tab.active {
-  background: #2f4553;
+  background: #261b38;
   color: #ffffff;
 }
 
@@ -60,7 +60,7 @@
   align-items: center;
   justify-content: center;
   font-size: 3.75rem;
-  color: #0f212e;
+  color: #0e091a;
   transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -83,8 +83,8 @@
 }
 
 .dice-bet-btn {
-  background: #213743;
-  border: 1px solid #2f4553;
+  background: #1b1328;
+  border: 1px solid #261b38;
   border-radius: 8px;
   padding: 0.85rem 0.65rem;
   text-align: center;
@@ -93,11 +93,11 @@
 }
 
 .dice-bet-btn:hover {
-  background: #2f4553;
+  background: #261b38;
 }
 
 .dice-bet-btn.active {
-  border-color: #00e701;
+  border-color: #05e6b4;
   background: rgba(0, 231, 1, 0.12);
 }
 
@@ -112,15 +112,15 @@
 .dice-bet-mult {
   font-family: var(--font-mono);
   font-size: 0.78rem;
-  color: #00e701;
+  color: #05e6b4;
   font-weight: 800;
 }
 
 .over-under-container {
   width: 100%;
   max-width: 540px;
-  background: #213743;
-  border: 1px solid #2f4553;
+  background: #1b1328;
+  border: 1px solid #261b38;
   border-radius: 10px;
   padding: 1.5rem;
   display: flex;
@@ -144,7 +144,7 @@
 
 .dice-slider {
   width: 100%;
-  accent-color: #00e701;
+  accent-color: #05e6b4;
   height: 10px;
   border-radius: 5px;
   cursor: pointer;

@@ -17,8 +17,8 @@
   align-items: center;
   flex-wrap: wrap;
   gap: 1rem;
-  background: #0f212e;
-  border: 1px solid #2f4553;
+  background: #0e091a;
+  border: 1px solid #261b38;
   border-radius: 10px;
   padding: 0.75rem 1.25rem;
 }
@@ -62,12 +62,12 @@
 .slider-hist-item.hist-win {
   background: rgba(0, 231, 1, 0.14);
   border-color: rgba(0, 231, 1, 0.4);
-  color: #00e701;
+  color: #05e6b4;
 }
 
 .slider-hist-item.hist-loss {
-  background: #213743;
-  border-color: #2f4553;
+  background: #1b1328;
+  border-color: #261b38;
   color: #b1bad3;
 }
 
@@ -85,8 +85,8 @@
 .slider-main-grid {
   display: flex;
   align-items: stretch;
-  background: #0f212e;
-  border: 1px solid #2f4553;
+  background: #0e091a;
+  border: 1px solid #261b38;
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
@@ -98,8 +98,8 @@
   order: 1;
   width: 320px;
   flex-shrink: 0;
-  background: #213743;
-  border-right: 1px solid #2f4553;
+  background: #1b1328;
+  border-right: 1px solid #261b38;
   padding: 1.35rem;
   display: flex;
   flex-direction: column;
@@ -112,7 +112,7 @@
   order: 2;
   flex: 1;
   min-width: 0;
-  background: #0f212e;
+  background: #0e091a;
   padding: 2rem 2.25rem;
   display: flex;
   flex-direction: column;
@@ -130,7 +130,7 @@
     order: 2;
     width: 100%;
     border-right: none;
-    border-top: 1px solid #2f4553;
+    border-top: 1px solid #261b38;
   }
   .slider-track-card {
     order: 1;
@@ -151,8 +151,8 @@
 
 .slider-result-badge.badge-win {
   background: rgba(0, 231, 1, 0.14);
-  border: 1px solid #00e701;
-  color: #00e701;
+  border: 1px solid #05e6b4;
+  color: #05e6b4;
 }
 
 .slider-result-badge.badge-loss {
@@ -175,8 +175,8 @@
 }
 
 .slider-metric-card {
-  background: #213743;
-  border: 1px solid #2f4553;
+  background: #1b1328;
+  border: 1px solid #261b38;
   border-radius: 8px;
   padding: 0.85rem 0.75rem;
   text-align: center;
@@ -202,15 +202,15 @@
 
 .slider-metric-card .val.highlight,
 .slider-metric-card .val.highlight-gold {
-  color: #00e701;
+  color: #05e6b4;
 }
 
 /* Stake Originals Slider Rail Arena */
 .slider-track-arena {
   position: relative;
   padding: 2.5rem 1rem 1.5rem;
-  background: #213743;
-  border: 1px solid #2f4553;
+  background: #1b1328;
+  border: 1px solid #261b38;
   border-radius: 12px;
 }
 
@@ -230,7 +230,7 @@
   width: 100%;
   height: 24px;
   background: #ff4d4d;
-  border: 4px solid #0f212e;
+  border: 4px solid #0e091a;
   border-radius: 999px;
   overflow: visible;
 }
@@ -239,7 +239,7 @@
   position: absolute;
   top: 0;
   bottom: 0;
-  background: #00e701;
+  background: #05e6b4;
   border-radius: 999px;
   pointer-events: none;
   transition: width 0.08s ease, left 0.08s ease;
@@ -250,7 +250,7 @@
   position: absolute;
   top: -36px;
   transform: translateX(-50%);
-  background: #2f4553;
+  background: #261b38;
   color: #ffffff;
   border: 1px solid #557086;
   font-family: var(--font-mono);
@@ -272,7 +272,7 @@
   height: 38px;
   border-radius: 8px;
   background: #ffffff;
-  border: 3px solid #2f4553;
+  border: 3px solid #261b38;
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
@@ -280,14 +280,14 @@
   font-family: var(--font-mono);
   font-size: 0.75rem;
   font-weight: 800;
-  color: #0f212e;
+  color: #0e091a;
   pointer-events: none;
   z-index: 6;
   transition: transform 0.2s ease;
 }
 
 .slider-puck.win {
-  background: #00e701;
+  background: #05e6b4;
   border-color: #ffffff;
   color: #05080a;
   transform: translate(-50%, -50%) scale(1.15);
@@ -361,8 +361,8 @@
 }
 
 .target-quick-btn {
-  background: #213743;
-  border: 1px solid #2f4553;
+  background: #1b1328;
+  border: 1px solid #261b38;
   color: #b1bad3;
   border-radius: 6px;
   padding: 0.4rem 0.85rem;
@@ -374,7 +374,7 @@
 }
 
 .target-quick-btn:hover {
-  background: #2f4553;
+  background: #261b38;
   color: #ffffff;
 }
 
@@ -383,10 +383,10 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.35rem;
-  background: #0f212e;
+  background: #0e091a;
   padding: 0.3rem;
   border-radius: 8px;
-  border: 1px solid #2f4553;
+  border: 1px solid #261b38;
 }
 
 .mode-toggle-btn {
@@ -407,7 +407,7 @@
 }
 
 .mode-toggle-btn.active {
-  background: #2f4553;
+  background: #261b38;
   color: #ffffff;
 }
 
@@ -425,8 +425,8 @@
 .slider-bet-box {
   display: flex;
   align-items: center;
-  background: #0f212e;
-  border: 2px solid #2f4553;
+  background: #0e091a;
+  border: 2px solid #261b38;
   border-radius: 6px;
   padding: 0.55rem 0.85rem;
 }
@@ -450,7 +450,7 @@
 }
 
 .slider-bet-btn {
-  background: #2f4553;
+  background: #261b38;
   border: 1px solid #3d5564;
   color: #ffffff;
   border-radius: 6px;
@@ -474,7 +474,7 @@
   font-family: var(--font-display);
   font-size: 1rem;
   font-weight: 800;
-  background: #00e701;
+  background: #05e6b4;
   color: #05080a;
   border: none;
   border-radius: 8px;

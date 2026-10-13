@@ -14,8 +14,8 @@
   width: 100%;
   height: 480px;
   border-radius: 10px;
-  background: #0f212e;
-  border: 1px solid #213743;
+  background: #0e091a;
+  border: 1px solid #1b1328;
 }
 
 .plinko-controls-bar {
@@ -29,8 +29,8 @@
   border-radius: 6px;
   font-size: 0.78rem;
   font-weight: 700;
-  border: 1px solid #2f4553;
-  background: #213743;
+  border: 1px solid #261b38;
+  background: #1b1328;
   color: #b1bad3;
   cursor: pointer;
   transition: var(--transition-fast);
@@ -38,13 +38,13 @@
 
 .risk-btn:hover {
   color: #ffffff;
-  background: #2f4553;
+  background: #261b38;
 }
 
 .risk-btn.active {
-  background: #2f4553;
+  background: #261b38;
   color: #ffffff;
-  border-color: #00e701;
+  border-color: #05e6b4;
 }
 
 .plinko-ball-selector {
@@ -56,8 +56,8 @@
 .ball-count-btn {
   flex: 1;
   padding: 0.45rem 0.2rem;
-  background: #0f212e;
-  border: 1px solid #2f4553;
+  background: #0e091a;
+  border: 1px solid #261b38;
   border-radius: 6px;
   color: #b1bad3;
   font-family: var(--font-mono);
@@ -69,19 +69,19 @@
 }
 
 .ball-count-btn:hover {
-  background: #2f4553;
+  background: #261b38;
   color: #ffffff;
 }
 
 .ball-count-btn.active {
-  background: #2f4553;
+  background: #261b38;
   color: #ffffff;
-  border-color: #00e701;
+  border-color: #05e6b4;
 }
 
 .plinko-cost-summary {
-  background: #0f212e;
-  border: 1px solid #2f4553;
+  background: #0e091a;
+  border: 1px solid #261b38;
   border-radius: 6px;
   padding: 0.65rem 0.75rem;
   margin-bottom: 0.65rem;
@@ -99,7 +99,7 @@
 }
 
 .cost-line.total {
-  border-top: 1px solid #2f4553;
+  border-top: 1px solid #261b38;
   padding-top: 0.35rem;
   margin-top: 0.15rem;
   font-size: 0.88rem;
@@ -108,7 +108,7 @@
 }
 
 .cost-total-value {
-  color: #00e701;
+  color: #05e6b4;
   font-family: var(--font-mono);
   font-weight: 800;
 }
@@ -117,8 +117,8 @@
   margin-top: 1rem;
   width: 100%;
   max-width: 480px;
-  background: #213743;
-  border: 1px solid #2f4553;
+  background: #1b1328;
+  border: 1px solid #261b38;
   border-radius: 8px;
   padding: 0.85rem 1rem;
 }
@@ -129,7 +129,7 @@
   align-items: center;
   margin-bottom: 0.55rem;
   padding-bottom: 0.4rem;
-  border-bottom: 1px solid #2f4553;
+  border-bottom: 1px solid #261b38;
 }
 
 .breakdown-title {
@@ -148,7 +148,7 @@
 
 .breakdown-badge.win {
   background: rgba(0, 231, 1, 0.14);
-  color: #00e701;
+  color: #05e6b4;
 }
 
 .breakdown-badge.lose {
@@ -169,8 +169,8 @@
   flex-direction: column;
   padding: 0.38rem 0.55rem;
   border-radius: 6px;
-  background: #0f212e;
-  border: 1px solid #2f4553;
+  background: #0e091a;
+  border: 1px solid #261b38;
   font-size: 0.75rem;
 }
 
@@ -188,6 +188,6 @@
   margin-top: 0.15rem;
 }
 
-.plinko-ball-pill.win .pill-payout { color: #00e701; }
+.plinko-ball-pill.win .pill-payout { color: #05e6b4; }
 .plinko-ball-pill.neutral .pill-payout { color: #f59e0b; }
 .plinko-ball-pill.lose .pill-payout { color: #ff4d4d; }
