@@ -344,6 +344,50 @@ const API = {
       method: 'POST',
       body: JSON.stringify(body)
     });
+  },
+
+  // Vidéo Poker (Jacks or Better)
+  async getVideoPokerState() {
+    return this.request('/games/video-poker/state');
+  },
+
+  async dealVideoPoker(bet) {
+    return this.request('/games/video-poker/deal', {
+      method: 'POST',
+      body: JSON.stringify({ bet })
+    });
+  },
+
+  async drawVideoPoker(holds) {
+    return this.request('/games/video-poker/draw', {
+      method: 'POST',
+      body: JSON.stringify({ holds })
+    });
+  },
+
+  // Dragon Tower
+  async getDragonTowerState() {
+    return this.request('/games/dragon-tower/state');
+  },
+
+  async startDragonTower(bet, difficulty = 'medium') {
+    return this.request('/games/dragon-tower/start', {
+      method: 'POST',
+      body: JSON.stringify({ bet, difficulty })
+    });
+  },
+
+  async stepDragonTower(tileIndex) {
+    return this.request('/games/dragon-tower/step', {
+      method: 'POST',
+      body: JSON.stringify({ tileIndex })
+    });
+  },
+
+  async cashoutDragonTower() {
+    return this.request('/games/dragon-tower/cashout', {
+      method: 'POST'
+    });
   }
 };
 

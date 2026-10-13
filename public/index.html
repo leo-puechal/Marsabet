@@ -36,6 +36,8 @@
   <link rel="stylesheet" href="/css/free-wheel.css?v=candyluxe1">
   <link rel="stylesheet" href="/css/wheels.css?v=candyluxe1">
   <link rel="stylesheet" href="/css/sidebar.css?v=candyluxe1">
+  <link rel="stylesheet" href="/css/videopoker.css?v=candyluxe1">
+  <link rel="stylesheet" href="/css/dragontower.css?v=candyluxe1">
   <link rel="stylesheet" href="/css/mobile-responsive.css?v=candyluxe1">
 </head>
 
@@ -112,6 +114,8 @@
               <li><a class="sidebar-sublink" data-view="slider"><span>🎯</span> Slider Over/Under</a></li>
               <li><a class="sidebar-sublink" data-view="crash"><span>🚀</span> Crash Galactique</a></li>
               <li><a class="sidebar-sublink" data-view="plinko"><span>💧</span> Plinko Cosmique</a></li>
+              <li><a class="sidebar-sublink" data-view="video-poker"><span>🎴</span> Vidéo Poker</a></li>
+              <li><a class="sidebar-sublink" data-view="dragon-tower"><span>🐉</span> Dragon Tower</a></li>
             </ul>
           </li>
           <li>
@@ -339,6 +343,24 @@
                 <div class="game-poster-sub">Marsabet Originals</div>
               </div>
             </div>
+
+            <div class="game-card" data-game="video-poker">
+              <div class="game-card-top"><span class="game-badge">JACKS OR BETTER</span></div>
+              <div class="game-poster-center">🎴</div>
+              <div class="game-poster-bottom">
+                <div class="game-poster-title">VIDÉO POKER</div>
+                <div class="game-poster-sub">Marsabet Originals</div>
+              </div>
+            </div>
+
+            <div class="game-card" data-game="dragon-tower">
+              <div class="game-card-top"><span class="game-badge">94.5% RTP</span></div>
+              <div class="game-poster-center">🐉</div>
+              <div class="game-poster-bottom">
+                <div class="game-poster-title">DRAGON TOWER</div>
+                <div class="game-poster-sub">Marsabet Originals</div>
+              </div>
+            </div>
           </div>
 
           <!-- Ticker défilant des derniers gains -->
@@ -421,6 +443,24 @@
               <div class="game-poster-center">🎲</div>
               <div class="game-poster-bottom">
                 <div class="game-poster-title">CRAPS</div>
+                <div class="game-poster-sub">Marsabet Originals</div>
+              </div>
+            </div>
+
+            <div class="game-card" data-game="video-poker">
+              <div class="game-card-top"><span class="game-badge">JACKS OR BETTER</span></div>
+              <div class="game-poster-center">🎴</div>
+              <div class="game-poster-bottom">
+                <div class="game-poster-title">VIDÉO POKER</div>
+                <div class="game-poster-sub">Marsabet Originals</div>
+              </div>
+            </div>
+
+            <div class="game-card" data-game="dragon-tower">
+              <div class="game-card-top"><span class="game-badge">94.5% RTP</span></div>
+              <div class="game-poster-center">🐉</div>
+              <div class="game-poster-bottom">
+                <div class="game-poster-title">DRAGON TOWER</div>
                 <div class="game-poster-sub">Marsabet Originals</div>
               </div>
             </div>
@@ -1542,6 +1582,207 @@
                 <button class="btn btn-gold" id="plinkoDropBtn"
                   style="padding: 1rem; font-size: 1.1rem; margin-top: auto; font-weight: 800;">
                   💧 LÂCHER 1 BILLE (25 coins)
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== VUE JEU : VIDÉO POKER (JACKS OR BETTER) ==================== -->
+        <section id="view-video-poker" class="section-view">
+          <div class="game-view-container vp-container">
+            <div class="game-header-bar">
+              <div class="game-title-group">
+                <button class="btn btn-outline btn-back-lobby">◀ Lobby</button>
+                <span class="game-title-icon">🎴</span>
+                <div>
+                  <h2 class="game-title-name" style="margin:0;">Vidéo Poker (Jacks or Better)</h2>
+                  <div style="font-size:0.8rem; color:var(--text-muted);">
+                    Tirage 5 cartes certifié serveur • Conserve tes meilleures cartes • Jackpot Quinte Flush Royale ×250
+                  </div>
+                </div>
+              </div>
+              <div class="game-badges">
+                <span class="game-badge rtp">RTP 99.5%</span>
+                <span class="game-badge" style="background:rgba(212,175,55,0.18); color:var(--gold-light); border:1px solid rgba(212,175,55,0.4);">
+                  JACKPOT ×250
+                </span>
+              </div>
+            </div>
+
+            <div class="game-layout vp-layout">
+              <!-- Zone Plateau Vidéo Poker -->
+              <div class="game-stage vp-stage">
+                <!-- Bannière Résultat -->
+                <div id="vpResultBanner" class="result-banner" style="display:none;"></div>
+
+                <!-- Table des Paiements consultable en permanence -->
+                <div class="vp-paytable-wrapper">
+                  <div class="vp-paytable-header">
+                    <span>TABLE DES GAINS (JACKS OR BETTER)</span>
+                    <span class="vp-paytable-multiplier-header">MULTIPLICATEUR</span>
+                  </div>
+                  <div class="vp-paytable-grid" id="vpPaytableGrid">
+                    <!-- Rempli dynamiquement -->
+                  </div>
+                </div>
+
+                <!-- Tapis de Cartes -->
+                <div class="vp-table-felt">
+                  <div class="vp-cards-container" id="vpCardsContainer">
+                    <!-- 5 slots de cartes -->
+                  </div>
+                  <div class="vp-instruction" id="vpInstruction">
+                    Place ta mise et clique sur DISTRIBUER pour recevoir 5 cartes.
+                  </div>
+                </div>
+              </div>
+
+              <!-- Panneau de Mise & Contrôle -->
+              <div class="bet-panel vp-bet-panel">
+                <h3 class="panel-title">Mise de Poker</h3>
+
+                <div class="bet-input-box">
+                  <input type="number" id="vpBetInput" class="bet-input" value="50" min="10" step="10">
+                </div>
+
+                <div class="quick-bet-chips">
+                  <button class="casino-chip chip-10" data-val="10">10</button>
+                  <button class="casino-chip chip-50" data-val="50">50</button>
+                  <button class="casino-chip chip-100" data-val="100">100</button>
+                  <button class="casino-chip chip-500" data-val="500">500</button>
+                  <button class="casino-chip chip-1000" data-val="1000">1k</button>
+                </div>
+
+                <div class="bet-multipliers">
+                  <button class="btn-mult" data-action="half">½</button>
+                  <button class="btn-mult" data-action="double">2×</button>
+                  <button class="btn-mult" data-action="max">MAX</button>
+                </div>
+
+                <div class="vp-status-card" id="vpStatusCard">
+                  <div class="vp-status-label">Gain Potentiel Max (×250)</div>
+                  <div class="vp-status-val" id="vpMaxPotentialGain">12 500 🪙</div>
+                </div>
+
+                <button class="btn btn-gold vp-action-btn" id="vpActionBtn">
+                  🎴 DISTRIBUER
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== VUE JEU : DRAGON TOWER ==================== -->
+        <section id="view-dragon-tower" class="section-view">
+          <div class="game-view-container dt-container">
+            <div class="game-header-bar">
+              <div class="game-title-group">
+                <button class="btn btn-outline btn-back-lobby">◀ Lobby</button>
+                <span class="game-title-icon">🐉</span>
+                <div>
+                  <h2 class="game-title-name" style="margin:0;">Dragon Tower (Tour du Dragon)</h2>
+                  <div style="font-size:0.8rem; color:var(--text-muted);">
+                    Grimpe les 9 étages • Évite les œufs de dragon piégés • Encaisse à tout moment ou vise le Sommet
+                  </div>
+                </div>
+              </div>
+              <div class="game-badges">
+                <span class="game-badge rtp">RTP 94.5%</span>
+                <span class="game-badge" style="background:rgba(212,175,55,0.18); color:var(--gold-light); border:1px solid rgba(212,175,55,0.4);">
+                  SOMMET ×483
+                </span>
+              </div>
+            </div>
+
+            <div class="game-layout dt-layout">
+              <!-- Zone Plateau : La Tour Verticale -->
+              <div class="game-stage dt-stage">
+                <!-- Bannière Résultat -->
+                <div id="dtResultBanner" class="result-banner" style="display:none;"></div>
+
+                <!-- Sommet du Dragon (Objectif Final) -->
+                <div class="dt-summit">
+                  <span class="dt-dragon-icon">🐉</span>
+                  <div class="dt-summit-info">
+                    <span class="dt-summit-title">TRÉSOR DU DRAGON (ÉTAGE 9)</span>
+                    <span class="dt-summit-sub">Atteins le sommet pour décrocher le trésor suprême</span>
+                  </div>
+                  <span class="dt-summit-multiplier" id="dtSummitMultiplier">×36.33</span>
+                </div>
+
+                <!-- Arène des 9 Étages -->
+                <div class="dt-tower-arena" id="dtTowerArena">
+                  <!-- Rempli dynamiquement (Étage 1 en bas à Étage 9 en haut) -->
+                </div>
+
+                <!-- Historique récent -->
+                <div class="dt-history-drawer">
+                  <div class="dt-history-title">
+                    <span>📜 DERNIÈRES ASCENSIONS</span>
+                    <span style="font-size:0.65rem; color:var(--text-muted);">10 dernières parties</span>
+                  </div>
+                  <div class="dt-history-list" id="dtHistoryList">
+                    <!-- Rempli dynamiquement -->
+                  </div>
+                </div>
+              </div>
+
+              <!-- Panneau Latéral : Mise, Difficulté & Encaissement -->
+              <div class="bet-panel dt-bet-panel">
+                <h3 class="panel-title">Configuration de la Tour</h3>
+
+                <!-- Sélecteur de Difficulté -->
+                <label class="panel-sublabel" style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.4rem; display:block;">
+                  Niveau de Difficulté :
+                </label>
+                <div class="dt-difficulty-selector">
+                  <button class="dt-diff-btn" data-diff="easy">
+                    <span class="dt-diff-label">Facile</span>
+                    <span class="dt-diff-sub">4 cases • 1 piège</span>
+                  </button>
+                  <button class="dt-diff-btn active" data-diff="medium">
+                    <span class="dt-diff-label">Moyen</span>
+                    <span class="dt-diff-sub">3 cases • 1 piège</span>
+                  </button>
+                  <button class="dt-diff-btn" data-diff="hard">
+                    <span class="dt-diff-label">Difficile</span>
+                    <span class="dt-diff-sub">2 cases • 1 piège</span>
+                  </button>
+                </div>
+
+                <div class="bet-input-box">
+                  <input type="number" id="dtBetInput" class="bet-input" value="50" min="10" step="10">
+                </div>
+
+                <div class="quick-bet-chips">
+                  <button class="casino-chip chip-10" data-val="10">10</button>
+                  <button class="casino-chip chip-50" data-val="50">50</button>
+                  <button class="casino-chip chip-100" data-val="100">100</button>
+                  <button class="casino-chip chip-500" data-val="500">500</button>
+                  <button class="casino-chip chip-1000" data-val="1000">1k</button>
+                </div>
+
+                <div class="bet-multipliers">
+                  <button class="btn-mult" data-action="half">½</button>
+                  <button class="btn-mult" data-action="double">2×</button>
+                  <button class="btn-mult" data-action="max">MAX</button>
+                </div>
+
+                <div class="vp-status-card" style="margin-top:0.75rem;">
+                  <div class="vp-status-label">Gain Maximum Sommet</div>
+                  <div class="vp-status-val" id="dtMaxPotentialGain">1 816 🪙</div>
+                  <div style="font-size:0.75rem; color:var(--text-muted); margin-top:4px;">
+                    Prochain multiplicateur : <span id="dtNextFloorMultiplier" style="color:var(--gold-light); font-weight:700;">×1.41</span>
+                  </div>
+                </div>
+
+                <button class="btn btn-gold" id="dtStartBtn" style="width:100%; padding:1.1rem; font-size:1.15rem; font-weight:800; margin-top:auto;">
+                  🐉 COMMENCER L'ASCENSION
+                </button>
+
+                <button class="dt-cashout-btn" id="dtCashoutBtn" style="display:none;" disabled>
+                  💰 ENCAISSER
                 </button>
               </div>
             </div>
@@ -2850,6 +3091,8 @@
   <script src="/js/games/freeWheel.js"></script>
   <script src="/js/games/plinko.js"></script>
   <script src="/js/games/fortuneWheels.js"></script>
+  <script src="/js/games/videoPoker.js"></script>
+  <script src="/js/games/dragonTower.js"></script>
   <script src="/js/admin.js"></script>
   <script src="/js/router.js"></script>
   <script src="/js/app.js"></script>

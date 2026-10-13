@@ -46,4 +46,17 @@ router.post('/crash/finish', gameController.finishCrash);
 router.get('/free-wheel/status', gameController.getFreeWheelStatus);
 router.post('/free-wheel/spin', gameController.spinFreeWheel);
 
+// Video Poker (Jacks or Better)
+const videoPokerController = require('../controllers/videoPokerController');
+router.get('/video-poker/state', videoPokerController.getState);
+router.post('/video-poker/deal', videoPokerController.deal);
+router.post('/video-poker/draw', videoPokerController.draw);
+
+// Dragon Tower
+const dragonTowerController = require('../controllers/dragonTowerController');
+router.get('/dragon-tower/state', dragonTowerController.getState);
+router.post('/dragon-tower/start', dragonTowerController.start);
+router.post('/dragon-tower/step', dragonTowerController.step);
+router.post('/dragon-tower/cashout', dragonTowerController.cashout);
+
 module.exports = router;

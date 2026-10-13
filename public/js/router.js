@@ -20,6 +20,8 @@ const Router = {
     '/jeux/roue': 'wheel',
     '/jeux/roue-quotidienne': 'free-wheel',
     '/jeux/plinko': 'plinko',
+    '/jeux/video-poker': 'video-poker',
+    '/jeux/dragon-tower': 'dragon-tower',
     '/admin': 'admin'
   },
 
@@ -41,6 +43,8 @@ const Router = {
     'wheel': '/jeux/roue',
     'free-wheel': '/jeux/roue-quotidienne',
     'plinko': '/jeux/plinko',
+    'video-poker': '/jeux/video-poker',
+    'dragon-tower': '/jeux/dragon-tower',
     'admin': '/admin'
   },
 
@@ -173,6 +177,10 @@ const Router = {
       window.FreeWheelGame.fetchStatus();
     } else if (viewName === 'crash' && window.CrashGame) {
       window.CrashGame.resizeCanvas();
+    } else if (viewName === 'video-poker' && window.VideoPokerGame) {
+      window.VideoPokerGame.init();
+    } else if (viewName === 'dragon-tower' && window.DragonTowerGame) {
+      window.DragonTowerGame.init();
     } else if (viewName === 'admin' && window.AdminBDE) {
       window.AdminBDE.switchTab('orders');
     }
@@ -207,6 +215,8 @@ const Router = {
       'wheel': 'Roue de la Fortune — Marsabet',
       'free-wheel': 'Roue Quotidienne Gratuite — Marsabet',
       'plinko': 'Plinko Cosmique — Marsabet',
+      'video-poker': 'Vidéo Poker Jacks or Better — Marsabet',
+      'dragon-tower': 'Dragon Tower — Tour du Dragon — Marsabet',
       'admin': 'Administration BDE — Marsabet'
     };
     document.title = titles[viewName] || 'Marsabet — Casino Virtuel BDE';

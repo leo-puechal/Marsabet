@@ -124,6 +124,30 @@ function initDb() {
       crash_point REAL NOT NULL,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
+
+    CREATE TABLE IF NOT EXISTS videopoker_sessions (
+      user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+      deck TEXT NOT NULL,
+      hand TEXT NOT NULL,
+      bet INTEGER NOT NULL,
+      status TEXT NOT NULL DEFAULT 'deal',
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS dragontower_sessions (
+      user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+      bet INTEGER NOT NULL,
+      difficulty TEXT NOT NULL,
+      tiles_per_floor INTEGER NOT NULL,
+      traps_per_floor INTEGER NOT NULL DEFAULT 1,
+      total_floors INTEGER NOT NULL DEFAULT 9,
+      current_floor INTEGER NOT NULL DEFAULT 0,
+      traps TEXT NOT NULL,
+      revealed TEXT NOT NULL DEFAULT '[]',
+      current_multiplier REAL NOT NULL DEFAULT 1.0,
+      status TEXT NOT NULL DEFAULT 'playing',
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
   `);
 
   // Assainissement préalable : aucun solde existant ne doit être inférieur à 0

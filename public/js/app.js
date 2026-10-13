@@ -336,6 +336,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   window.WheelGame.init();
   window.PlinkoGame.init();
   if (window.FreeWheelGame) window.FreeWheelGame.init();
+  if (window.VideoPokerGame) window.VideoPokerGame.init();
+  if (window.DragonTowerGame) window.DragonTowerGame.init();
   if (window.AdminBDE) window.AdminBDE.init();
   if (window.Router) window.Router.init();
 
@@ -379,6 +381,12 @@ async function checkSession() {
     }
     if (window.FreeWheelGame) {
       window.FreeWheelGame.fetchStatus();
+    }
+    if (window.VideoPokerGame) {
+      window.VideoPokerGame.init();
+    }
+    if (window.DragonTowerGame) {
+      window.DragonTowerGame.init();
     }
   } catch (err) {
     window.API.clearToken();

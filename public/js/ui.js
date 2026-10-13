@@ -137,6 +137,10 @@ const UI = {
 
       if (viewName === 'crash' && window.CrashGame && typeof window.CrashGame.onShow === 'function') {
         window.CrashGame.onShow();
+      } else if (viewName === 'video-poker' && window.VideoPokerGame) {
+        window.VideoPokerGame.init();
+      } else if (viewName === 'dragon-tower' && window.DragonTowerGame) {
+        window.DragonTowerGame.init();
       }
     }
 
@@ -151,7 +155,7 @@ const UI = {
     }
 
     // Mettre à jour l'état actif dans la navbar et la sidebar
-    const gameViews = ['games', 'slots', 'blackjack', 'roulette', 'dice', 'slider', 'crash', 'plinko', 'wheel', 'free-wheel'];
+    const gameViews = ['games', 'slots', 'blackjack', 'roulette', 'dice', 'slider', 'crash', 'plinko', 'wheel', 'free-wheel', 'video-poker', 'dragon-tower'];
     document.querySelectorAll('.nav-link, .sidebar-link, .sidebar-sublink').forEach(l => {
       if (l.dataset.view === viewName) {
         l.classList.add('active');
