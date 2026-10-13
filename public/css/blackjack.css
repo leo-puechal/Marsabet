@@ -511,6 +511,113 @@
 }
 
 /* ==========================================================================
+   Piles Visuelles 3D de Jetons Déposés (Visual Chip Stacks)
+   ========================================================================== */
+.bj-felt-chip-stack {
+  position: relative;
+  width: 44px;
+  height: 28px;
+  margin: 3px auto 4px auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 22px;
+}
+
+.bj-stacked-chip {
+  position: absolute;
+  width: 36px;
+  height: 15px;
+  border-radius: 50%;
+  border: 1.5px dashed rgba(255, 255, 255, 0.8);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.65), inset 0 1px 2px rgba(255, 255, 255, 0.5), inset 0 -1px 2px rgba(0, 0, 0, 0.4);
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: chipStackDrop 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.bj-stacked-chip .stacked-chip-label {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+  line-height: 1;
+  pointer-events: none;
+}
+
+.chip-stack-10 {
+  background: radial-gradient(circle, #38bdf8 0%, #0284c7 100%);
+  border-color: #bae6fd;
+}
+
+.chip-stack-50 {
+  background: radial-gradient(circle, #f87171 0%, #dc2626 100%);
+  border-color: #fecaca;
+}
+
+.chip-stack-100 {
+  background: radial-gradient(circle, #60a5fa 0%, #1d4ed8 100%);
+  border-color: #bfdbfe;
+}
+
+.chip-stack-500 {
+  background: radial-gradient(circle, #c084fc 0%, #7e22ce 100%);
+  border-color: #e9d5ff;
+}
+
+.chip-stack-1000 {
+  background: radial-gradient(circle, #fde047 0%, #d97706 100%);
+  border-color: #fef08a;
+}
+.chip-stack-1000 .stacked-chip-label {
+  color: #fef08a;
+}
+
+@keyframes chipStackDrop {
+  0% {
+    transform: translateY(-28px) scale(1.2);
+    opacity: 0.2;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* Effet Drag & Drop sur les Felt Spots */
+.bj-felt-spot.drag-over {
+  border-color: #05e6b4 !important;
+  background: radial-gradient(circle, rgba(5, 230, 180, 0.3) 0%, rgba(15, 33, 46, 0.98) 100%) !important;
+  transform: scale(1.08) translateY(-4px) !important;
+  box-shadow: 0 0 22px rgba(5, 230, 180, 0.65), inset 0 0 12px rgba(5, 230, 180, 0.3) !important;
+}
+
+.bj-casino-chip.dragging {
+  opacity: 0.45;
+  transform: scale(0.92);
+  cursor: grabbing;
+}
+
+/* Jeton tactile flottant pour mobile */
+.bj-touch-drag-proxy {
+  position: fixed;
+  pointer-events: none;
+  z-index: 99999;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 3px dashed rgba(255, 255, 255, 0.9);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.75), 0 0 20px rgba(5, 230, 180, 0.75);
+  transform: translate(-50%, -50%) scale(1.18);
+  user-select: none;
+}
+
+/* ==========================================================================
    Onglets de Sélection de Mise Active (Panneau Latéral)
    ========================================================================== */
 .bj-spot-tabs {

@@ -41,7 +41,10 @@ exports.spin = (req, res) => {
       err.message.includes('Solde insuffisant') ||
       err.message.includes('Patience') ||
       err.message.includes('Limite quotidienne') ||
-      err.message.includes('introuvable')
+      err.message.includes('introuvable') ||
+      err.message.includes('filet de sécurité') ||
+      err.message.includes('réservé') ||
+      err.message.includes('1 000 coins')
     );
     const status = isClientError ? 400 : 500;
     return res.status(status).json({ error: err.message || 'Erreur lors du tour de roue.' });

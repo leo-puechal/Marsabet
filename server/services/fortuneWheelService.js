@@ -9,6 +9,8 @@ const WHEELS_CONFIG = {
     type: 'free',
     cost: 0,
     cooldownHours: 24,
+    cooldownMinutes: 1440,
+    maxBalanceLimit: null,
     badge: '✨ GRATUIT',
     badgeClass: 'badge-free',
     icon: '🎁',
@@ -22,6 +24,28 @@ const WHEELS_CONFIG = {
       { id: 'q_1000', type: 'coins', coins: 1000, label: '👑 1 000 🪙', color: '#D4AF37', textColor: '#000', weight: 4, isJackpot: true },
       { id: 'q_coca', type: 'physical', product: { itemId: 'coca', name: 'Canette Coca-Cola 33cl', icon: '🥤', category: 'Boissons Fraîches' }, label: '🥤 Canette Coca', color: '#DC2626', textColor: '#FFF', weight: 4, isPhysical: true },
       { id: 'q_kinder', type: 'physical', product: { itemId: 'kinder_bueno', name: 'Kinder Bueno', icon: '🍫', category: 'Sucreries' }, label: '🍫 Kinder Bueno', color: '#EA580C', textColor: '#FFF', weight: 4, isPhysical: true }
+    ]
+  },
+  'filet_securite': {
+    id: 'filet_securite',
+    name: 'Filet de Sécurité BDE',
+    subtitle: 'Recharge express toutes les 5 min (Solde < 1 000 🪙)',
+    type: 'free',
+    cost: 0,
+    cooldownHours: 0,
+    cooldownMinutes: 5,
+    maxBalanceLimit: 1000,
+    badge: '🛟 FILET DE SÉCURITÉ',
+    badgeClass: 'badge-safety',
+    icon: '🛟',
+    description: 'Roue de secours réservée aux élèves ayant moins de 1 000 coins. Tourne toutes les 5 minutes pour te renflouer gratuitement et continuer à jouer !',
+    segments: [
+      { id: 'fs_50', type: 'coins', coins: 50, label: '50 🪙', color: '#1E3A8A', textColor: '#FFF', weight: 35 },
+      { id: 'fs_100', type: 'coins', coins: 100, label: '100 🪙', color: '#0D9488', textColor: '#FFF', weight: 28 },
+      { id: 'fs_150', type: 'coins', coins: 150, label: '150 🪙', color: '#3B82F6', textColor: '#FFF', weight: 16 },
+      { id: 'fs_200', type: 'coins', coins: 200, label: '200 🪙', color: '#10B981', textColor: '#FFF', weight: 12 },
+      { id: 'fs_300', type: 'coins', coins: 300, label: '300 🪙', color: '#8B5CF6', textColor: '#FFF', weight: 6 },
+      { id: 'fs_500', type: 'coins', coins: 500, label: '⭐ 500 🪙', color: '#F59E0B', textColor: '#000', weight: 3, isJackpot: true }
     ]
   },
   'roue_2000': {
@@ -107,6 +131,16 @@ function initWheelConfigsDb() {
     const tableExists = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='wheel_configs'").get();
     if (!tableExists) return;
 
+    // S'assurer que les colonnes cooldown_minutes et max_balance_limit existent
+    const cols = db.prepare("PRAGMA table_info(wheel_configs)").all();
+    const colNames = cols.map(c => c.name);
+    if (!colNames.includes('cooldown_minutes')) {
+      db.prepare('ALTER TABLE wheel_configs ADD COLUMN cooldown_minutes INTEGER DEFAULT NULL').run();
+    }
+    if (!colNames.includes('max_balance_limit')) {
+      db.prepare('ALTER TABLE wheel_configs ADD COLUMN max_balance_limit INTEGER DEFAULT NULL').run();
+    }
+
     // Supprimer les anciennes roues payantes obsolètes si existantes
     const obsoleteIds = ['snack', 'energie', 'royale'];
     for (const oldId of obsoleteIds) {
@@ -114,14 +148,16 @@ function initWheelConfigsDb() {
     }
 
     const upsert = db.prepare(`
-      INSERT INTO wheel_configs (id, name, subtitle, type, cost, cooldown_hours, badge, badge_class, icon, description, segments_json)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO wheel_configs (id, name, subtitle, type, cost, cooldown_hours, cooldown_minutes, max_balance_limit, badge, badge_class, icon, description, segments_json)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(id) DO UPDATE SET
         name = excluded.name,
         subtitle = excluded.subtitle,
         type = excluded.type,
         cost = excluded.cost,
         cooldown_hours = excluded.cooldown_hours,
+        cooldown_minutes = excluded.cooldown_minutes,
+        max_balance_limit = excluded.max_balance_limit,
         badge = excluded.badge,
         badge_class = excluded.badge_class,
         icon = excluded.icon,
@@ -137,7 +173,9 @@ function initWheelConfigsDb() {
         w.subtitle,
         w.type,
         w.cost,
-        w.cooldownHours || 24,
+        w.cooldownHours || 0,
+        w.cooldownMinutes !== undefined ? w.cooldownMinutes : null,
+        w.maxBalanceLimit !== undefined ? w.maxBalanceLimit : null,
         w.badge,
         w.badgeClass,
         w.icon,
@@ -163,6 +201,8 @@ function getWheelConfig(wheelId) {
         type: row.type,
         cost: row.cost,
         cooldownHours: row.cooldown_hours,
+        cooldownMinutes: row.cooldown_minutes,
+        maxBalanceLimit: row.max_balance_limit,
         badge: row.badge,
         badgeClass: row.badge_class,
         icon: row.icon,
@@ -182,7 +222,9 @@ function getUserCooldown(userId, wheel) {
     return { canSpin: true, remainingMs: 0, streak: 0 };
   }
 
-  const cooldownMs = (wheel.cooldownHours || 24) * 60 * 60 * 1000;
+  const cooldownMs = (wheel.cooldownMinutes !== undefined && wheel.cooldownMinutes !== null)
+    ? wheel.cooldownMinutes * 60 * 1000
+    : (wheel.cooldownHours || 24) * 60 * 60 * 1000;
   const streakResetMs = 48 * 60 * 60 * 1000;
 
   // Chercher d'abord dans user_wheel_cooldowns
@@ -223,6 +265,14 @@ function getUserCooldown(userId, wheel) {
 
 // Récupère la liste de toutes les roues avec le statut pour l'utilisateur
 function getAllWheels(userId) {
+  let userCoins = null;
+  if (userId) {
+    try {
+      const uRow = db.prepare('SELECT coins FROM users WHERE id = ?').get(userId);
+      if (uRow) userCoins = uRow.coins;
+    } catch (e) {}
+  }
+
   let wheels = [];
   try {
     const rows = db.prepare('SELECT * FROM wheel_configs ORDER BY cost ASC').all();
@@ -234,6 +284,8 @@ function getAllWheels(userId) {
         type: r.type,
         cost: r.cost,
         cooldownHours: r.cooldown_hours,
+        cooldownMinutes: r.cooldown_minutes,
+        maxBalanceLimit: r.max_balance_limit,
         badge: r.badge,
         badgeClass: r.badge_class,
         icon: r.icon,
@@ -257,14 +309,21 @@ function getAllWheels(userId) {
       limitReached: false
     };
 
-    const canSpin = isFree ? cd.canSpin : !dailyLimit.limitReached;
+    const hasBalanceLimit = w.maxBalanceLimit !== null && w.maxBalanceLimit !== undefined;
+    const lockedDueToBalance = hasBalanceLimit && userCoins !== null && userCoins >= w.maxBalanceLimit;
+    const canSpin = lockedDueToBalance ? false : (isFree ? cd.canSpin : !dailyLimit.limitReached);
 
     return {
       id: w.id,
       name: w.name,
       subtitle: w.subtitle,
       type: w.type,
+      isFree,
       cost: w.cost,
+      cooldownHours: w.cooldownHours,
+      cooldownMinutes: w.cooldownMinutes,
+      maxBalanceLimit: w.maxBalanceLimit,
+      lockedDueToBalance,
       badge: w.badge,
       badgeClass: w.badgeClass,
       icon: w.icon,
@@ -288,6 +347,14 @@ function getWheel(wheelId, userId) {
   const wheel = getWheelConfig(wheelId);
   if (!wheel) return null;
 
+  let userCoins = null;
+  if (userId) {
+    try {
+      const uRow = db.prepare('SELECT coins FROM users WHERE id = ?').get(userId);
+      if (uRow) userCoins = uRow.coins;
+    } catch (e) {}
+  }
+
   const isFree = wheel.type === 'free';
   const cd = isFree ? (userId ? getUserCooldown(userId, wheel) : { canSpin: true, remainingMs: 0, streak: 0 }) : { canSpin: true, remainingMs: 0, streak: 0 };
   const dailyLimit = (!isFree && userId) ? getUserDailySpins(userId, wheel.id) : {
@@ -298,7 +365,9 @@ function getWheel(wheelId, userId) {
     limitReached: false
   };
 
-  const canSpin = isFree ? cd.canSpin : !dailyLimit.limitReached;
+  const hasBalanceLimit = wheel.maxBalanceLimit !== null && wheel.maxBalanceLimit !== undefined;
+  const lockedDueToBalance = hasBalanceLimit && userCoins !== null && userCoins >= wheel.maxBalanceLimit;
+  const canSpin = lockedDueToBalance ? false : (isFree ? cd.canSpin : !dailyLimit.limitReached);
 
   // Calcul des probabilités exactes pour l'affichage transparent
   const totalWeight = wheel.segments.reduce((acc, s) => acc + (Number(s.weight) || 1), 0);
@@ -327,7 +396,13 @@ function getWheel(wheelId, userId) {
     name: wheel.name,
     subtitle: wheel.subtitle,
     type: wheel.type,
+    isFree,
     cost: wheel.cost,
+    cooldownHours: wheel.cooldownHours,
+    cooldownMinutes: wheel.cooldownMinutes,
+    maxBalanceLimit: wheel.maxBalanceLimit,
+    lockedDueToBalance,
+    userCoins,
     badge: wheel.badge,
     badgeClass: wheel.badgeClass,
     icon: wheel.icon,
@@ -389,6 +464,8 @@ function getAllWheelsAdmin() {
       type: r.type,
       cost: r.cost,
       cooldownHours: r.cooldown_hours,
+      cooldownMinutes: r.cooldown_minutes,
+      maxBalanceLimit: r.max_balance_limit,
       badge: r.badge,
       badgeClass: r.badge_class,
       icon: r.icon,
@@ -465,7 +542,14 @@ function spinWheel(wheelId, userId) {
     throw new Error('Utilisateur introuvable.');
   }
 
-  // 1. Vérification pour roue gratuite
+  // 1. Vérification de la restriction de solde max (ex: Filet de Sécurité < 1000 coins)
+  if (wheel.maxBalanceLimit !== null && wheel.maxBalanceLimit !== undefined) {
+    if (user.coins >= wheel.maxBalanceLimit) {
+      throw new Error(`Cette roue est un filet de sécurité réservé aux élèves ayant moins de ${wheel.maxBalanceLimit.toLocaleString('fr-FR')} coins (ton solde actuel : ${user.coins.toLocaleString('fr-FR')} coins).`);
+    }
+  }
+
+  // 2. Vérification pour roue gratuite
   let newStreak = 1;
   if (wheel.type === 'free') {
     const cd = getUserCooldown(userId, wheel);
@@ -473,7 +557,16 @@ function spinWheel(wheelId, userId) {
       const remainingSecs = Math.ceil(cd.remainingMs / 1000);
       const hours = Math.floor(remainingSecs / 3600);
       const mins = Math.floor((remainingSecs % 3600) / 60);
-      throw new Error(`Patience ! Ton prochain tour gratuit sera disponible dans ${hours}h ${mins}m.`);
+      const secs = remainingSecs % 60;
+      let timeStr = '';
+      if (hours > 0) {
+        timeStr = `${hours}h ${mins}m`;
+      } else if (mins > 0) {
+        timeStr = `${mins}m ${secs}s`;
+      } else {
+        timeStr = `${secs}s`;
+      }
+      throw new Error(`Patience ! Ton prochain tour gratuit sera disponible dans ${timeStr}.`);
     }
     newStreak = (cd.streak || 0) + 1;
   }
@@ -674,7 +767,11 @@ function spinWheel(wheelId, userId) {
       coins: txResult.newCoins,
       userCoins: txResult.newCoins,
       cost: wheel.cost,
-      remainingMs: wheel.type === 'free' ? (wheel.cooldownHours || 24) * 3600 * 1000 : 0,
+      remainingMs: wheel.type === 'free'
+        ? (wheel.cooldownMinutes !== undefined && wheel.cooldownMinutes !== null
+            ? wheel.cooldownMinutes * 60 * 1000
+            : (wheel.cooldownHours || 24) * 3600 * 1000)
+        : 0,
       canSpin: wheel.type === 'free' ? false : (postDaily ? !postDaily.limitReached : true),
       streak: newStreak,
       dailyLimit: postDaily,

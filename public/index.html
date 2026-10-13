@@ -780,25 +780,28 @@
                   <!-- SPOTS DE MISES SUR LE TAPIS (Blackjack & Sidebets) -->
                   <div class="bj-table-felt-spots" id="bjFeltSpots">
                     <!-- Spot Perfect Pairs -->
-                    <div class="bj-felt-spot" id="bjFeltSpotPP" data-spot="perfectPairs" title="Cliquer pour miser sur Perfect Pairs">
+                    <div class="bj-felt-spot" id="bjFeltSpotPP" data-spot="perfectPairs" title="Glisser un jeton ou cliquer pour miser sur Perfect Pairs">
                       <span class="bj-spot-sublabel">Sidebet</span>
                       <span class="bj-spot-title">Perfect Pairs</span>
+                      <div class="bj-felt-chip-stack" id="bjChipStack_perfectPairs"></div>
                       <div class="bj-spot-chip-display" id="bjFeltDisplayPP">0 🪙</div>
                       <span class="bj-spot-odds">25:1</span>
                     </div>
 
                     <!-- Spot Mise Principale -->
-                    <div class="bj-felt-spot bj-felt-spot-main active-spot" id="bjFeltSpotMain" data-spot="main" title="Cliquer pour miser sur la main principale">
+                    <div class="bj-felt-spot bj-felt-spot-main active-spot" id="bjFeltSpotMain" data-spot="main" title="Glisser un jeton ou cliquer pour miser sur la main principale">
                       <span class="bj-spot-sublabel">Mise Principale</span>
                       <span class="bj-spot-title">Blackjack</span>
+                      <div class="bj-felt-chip-stack" id="bjChipStack_main"></div>
                       <div class="bj-spot-chip-display" id="bjFeltDisplayMain">50 🪙</div>
                       <span class="bj-spot-odds">Paie 3:2</span>
                     </div>
 
                     <!-- Spot 21+3 -->
-                    <div class="bj-felt-spot" id="bjFeltSpotPlus3" data-spot="plus3" title="Cliquer pour miser sur 21+3">
+                    <div class="bj-felt-spot" id="bjFeltSpotPlus3" data-spot="plus3" title="Glisser un jeton ou cliquer pour miser sur 21+3">
                       <span class="bj-spot-sublabel">Sidebet</span>
                       <span class="bj-spot-title">21 + 3</span>
+                      <div class="bj-felt-chip-stack" id="bjChipStack_plus3"></div>
                       <div class="bj-spot-chip-display" id="bjFeltDisplayPlus3">0 🪙</div>
                       <span class="bj-spot-odds">40:1</span>
                     </div>
@@ -807,6 +810,7 @@
                     <div class="bj-felt-spot" id="bjFeltSpotInsurance" data-spot="insurance" title="Assurance si le croupier montre un As">
                       <span class="bj-spot-sublabel">Option</span>
                       <span class="bj-spot-title">Assurance</span>
+                      <div class="bj-felt-chip-stack" id="bjChipStack_insurance"></div>
                       <div class="bj-spot-chip-display" id="bjFeltDisplayInsurance">0 🪙</div>
                       <span class="bj-spot-odds">2:1</span>
                     </div>
@@ -905,23 +909,24 @@
                 </div>
 
                 <!-- Rack de Jetons de Casino Visuels (10, 50, 100, 500, 1000) -->
-                <div style="font-size:0.75rem; font-weight:700; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.05em; margin:0.4rem 0 0.3rem 0;">
-                  Clique pour ajouter :
+                <div style="font-size:0.75rem; font-weight:700; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.05em; margin:0.4rem 0 0.3rem 0; display:flex; justify-content:space-between; align-items:center;">
+                  <span>Glisse ou clique un jeton :</span>
+                  <span style="font-size:0.7rem; color:var(--gold-light);">🖐️ Glisser-déposer</span>
                 </div>
                 <div class="bj-chips-rack" id="bjChipsRack">
-                  <button type="button" class="bj-casino-chip chip-10" data-val="10" title="Ajouter 10 🪙">
+                  <button type="button" class="bj-casino-chip chip-10" data-val="10" draggable="true" title="Glisser vers un spot ou cliquer (+10 🪙)">
                     <span class="chip-inner">10</span>
                   </button>
-                  <button type="button" class="bj-casino-chip chip-50 active-chip" data-val="50" title="Ajouter 50 🪙">
+                  <button type="button" class="bj-casino-chip chip-50 active-chip" data-val="50" draggable="true" title="Glisser vers un spot ou cliquer (+50 🪙)">
                     <span class="chip-inner">50</span>
                   </button>
-                  <button type="button" class="bj-casino-chip chip-100" data-val="100" title="Ajouter 100 🪙">
+                  <button type="button" class="bj-casino-chip chip-100" data-val="100" draggable="true" title="Glisser vers un spot ou cliquer (+100 🪙)">
                     <span class="chip-inner">100</span>
                   </button>
-                  <button type="button" class="bj-casino-chip chip-500" data-val="500" title="Ajouter 500 🪙">
+                  <button type="button" class="bj-casino-chip chip-500" data-val="500" draggable="true" title="Glisser vers un spot ou cliquer (+500 🪙)">
                     <span class="chip-inner">500</span>
                   </button>
-                  <button type="button" class="bj-casino-chip chip-1000" data-val="1000" title="Ajouter 1000 🪙">
+                  <button type="button" class="bj-casino-chip chip-1000" data-val="1000" draggable="true" title="Glisser vers un spot ou cliquer (+1000 🪙)">
                     <span class="chip-inner">1K</span>
                   </button>
                 </div>

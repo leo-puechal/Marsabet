@@ -114,14 +114,20 @@ const FortuneWheels = {
       if (!container) return;
 
       container.innerHTML = wheels.map(wheel => {
-        const isFree = wheel.isFree;
-        const badgeClass = isFree ? 'badge-free' : 'badge-coins';
-        const badgeText = isFree ? '✨ 100% GRATUIT' : `${wheel.cost} 🪙 COINS`;
+        const isFree = wheel.isFree || wheel.type === 'free';
+        const isSafety = wheel.id === 'filet_securite';
+        const badgeClass = wheel.badgeClass || (isSafety ? 'badge-safety' : (isFree ? 'badge-free' : 'badge-coins'));
+        const badgeText = wheel.badge || (isSafety ? '🛟 FILET DE SÉCURITÉ' : (isFree ? '✨ 100% GRATUIT' : `${wheel.cost} 🪙 COINS`));
+        const isLocked = !!wheel.lockedDueToBalance;
 
         let actionStatusHtml = '';
-        if (isFree) {
+        if (isLocked) {
+          actionStatusHtml = '<span style="color:#F87171; font-weight:700; font-size:0.85rem;">🔒 Disponible uniquement sous 1 000 coins</span>';
+        } else if (isFree) {
           if (wheel.canSpin) {
-            actionStatusHtml = '<span style="color:#34D399; font-weight:700;">🎁 Tour gratuit prêt !</span>';
+            actionStatusHtml = isSafety
+              ? '<span style="color:#38BDF8; font-weight:700;">🛟 Recharge de secours prête !</span>'
+              : '<span style="color:#34D399; font-weight:700;">🎁 Tour gratuit prêt !</span>';
           } else {
             const countdownStr = this.formatDuration(wheel.remainingMs);
             actionStatusHtml = `<span class="wheel-list-timer" data-wheel-id="${wheel.id}" data-ms="${wheel.remainingMs}" style="color:var(--text-muted); font-size:0.85rem;">⏱️ Prêt dans ${countdownStr}</span>`;
@@ -143,8 +149,12 @@ const FortuneWheels = {
           return `<span style="font-size:0.8rem; background:rgba(255,255,255,0.05); padding:3px 7px; border-radius:4px; border:1px solid rgba(255,255,255,0.08); ${isPhys ? 'color:#FCA5A5; border-color:rgba(239,68,68,0.3);' : ''}">${icon} ${s.label}</span>`;
         }).join('');
 
+        const lockedBannerHtml = isLocked
+          ? '<div class="wheel-card-locked-banner"><span>⚠️</span> Disponible uniquement sous 1 000 coins</div>'
+          : '';
+
         return `
-          <div class="wheel-card" data-wheel-id="${wheel.id}" onclick="FortuneWheels.openWheel('${wheel.id}')">
+          <div class="wheel-card ${isLocked ? 'wheel-card-locked' : ''}" data-wheel-id="${wheel.id}" onclick="FortuneWheels.openWheel('${wheel.id}')">
             <div>
               <div class="wheel-card-header">
                 <div class="wheel-card-icon">${wheel.icon || '🎡'}</div>
@@ -152,16 +162,17 @@ const FortuneWheels = {
               </div>
               <h3 class="wheel-card-title">${wheel.name}</h3>
               <p class="wheel-card-desc">${wheel.description}</p>
+              ${lockedBannerHtml}
               
-              <div style="display:flex; flex-wrap:wrap; gap:0.4rem; margin-bottom:1.25rem;">
+              <div style="display:flex; flex-wrap:wrap; gap:0.4rem; margin-top:0.85rem; margin-bottom:1.25rem;">
                 ${previewPrizes}
               </div>
             </div>
 
             <div class="wheel-card-footer">
               <div>${actionStatusHtml}</div>
-              <button class="btn btn-gold" style="padding:0.6rem 1.25rem; font-size:0.9rem;">
-                Entrer ▶
+              <button class="btn ${isLocked ? 'btn-secondary' : 'btn-gold'}" style="padding:0.6rem 1.25rem; font-size:0.9rem; ${isLocked ? 'opacity:0.75;' : ''}">
+                ${isLocked ? '🔒 Voir' : 'Entrer ▶'}
               </button>
             </div>
           </div>
@@ -236,7 +247,9 @@ const FortuneWheels = {
       if (centerIcon) centerIcon.textContent = wheel.icon || '🪐';
 
       if (costBadge) {
-        if (wheel.isFree || wheel.type === 'free') {
+        if (wheel.id === 'filet_securite') {
+          costBadge.innerHTML = '<span class="badge-safety">🛟 FILET DE SÉCURITÉ (5 MIN)</span>';
+        } else if (wheel.isFree || wheel.type === 'free') {
           costBadge.innerHTML = '<span class="badge-free">✨ 100% GRATUIT (24H)</span>';
         } else {
           const rem = (wheel.remainingSpinsToday !== undefined) ? wheel.remainingSpinsToday : 5;
@@ -300,16 +313,43 @@ const FortuneWheels = {
 
     if (this.cooldownTimer) clearInterval(this.cooldownTimer);
 
-    if (wheel.isFree) {
+    // Vérification de restriction de solde max (ex: Filet de Sécurité < 1000 coins)
+    if (wheel.lockedDueToBalance) {
+      if (cooldownBox) cooldownBox.style.display = 'none';
+      const userCoins = window.State?.user?.coins ?? (wheel.userCoins || 0);
+      if (spinBtn) {
+        spinBtn.disabled = true;
+        spinBtn.innerHTML = '<span>🔒</span> DISPONIBLE UNIQUEMENT SOUS 1 000 COINS';
+        spinBtn.style.background = '#334155';
+        spinBtn.style.color = '#94A3B8';
+        spinBtn.style.boxShadow = 'none';
+      }
+      if (statusText) {
+        statusText.innerHTML = `<span style="color:#F87171; font-weight:700;">🔒 Filet de sécurité réservé aux élèves ayant moins de 1 000 coins (ton solde actuel : ${userCoins.toLocaleString('fr-FR')} 🪙).</span>`;
+      }
+      return;
+    }
+
+    if (wheel.isFree || wheel.type === 'free') {
+      const isSafety = wheel.id === 'filet_securite';
       if (wheel.canSpin) {
         if (cooldownBox) cooldownBox.style.display = 'none';
         if (spinBtn) {
           spinBtn.disabled = false;
-          spinBtn.innerHTML = '<span>🎁</span> LANCER MON TOUR GRATUIT !';
-          spinBtn.style.background = 'linear-gradient(135deg, #34D399 0%, #10B981 50%, #059669 100%)';
+          if (isSafety) {
+            spinBtn.innerHTML = '<span>🛟</span> TOURNER LE FILET DE SÉCURITÉ !';
+            spinBtn.style.background = 'linear-gradient(135deg, #0284C7 0%, #0369A1 50%, #075985 100%)';
+          } else {
+            spinBtn.innerHTML = '<span>🎁</span> LANCER MON TOUR GRATUIT !';
+            spinBtn.style.background = 'linear-gradient(135deg, #34D399 0%, #10B981 50%, #059669 100%)';
+          }
           spinBtn.style.color = '#FFF';
         }
-        if (statusText) statusText.textContent = '🎉 Tour gratuit prêt ! Clique pour lancer.';
+        if (statusText) {
+          statusText.textContent = isSafety
+            ? '🛟 Tour de secours prêt ! Clique pour te renflouer gratuitement.'
+            : '🎉 Tour gratuit prêt ! Clique pour lancer.';
+        }
       } else {
         if (cooldownBox) cooldownBox.style.display = 'flex';
         let remaining = wheel.remainingMs || 0;
@@ -321,7 +361,11 @@ const FortuneWheels = {
           spinBtn.style.background = '#334155';
           spinBtn.style.color = '#94A3B8';
         }
-        if (statusText) statusText.textContent = '⏱️ Ton prochain tour gratuit sera disponible dès la fin du compte à rebours.';
+        if (statusText) {
+          statusText.textContent = isSafety
+            ? '⏱️ Prochain rechargement disponible dès la fin du compte à rebours (5 min).'
+            : '⏱️ Ton prochain tour gratuit sera disponible dès la fin du compte à rebours.';
+        }
 
         this.cooldownTimer = setInterval(() => {
           remaining -= 1000;

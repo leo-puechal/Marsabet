@@ -72,6 +72,18 @@
   letter-spacing: 0.4px;
 }
 
+.badge-safety {
+  background: rgba(14, 165, 233, 0.2);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.5);
+  padding: 0.3rem 0.8rem;
+  border-radius: var(--radius-full);
+  font-size: 0.74rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
 .badge-coins {
   background: var(--bg-secondary);
   color: var(--candy-gold-light);
@@ -81,6 +93,33 @@
   font-size: 0.76rem;
   font-family: var(--font-body);
   font-weight: 800;
+}
+
+.wheel-card.wheel-card-locked {
+  opacity: 0.62;
+  filter: grayscale(0.4);
+  cursor: not-allowed;
+  border-color: rgba(148, 163, 184, 0.25);
+}
+
+.wheel-card.wheel-card-locked:hover {
+  transform: none;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  border-color: rgba(148, 163, 184, 0.25);
+}
+
+.wheel-card-locked-banner {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: #fca5a5;
+  padding: 0.45rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.6rem;
 }
 
 .wheel-card-title {

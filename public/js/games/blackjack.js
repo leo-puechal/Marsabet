@@ -118,6 +118,10 @@ const BlackjackGame = {
         this.playChipSound();
       });
     }
+
+    // Initialisation du drag & drop et du rendu visuel des jetons empilés
+    this.initDragAndDrop();
+    this.updateBetDisplays();
   },
 
   playChipSound() {
@@ -146,24 +150,30 @@ const BlackjackGame = {
     });
   },
 
-  addChipToActiveSpot(val) {
-    if (this.activeBetSpot === 'main') {
+  addChipToSpot(spotName, val) {
+    if (this.inGame || this.isDealing) return;
+    this.setActiveSpot(spotName);
+    if (spotName === 'main') {
       this.mainBet += val;
-    } else if (this.activeBetSpot === 'perfectPairs') {
+    } else if (spotName === 'perfectPairs') {
       this.sidebets.perfectPairs += val;
-    } else if (this.activeBetSpot === 'plus3') {
+    } else if (spotName === 'plus3') {
       this.sidebets.plus3 += val;
-    } else if (this.activeBetSpot === 'insurance') {
-      // Assurance plafonnée à 50% de la mise principale
+    } else if (spotName === 'insurance') {
       const maxIns = Math.max(10, Math.floor(this.mainBet / 2));
       this.sidebets.insurance = Math.min(maxIns, this.sidebets.insurance + val);
     }
+    this.playChipSound();
     this.updateBetDisplays();
+  },
+
+  addChipToActiveSpot(val) {
+    this.addChipToSpot(this.activeBetSpot || 'main', val);
   },
 
   clearActiveSpot() {
     if (this.activeBetSpot === 'main') {
-      this.mainBet = 10;
+      this.mainBet = 0;
     } else if (this.activeBetSpot === 'perfectPairs') {
       this.sidebets.perfectPairs = 0;
     } else if (this.activeBetSpot === 'plus3') {
@@ -175,7 +185,7 @@ const BlackjackGame = {
   },
 
   clearAllBets() {
-    this.mainBet = 50;
+    this.mainBet = 0;
     this.sidebets.perfectPairs = 0;
     this.sidebets.plus3 = 0;
     this.sidebets.insurance = 0;
@@ -183,7 +193,7 @@ const BlackjackGame = {
   },
 
   doubleAllBets() {
-    this.mainBet *= 2;
+    this.mainBet = this.mainBet > 0 ? this.mainBet * 2 : 50;
     this.sidebets.perfectPairs *= 2;
     this.sidebets.plus3 *= 2;
     this.sidebets.insurance = Math.min(Math.floor(this.mainBet / 2), this.sidebets.insurance * 2);
@@ -199,6 +209,194 @@ const BlackjackGame = {
     this.sidebets = { ...this.lastBets.sidebets };
     this.setHandsCount(this.lastBets.handsCount || 1);
     this.updateBetDisplays();
+  },
+
+  initDragAndDrop() {
+    const chips = document.querySelectorAll('#bjChipsRack .bj-casino-chip');
+    const spots = document.querySelectorAll('#bjFeltSpots .bj-felt-spot');
+
+    chips.forEach(chip => {
+      chip.setAttribute('draggable', 'true');
+
+      chip.addEventListener('dragstart', (e) => {
+        if (this.inGame || this.isDealing) {
+          e.preventDefault();
+          return;
+        }
+        const val = parseInt(chip.dataset.val, 10) || 50;
+        this.draggedChipVal = val;
+        chip.classList.add('dragging');
+        if (e.dataTransfer) {
+          e.dataTransfer.setData('text/plain', String(val));
+          e.dataTransfer.effectAllowed = 'copy';
+        }
+      });
+
+      chip.addEventListener('dragend', () => {
+        this.draggedChipVal = null;
+        chip.classList.remove('dragging');
+        spots.forEach(s => s.classList.remove('drag-over'));
+      });
+    });
+
+    spots.forEach(spot => {
+      spot.addEventListener('dragover', (e) => {
+        if (this.inGame || this.isDealing) return;
+        e.preventDefault();
+        if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
+        spot.classList.add('drag-over');
+      });
+
+      spot.addEventListener('dragleave', () => {
+        spot.classList.remove('drag-over');
+      });
+
+      spot.addEventListener('drop', (e) => {
+        if (this.inGame || this.isDealing) return;
+        e.preventDefault();
+        spot.classList.remove('drag-over');
+        let val = null;
+        if (e.dataTransfer) {
+          val = parseInt(e.dataTransfer.getData('text/plain'), 10);
+        }
+        if (!val || isNaN(val)) {
+          val = this.draggedChipVal || this.selectedChip || 50;
+        }
+        const target = spot.dataset.spot;
+        if (target) {
+          this.addChipToSpot(target, val);
+        }
+      });
+    });
+
+    // Touch events pour mobile et tablettes (glisser-déposer au doigt fluide)
+    let touchProxy = null;
+    let activeTouchChipVal = null;
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let hasMoved = false;
+
+    chips.forEach(chip => {
+      chip.addEventListener('touchstart', (e) => {
+        if (this.inGame || this.isDealing) return;
+        const touch = e.touches[0];
+        touchStartX = touch.clientX;
+        touchStartY = touch.clientY;
+        hasMoved = false;
+        activeTouchChipVal = parseInt(chip.dataset.val, 10) || 50;
+      }, { passive: true });
+
+      chip.addEventListener('touchmove', (e) => {
+        if (this.inGame || this.isDealing || !activeTouchChipVal) return;
+        const touch = e.touches[0];
+        const dist = Math.hypot(touch.clientX - touchStartX, touch.clientY - touchStartY);
+        if (dist > 8) {
+          hasMoved = true;
+          if (!touchProxy) {
+            touchProxy = document.createElement('div');
+            touchProxy.className = `bj-touch-drag-proxy chip-${activeTouchChipVal}`;
+            touchProxy.innerHTML = `<span class="chip-inner" style="width:32px; height:32px; border-radius:50%; background:rgba(15,33,46,0.92); display:flex; align-items:center; justify-content:center; color:#fff; font-weight:900; font-family:var(--font-mono); font-size:0.75rem;">${activeTouchChipVal >= 1000 ? '1K' : activeTouchChipVal}</span>`;
+            document.body.appendChild(touchProxy);
+          }
+          touchProxy.style.left = `${touch.clientX}px`;
+          touchProxy.style.top = `${touch.clientY}px`;
+
+          const elemUnder = document.elementFromPoint(touch.clientX, touch.clientY);
+          const hoveredSpot = elemUnder ? elemUnder.closest('.bj-felt-spot') : null;
+          spots.forEach(s => {
+            if (s === hoveredSpot) {
+              s.classList.add('drag-over');
+            } else {
+              s.classList.remove('drag-over');
+            }
+          });
+        }
+      }, { passive: true });
+
+      chip.addEventListener('touchend', (e) => {
+        if (touchProxy) {
+          touchProxy.remove();
+          touchProxy = null;
+        }
+        spots.forEach(s => s.classList.remove('drag-over'));
+
+        if (hasMoved && activeTouchChipVal) {
+          const touch = e.changedTouches[0];
+          const elemUnder = document.elementFromPoint(touch.clientX, touch.clientY);
+          const dropSpot = elemUnder ? elemUnder.closest('.bj-felt-spot') : null;
+          if (dropSpot && dropSpot.dataset.spot) {
+            this.addChipToSpot(dropSpot.dataset.spot, activeTouchChipVal);
+          }
+          activeTouchChipVal = null;
+          hasMoved = false;
+        } else if (!hasMoved && activeTouchChipVal) {
+          // Tap simple sans déplacement : conserve le comportement clic rapide
+          this.selectChip(activeTouchChipVal);
+          this.addChipToActiveSpot(activeTouchChipVal);
+          this.playChipSound();
+          activeTouchChipVal = null;
+        }
+      });
+
+      chip.addEventListener('touchcancel', () => {
+        if (touchProxy) {
+          touchProxy.remove();
+          touchProxy = null;
+        }
+        spots.forEach(s => s.classList.remove('drag-over'));
+        activeTouchChipVal = null;
+        hasMoved = false;
+      });
+    });
+  },
+
+  decomposeAmountIntoChips(amount) {
+    if (!amount || amount <= 0) return [];
+    const denoms = [1000, 500, 100, 50, 10];
+    const chips = [];
+    let rem = amount;
+    for (const d of denoms) {
+      while (rem >= d) {
+        chips.push(d);
+        rem -= d;
+        if (chips.length >= 7) break;
+      }
+      if (chips.length >= 7) break;
+    }
+    if (rem > 0 && chips.length < 7) {
+      chips.push(10);
+    }
+    return chips.reverse();
+  },
+
+  renderChipStack(spotName, amount) {
+    const container = document.getElementById(`bjChipStack_${spotName}`);
+    if (!container) return;
+
+    if (!amount || amount <= 0) {
+      container.innerHTML = '';
+      container.style.display = 'none';
+      return;
+    }
+
+    container.style.display = 'flex';
+    const chips = this.decomposeAmountIntoChips(amount);
+    const rotations = [-5, 6, -3, 8, -7, 4, -6, 5];
+
+    container.innerHTML = chips.map((val, idx) => {
+      const rot = rotations[idx % rotations.length];
+      const bottom = idx * 3.5;
+      const isTop = idx === chips.length - 1;
+      const labelHtml = isTop ? `<span class="stacked-chip-label">${val >= 1000 ? '1K' : val}</span>` : '';
+      return `<div class="bj-stacked-chip chip-stack-${val}" style="bottom:${bottom}px; transform:rotate(${rot}deg); z-index:${idx + 1};">${labelHtml}</div>`;
+    }).join('');
+  },
+
+  renderAllChipStacks() {
+    this.renderChipStack('main', this.mainBet);
+    this.renderChipStack('perfectPairs', this.sidebets.perfectPairs);
+    this.renderChipStack('plus3', this.sidebets.plus3);
+    this.renderChipStack('insurance', this.sidebets.insurance);
   },
 
   setHandsCount(count) {
@@ -292,6 +490,9 @@ const BlackjackGame = {
     if (dealBtn && !this.inGame) {
       dealBtn.textContent = `🃏 DISTRIBUER (${totalRequired} 🪙)`;
     }
+
+    // Mise à jour des piles visuelles de jetons sur chaque spot
+    this.renderAllChipStacks();
   },
 
   sleep(ms) {
@@ -602,6 +803,11 @@ const BlackjackGame = {
 
   async deal() {
     if (this.inGame || this.isDealing) return;
+
+    if (!this.mainBet || this.mainBet < 10) {
+      if (window.UI) window.UI.showToast('La mise principale minimale est de 10 coins.', 'warning');
+      return;
+    }
 
     const totalRequired = this.calculateTotalRequired();
 
