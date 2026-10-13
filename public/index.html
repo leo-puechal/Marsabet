@@ -788,15 +788,26 @@
                         <div class="bj-cards-row" id="bjPlayerCards"></div>
                       </div>
 
-                      <!-- Main 2 (activée uniquement si Split) -->
+                      <!-- Main 2 (activée si Split ou 2-3 mains) -->
                       <div class="bj-hand-box" id="bjHandBox2" style="display:none;">
                         <div class="bj-area-label">
-                          <span>Main 2</span>
+                          <span id="bjHandTitle2">Main 2</span>
                           <span class="bj-score-badge" id="bjPlayerScore2">-</span>
                           <span class="bj-hand-tag" id="bjHandTag2">En attente</span>
                           <span class="bj-hand-bet-badge" id="bjHandBetDisplay2">50 🪙</span>
                         </div>
                         <div class="bj-cards-row" id="bjPlayerCards2"></div>
+                      </div>
+
+                      <!-- Main 3 (activée si 3 mains) -->
+                      <div class="bj-hand-box" id="bjHandBox3" style="display:none;">
+                        <div class="bj-area-label">
+                          <span id="bjHandTitle3">Main 3</span>
+                          <span class="bj-score-badge" id="bjPlayerScore3">-</span>
+                          <span class="bj-hand-tag" id="bjHandTag3">En attente</span>
+                          <span class="bj-hand-bet-badge" id="bjHandBetDisplay3">50 🪙</span>
+                        </div>
+                        <div class="bj-cards-row" id="bjPlayerCards3"></div>
                       </div>
                     </div>
                   </div>
@@ -815,10 +826,27 @@
 
               <!-- Panneau de Mise -->
               <div class="bet-panel">
-                <h3 class="panel-title">Mise de Blackjack</h3>
+                <h3 class="panel-title">Mise par Main</h3>
 
                 <div class="bet-input-box">
                   <input type="number" id="bjBetInput" class="bet-input" value="50" min="10" step="10">
+                </div>
+
+                <!-- Sélecteur Multi-mains (1 à 3 mains simultanées) -->
+                <div class="bj-hands-selector-group" style="margin: 0.6rem 0;">
+                  <div style="font-size:0.75rem; font-weight:700; color:#b1bad3; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:0.35rem; display:flex; justify-content:space-between;">
+                    <span>Mains en parallèle</span>
+                    <span id="bjHandsCountBadge" style="color:#00e701;">1 main</span>
+                  </div>
+                  <div class="bj-hands-pill-selector" id="bjHandsSelector">
+                    <button type="button" class="bj-hand-pill-btn active" data-hands="1">1 Main</button>
+                    <button type="button" class="bj-hand-pill-btn" data-hands="2">2 Mains</button>
+                    <button type="button" class="bj-hand-pill-btn" data-hands="3">3 Mains</button>
+                  </div>
+                  <div id="bjTotalBetSummary" style="font-size:0.8rem; color:#b1bad3; margin-top:0.4rem; padding:0.35rem 0.6rem; background:#0f212e; border:1px solid #2f4553; border-radius:6px; display:flex; justify-content:space-between; align-items:center;">
+                    <span>Mise totale :</span>
+                    <strong style="color:var(--gold-light); font-family:var(--font-mono); font-size:0.9rem;" id="bjTotalBetDisplay">50 🪙</strong>
+                  </div>
                 </div>
 
                 <div class="quick-bet-chips">
@@ -2470,7 +2498,7 @@
             Remplace n'importe quel symbole standard pour compléter une ligne.<br>
             <strong style="color:var(--gold-light);">Multiplicateur x2 :</strong> tout gain de ligne incluant un Wild
             est automatiquement doublé !<br>
-            <small style="color:var(--text-muted);">5 Wilds sur une ligne = x3 000 !</small>
+            <small style="color:var(--text-muted);">5 Wilds sur une ligne = x2 400 ! (et dès 2 Wilds = x10)</small>
           </div>
         </div>
 
@@ -2479,6 +2507,7 @@
           <div style="font-size:1.5rem; margin-bottom:0.25rem;">⚡ <strong>SCATTER FREE SPINS</strong></div>
           <div style="font-size:0.82rem; color:var(--text-secondary); line-height:1.4;">
             Paye n'importe où sur les 5 rouleaux sans suivre les lignes.<br>
+            <strong style="color:var(--gold-light);">2 Scatters :</strong> remboursement immédiat de 1x la mise totale !<br>
             <strong>3 Scatters :</strong> 10 Free Spins + 3x mise totale<br>
             <strong>4 Scatters :</strong> 15 Free Spins + 15x mise totale<br>
             <strong>5 Scatters :</strong> 25 Free Spins + 100x mise totale<br>
@@ -2501,7 +2530,7 @@
             <div><span style="font-size:1.6rem;">🪐</span> <strong>Planète Marsabet</strong> <span class="vip-badge"
                 style="font-size:0.65rem; background:#DC2626;">JACKPOT</span></div>
             <div style="font-size:0.8rem; color:var(--gold-light); text-align:right;">
-              5: <strong>x2 500</strong> | 4: x500 | 3: x100 | 2: x10
+              5: <strong>x2 000</strong> | 4: x420 | 3: x120 | 2: <strong>x8</strong>
             </div>
           </div>
 
@@ -2510,7 +2539,7 @@
             style="background:rgba(37,99,235,0.15); border:1px solid rgba(96,165,250,0.3); border-radius:var(--radius-sm); padding:0.6rem 0.8rem; display:flex; justify-content:space-between; align-items:center;">
             <div><span style="font-size:1.6rem;">💎</span> <strong>Diamant Bleu</strong></div>
             <div style="font-size:0.8rem; color:var(--gold-light); text-align:right;">
-              5: <strong>x1 000</strong> | 4: x250 | 3: x50
+              5: <strong>x850</strong> | 4: x250 | 3: x80 | 2: <strong>x5</strong>
             </div>
           </div>
 
@@ -2519,7 +2548,7 @@
             style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:var(--radius-sm); padding:0.6rem 0.8rem; display:flex; justify-content:space-between; align-items:center;">
             <div><span style="font-size:1.5rem;">🥤</span> <strong>Canette BDE</strong></div>
             <div style="font-size:0.8rem; color:var(--text-secondary); text-align:right;">
-              5: <strong>x500</strong> | 4: x150 | 3: x35
+              5: <strong>x520</strong> | 4: x160 | 3: x55 | 2: <strong>x3</strong>
             </div>
           </div>
 
@@ -2528,7 +2557,7 @@
             style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:var(--radius-sm); padding:0.6rem 0.8rem; display:flex; justify-content:space-between; align-items:center;">
             <div><span style="font-size:1.5rem;">🍫</span> <strong>Chocolat BDE</strong></div>
             <div style="font-size:0.8rem; color:var(--text-secondary); text-align:right;">
-              5: <strong>x350</strong> | 4: x100 | 3: x25
+              5: <strong>x390</strong> | 4: x125 | 3: x45 | 2: <strong>x2</strong>
             </div>
           </div>
 
@@ -2537,7 +2566,7 @@
             style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:var(--radius-sm); padding:0.6rem 0.8rem; display:flex; justify-content:space-between; align-items:center;">
             <div><span style="font-size:1.5rem;">🥔</span> <strong>Chips Snack BDE</strong></div>
             <div style="font-size:0.8rem; color:var(--text-secondary); text-align:right;">
-              5: <strong>x250</strong> | 4: x75 | 3: x20
+              5: <strong>x300</strong> | 4: x95 | 3: x35 | 2: <strong>x2</strong>
             </div>
           </div>
 
@@ -2546,7 +2575,7 @@
             style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:var(--radius-sm); padding:0.6rem 0.8rem; display:flex; justify-content:space-between; align-items:center;">
             <div><span style="font-size:1.5rem;">☕</span> <strong>Café Campus</strong></div>
             <div style="font-size:0.8rem; color:var(--text-secondary); text-align:right;">
-              5: <strong>x180</strong> | 4: x50 | 3: x15
+              5: <strong>x230</strong> | 4: x75 | 3: x25 | 2: <strong>x2</strong>
             </div>
           </div>
 
@@ -2556,8 +2585,8 @@
             <div><span style="font-size:1.5rem;">🂱</span> <strong>As (A)</strong> / <span
                 style="font-size:1.5rem;">🃎</span> <strong>Roi (K)</strong></div>
             <div style="font-size:0.8rem; color:var(--text-secondary); text-align:right;">
-              A: 5: <strong>x120</strong> | 4: x35 | 3: x10<br>
-              K: 5: <strong>x80</strong> | 4: x25 | 3: x8
+              A: 5: <strong>x140</strong> | 4: x50 | 3: x18 | 2: <strong>x2</strong><br>
+              K: 5: <strong>x110</strong> | 4: x38 | 3: x14 | 2: <strong>x2</strong>
             </div>
           </div>
 
@@ -2567,9 +2596,9 @@
             <div><span style="font-size:1.5rem;">🃍</span> <strong>Q</strong> / <span
                 style="font-size:1.5rem;">🃋</span> <strong>J</strong> / 🔟 <strong>10</strong></div>
             <div style="font-size:0.8rem; color:var(--text-secondary); text-align:right;">
-              Q: 5: <strong>x60</strong> | 4: x20 | 3: x6<br>
-              J: 5: <strong>x45</strong> | 4: x15 | 3: x5<br>
-              10: 5: <strong>x35</strong> | 4: x12 | 3: x4
+              Q: 5: <strong>x85</strong> | 4: x28 | 3: x10<br>
+              J: 5: <strong>x70</strong> | 4: x22 | 3: x8<br>
+              10: 5: <strong>x55</strong> | 4: x18 | 3: x6
             </div>
           </div>
         </div>

@@ -42,17 +42,23 @@ function initDb() {
       deck TEXT NOT NULL,
       player_hand TEXT NOT NULL,
       player_hand_2 TEXT DEFAULT NULL,
+      player_hand_3 TEXT DEFAULT NULL,
       dealer_hand TEXT NOT NULL,
       bet INTEGER NOT NULL,
       bet_2 INTEGER NOT NULL DEFAULT 0,
+      bet_3 INTEGER NOT NULL DEFAULT 0,
       status TEXT NOT NULL DEFAULT 'playing',
       active_hand INTEGER NOT NULL DEFAULT 1,
       can_double INTEGER NOT NULL DEFAULT 1,
       can_double_2 INTEGER NOT NULL DEFAULT 1,
+      can_double_3 INTEGER NOT NULL DEFAULT 1,
       can_split INTEGER NOT NULL DEFAULT 0,
       split_aces INTEGER NOT NULL DEFAULT 0,
       status_1 TEXT DEFAULT NULL,
       status_2 TEXT DEFAULT NULL,
+      status_3 TEXT DEFAULT NULL,
+      hands_count INTEGER NOT NULL DEFAULT 1,
+      hands TEXT DEFAULT NULL,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 
@@ -205,6 +211,16 @@ function initDb() {
     db.exec("ALTER TABLE blackjack_sessions ADD COLUMN status_1 TEXT DEFAULT NULL");
     db.exec("ALTER TABLE blackjack_sessions ADD COLUMN status_2 TEXT DEFAULT NULL");
     db.exec("ALTER TABLE blackjack_sessions ADD COLUMN can_double_2 INTEGER NOT NULL DEFAULT 1");
+  }
+
+  const hasHandsCol = bjCols.some(c => c.name === 'hands');
+  if (!hasHandsCol) {
+    db.exec("ALTER TABLE blackjack_sessions ADD COLUMN hands TEXT DEFAULT NULL");
+    db.exec("ALTER TABLE blackjack_sessions ADD COLUMN hands_count INTEGER NOT NULL DEFAULT 1");
+    db.exec("ALTER TABLE blackjack_sessions ADD COLUMN player_hand_3 TEXT DEFAULT NULL");
+    db.exec("ALTER TABLE blackjack_sessions ADD COLUMN bet_3 INTEGER NOT NULL DEFAULT 0");
+    db.exec("ALTER TABLE blackjack_sessions ADD COLUMN status_3 TEXT DEFAULT NULL");
+    db.exec("ALTER TABLE blackjack_sessions ADD COLUMN can_double_3 INTEGER NOT NULL DEFAULT 1");
   }
 
   // Table des Demandes de Livraison Directe (remplace le système de code de retrait)
