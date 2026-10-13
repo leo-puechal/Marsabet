@@ -382,7 +382,7 @@ const BlackjackGame = {
   },
 
   // Rendu dynamique complet de toutes les mains du joueur (garantit l'affichage côté à côte après split)
-  renderDynamicHands(data) {
+  renderDynamicHands(data, renderCards = true) {
     const container = document.getElementById('bjPlayerHandsContainer');
     if (!container) return;
 
@@ -416,28 +416,32 @@ const BlackjackGame = {
       handBox.style.display = 'flex';
 
       const titleEl = document.getElementById(`bjHandTitle${hand.id}`);
-      const scoreEl = document.getElementById(`bjPlayerScore${hand.id}`);
+      const scoreEl = document.getElementById(`bjPlayerScore${hand.id}`) || document.getElementById('bjPlayerScore');
       const tagEl = document.getElementById(`bjHandTag${hand.id}`);
       const betEl = document.getElementById(`bjHandBetDisplay${hand.id}`);
-      const cardsEl = document.getElementById(`bjPlayerCards${hand.id}`);
+      const cardsEl = document.getElementById(`bjPlayerCards${hand.id}`) || document.getElementById('bjPlayerCards');
 
       if (titleEl) {
         titleEl.textContent = isMultiOrSplit ? `Main ${hand.id}` : 'Ta Main';
       }
       if (scoreEl) {
-        scoreEl.textContent = hand.score !== undefined ? hand.score : '-';
+        scoreEl.textContent = renderCards ? (hand.score !== undefined ? hand.score : '-') : '-';
       }
       if (betEl) {
         betEl.style.display = 'inline-block';
         betEl.textContent = `${hand.bet} 🪙`;
       }
 
-      // Rendu des cartes de cette main
-      if (cardsEl && hand.cards) {
-        cardsEl.innerHTML = '';
-        hand.cards.forEach(c => {
-          cardsEl.appendChild(this.createCardElement(c, false, false));
-        });
+      // Rendu des cartes de cette main : vidé si renderCards = false (préparation distribution animée)
+      if (cardsEl) {
+        if (!renderCards) {
+          cardsEl.innerHTML = '';
+        } else if (hand.cards) {
+          cardsEl.innerHTML = '';
+          hand.cards.forEach(c => {
+            cardsEl.appendChild(this.createCardElement(c, false, false));
+          });
+        }
       }
 
       // Gestion des statuts et surbrillances
@@ -643,13 +647,17 @@ const BlackjackGame = {
     const dealerScoreEl = document.getElementById('bjDealerScore');
     const hands = data.hands || [];
 
-    // Initialiser les conteneurs de mains
-    this.renderDynamicHands({ ...data, status: 'playing' });
+    // 1. Initialiser les conteneurs SANS insérer de cartes (renderCards = false)
+    this.renderDynamicHands({ ...data, status: 'playing' }, false);
 
-    // 1ère carte pour chaque main joueur
+    // Vider les cartes du croupier pour l'animation
+    if (dealerCardsEl) dealerCardsEl.innerHTML = '';
+    if (dealerScoreEl) dealerScoreEl.textContent = '-';
+
+    // 2. 1ère carte pour chaque main joueur
     for (const h of hands) {
-      const cardsEl = document.getElementById(`bjPlayerCards${h.id}`);
-      if (cardsEl && h.cards[0]) {
+      const cardsEl = document.getElementById(`bjPlayerCards${h.id}`) || document.getElementById('bjPlayerCards');
+      if (cardsEl && h.cards && h.cards[0]) {
         this.pulseShoe();
         if (window.sound && typeof window.sound.playCard === 'function') window.sound.playCard();
         cardsEl.appendChild(this.createCardElement(h.cards[0], false, true));
@@ -657,8 +665,8 @@ const BlackjackGame = {
       }
     }
 
-    // 1ère carte visible pour le croupier
-    if (dealerCardsEl && data.dealerHand[0]) {
+    // 3. 1ère carte visible pour le croupier
+    if (dealerCardsEl && data.dealerHand && data.dealerHand[0]) {
       this.pulseShoe();
       if (window.sound && typeof window.sound.playCard === 'function') window.sound.playCard();
       dealerCardsEl.appendChild(this.createCardElement(data.dealerHand[0], false, true));
@@ -666,11 +674,11 @@ const BlackjackGame = {
       await this.sleep(220);
     }
 
-    // 2ème carte pour chaque main joueur
+    // 4. 2ème carte pour chaque main joueur et mise à jour du score
     for (const h of hands) {
-      const cardsEl = document.getElementById(`bjPlayerCards${h.id}`);
-      const scoreEl = document.getElementById(`bjPlayerScore${h.id}`);
-      if (cardsEl && h.cards[1]) {
+      const cardsEl = document.getElementById(`bjPlayerCards${h.id}`) || document.getElementById('bjPlayerCards');
+      const scoreEl = document.getElementById(`bjPlayerScore${h.id}`) || document.getElementById('bjPlayerScore');
+      if (cardsEl && h.cards && h.cards[1]) {
         this.pulseShoe();
         if (window.sound && typeof window.sound.playCard === 'function') window.sound.playCard();
         cardsEl.appendChild(this.createCardElement(h.cards[1], false, true));
@@ -679,8 +687,8 @@ const BlackjackGame = {
       }
     }
 
-    // 2ème carte cachée pour le croupier
-    if (dealerCardsEl && data.dealerHand[1]) {
+    // 5. 2ème carte cachée pour le croupier
+    if (dealerCardsEl && data.dealerHand && data.dealerHand[1]) {
       this.pulseShoe();
       if (window.sound && typeof window.sound.playCard === 'function') window.sound.playCard();
       dealerCardsEl.appendChild(this.createCardElement(data.dealerHand[1], true, true));
@@ -714,8 +722,8 @@ const BlackjackGame = {
       const playedHand = hands.find(h => h.id === prevActiveId) || hands[0];
 
       if (playedHand) {
-        const cardsEl = document.getElementById(`bjPlayerCards${playedHand.id}`);
-        const scoreEl = document.getElementById(`bjPlayerScore${playedHand.id}`);
+        const cardsEl = document.getElementById(`bjPlayerCards${playedHand.id}`) || document.getElementById('bjPlayerCards');
+        const scoreEl = document.getElementById(`bjPlayerScore${playedHand.id}`) || document.getElementById('bjPlayerScore');
         const lastCard = playedHand.cards[playedHand.cards.length - 1];
 
         if (cardsEl && lastCard) {
@@ -734,7 +742,7 @@ const BlackjackGame = {
       }
 
       this.isDealing = false;
-      this.renderDynamicHands(data);
+      this.renderDynamicHands(data, false);
       this.updateControls(data);
 
       if (data.status === 'playing' && data.activeHand !== prevActiveId) {
@@ -766,7 +774,7 @@ const BlackjackGame = {
       if (data.status === 'playing') {
         window.UI.showToast(`Main ${prevActiveId} validée. Au tour de la Main ${data.activeHand} !`, 'info');
         this.isDealing = false;
-        this.renderDynamicHands(data);
+        this.renderDynamicHands(data, false);
         this.updateControls(data);
         return;
       }
@@ -774,7 +782,7 @@ const BlackjackGame = {
       // Partie terminée : résoudre le croupier
       await this.playDealerSequence(data);
       this.isDealing = false;
-      this.renderDynamicHands(data);
+      this.renderDynamicHands(data, false);
       this.updateControls(data);
       this.handleFinish(data);
     } catch (err) {
@@ -801,8 +809,8 @@ const BlackjackGame = {
       const playedHand = hands.find(h => h.id === prevActiveId) || hands[0];
 
       if (playedHand) {
-        const cardsEl = document.getElementById(`bjPlayerCards${playedHand.id}`);
-        const scoreEl = document.getElementById(`bjPlayerScore${playedHand.id}`);
+        const cardsEl = document.getElementById(`bjPlayerCards${playedHand.id}`) || document.getElementById('bjPlayerCards');
+        const scoreEl = document.getElementById(`bjPlayerScore${playedHand.id}`) || document.getElementById('bjPlayerScore');
         const lastCard = playedHand.cards[playedHand.cards.length - 1];
 
         if (cardsEl && lastCard) {
@@ -815,7 +823,7 @@ const BlackjackGame = {
       }
 
       this.isDealing = false;
-      this.renderDynamicHands(data);
+      this.renderDynamicHands(data, false);
       this.updateControls(data);
 
       if (data.status === 'playing') {
