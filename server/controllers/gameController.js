@@ -683,9 +683,13 @@ exports.playSlider = (req, res) => {
     return res.json({
       success: true,
       ...result,
+      mode: result.mode || condition,
+      condition,
       coins: newCoins,
       data: {
         ...result,
+        mode: result.mode || condition,
+        condition,
         balance: newCoins,
         coins: newCoins
       }

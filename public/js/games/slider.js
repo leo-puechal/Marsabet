@@ -201,7 +201,17 @@ const SliderGame = {
             }
 
             // Record to history
-            this.addToHistory(gameData);
+            const historyItem = {
+                ...gameData,
+                mode: gameData.mode || gameData.condition || this.mode || 'over',
+                condition: gameData.condition || gameData.mode || this.mode || 'over',
+                target: gameData.target !== undefined ? gameData.target : this.target,
+                payout: gameData.payout !== undefined ? gameData.payout : 0,
+                multiplier: gameData.multiplier !== undefined ? Number(gameData.multiplier) : 1.0,
+                roll: gameData.roll !== undefined ? Number(gameData.roll) : 0,
+                isWin: !!gameData.isWin
+            };
+            this.addToHistory(historyItem);
 
             if (gameData.isWin) {
                 if (window.sound && typeof window.sound.playWin === 'function') {
@@ -287,7 +297,18 @@ const SliderGame = {
     },
 
     addToHistory(data) {
-        this.history.unshift(data);
+        if (!data) return;
+        const normalized = {
+            ...data,
+            mode: data.mode || data.condition || this.mode || 'over',
+            condition: data.condition || data.mode || this.mode || 'over',
+            target: data.target !== undefined ? data.target : this.target,
+            payout: data.payout !== undefined ? data.payout : 0,
+            multiplier: data.multiplier !== undefined ? Number(data.multiplier) : 1.0,
+            roll: data.roll !== undefined ? Number(data.roll) : 0,
+            isWin: !!data.isWin
+        };
+        this.history.unshift(normalized);
         if (this.history.length > 12) this.history.pop();
         this.renderHistory();
     },
@@ -301,12 +322,21 @@ const SliderGame = {
             return;
         }
 
-        container.innerHTML = this.history.map(item => `
-            <div class="slider-hist-item ${item.isWin ? 'hist-win' : 'hist-loss'}" title="${item.mode.toUpperCase()} ${item.target} • Gain: ${item.payout}">
-                <span class="hist-roll">${item.roll.toFixed(1)}</span>
-                <span class="hist-mult">×${item.multiplier.toFixed(2)}</span>
-            </div>
-        `).join('');
+        container.innerHTML = this.history.map(item => {
+            const modeStr = String(item?.mode || item?.condition || 'OVER').toUpperCase();
+            const targetVal = item?.target !== undefined ? item.target : 50;
+            const payoutVal = item?.payout !== undefined ? item.payout : 0;
+            const rollVal = (typeof item?.roll === 'number') ? item.roll.toFixed(1) : Number(item?.roll || 0).toFixed(1);
+            const multVal = (typeof item?.multiplier === 'number') ? item.multiplier.toFixed(2) : Number(item?.multiplier || 1).toFixed(2);
+            const isWin = !!(item?.isWin);
+
+            return `
+                <div class="slider-hist-item ${isWin ? 'hist-win' : 'hist-loss'}" title="${modeStr} ${targetVal} • Gain: ${payoutVal}">
+                    <span class="hist-roll">${rollVal}</span>
+                    <span class="hist-mult">×${multVal}</span>
+                </div>
+            `;
+        }).join('');
     },
 
     resetState() {

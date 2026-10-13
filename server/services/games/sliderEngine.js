@@ -27,6 +27,7 @@ function playSlider(bet, target, condition = 'under') {
     roll,
     target: cleanTarget,
     condition: cond,
+    mode: cond,
     winChance: Number(winChance.toFixed(2)),
     multiplier,
     won,
