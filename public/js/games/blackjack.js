@@ -425,22 +425,28 @@ const BlackjackGame = {
         titleEl.textContent = isMultiOrSplit ? `Main ${hand.id}` : 'Ta Main';
       }
       if (scoreEl) {
-        scoreEl.textContent = renderCards ? (hand.score !== undefined ? hand.score : '-') : '-';
+        if (hand.score !== undefined && hand.score !== null) {
+          scoreEl.textContent = hand.score;
+        } else if (renderCards) {
+          scoreEl.textContent = '-';
+        }
       }
       if (betEl) {
         betEl.style.display = 'inline-block';
         betEl.textContent = `${hand.bet} 🪙`;
       }
 
-      // Rendu des cartes de cette main : vidé si renderCards = false (préparation distribution animée)
+      // Rendu des cartes de cette main :
+      // On peuple les cartes si renderCards est vrai OU si le conteneur est vide alors que la main en possède.
+      // Si renderCards est faux et qu'il y a déjà des cartes affichées, on les préserve intactes (pas de wipe !).
       if (cardsEl) {
-        if (!renderCards) {
-          cardsEl.innerHTML = '';
-        } else if (hand.cards) {
-          cardsEl.innerHTML = '';
-          hand.cards.forEach(c => {
-            cardsEl.appendChild(this.createCardElement(c, false, false));
-          });
+        if (renderCards || cardsEl.children.length === 0) {
+          if (hand.cards && hand.cards.length > 0) {
+            cardsEl.innerHTML = '';
+            hand.cards.forEach(c => {
+              cardsEl.appendChild(this.createCardElement(c, false, false));
+            });
+          }
         }
       }
 
@@ -606,7 +612,6 @@ const BlackjackGame = {
     }
 
     this.isDealing = true;
-    this.resetTable();
 
     // Sauvegarde des mises pour le bouton Rejouer
     this.lastBets = {
@@ -615,15 +620,18 @@ const BlackjackGame = {
       handsCount: this.handsCount
     };
 
-    if (window.State) {
-      window.State.deductBet(totalRequired);
-      window.State.setGameAnimating(true);
-    }
-
     try {
       const data = await window.API.dealBlackjack(this.mainBet, this.handsCount, this.sidebets);
 
-      // Distribution animée
+      if (window.State) {
+        window.State.deductBet(totalRequired);
+        window.State.setGameAnimating(true);
+      }
+
+      // La donne est confirmée par le serveur : réinitialisation visuelle pour la nouvelle manche
+      this.resetTable();
+
+      // Distribution séquentielle animée
       await this.playSequentialDeal(data);
 
       this.isDealing = false;
@@ -638,7 +646,13 @@ const BlackjackGame = {
       this.isDealing = false;
       if (window.State) window.State.setGameAnimating(false);
       window.UI.showToast(err.message, 'error');
-      this.updateControls({ status: 'error' });
+
+      // Si une partie est déjà en cours sur le serveur, on restaure la table immédiatement
+      if (err.message && err.message.includes('déjà en cours')) {
+        await this.checkExistingGame();
+      } else {
+        this.updateControls({ status: 'error' });
+      }
     }
   },
 
@@ -647,12 +661,18 @@ const BlackjackGame = {
     const dealerScoreEl = document.getElementById('bjDealerScore');
     const hands = data.hands || [];
 
-    // 1. Initialiser les conteneurs SANS insérer de cartes (renderCards = false)
-    this.renderDynamicHands({ ...data, status: 'playing' }, false);
-
-    // Vider les cartes du croupier pour l'animation
+    // Vider explicitement les cartes pour la distribution animée
     if (dealerCardsEl) dealerCardsEl.innerHTML = '';
     if (dealerScoreEl) dealerScoreEl.textContent = '-';
+
+    // 1. Initialiser la disposition des boîtes de mains SANS injecter de cartes statiques
+    this.renderDynamicHands({ ...data, status: 'playing' }, false);
+    hands.forEach(h => {
+      const cardsEl = document.getElementById(`bjPlayerCards${h.id}`) || document.getElementById('bjPlayerCards');
+      const scoreEl = document.getElementById(`bjPlayerScore${h.id}`) || document.getElementById('bjPlayerScore');
+      if (cardsEl) cardsEl.innerHTML = '';
+      if (scoreEl) scoreEl.textContent = '-';
+    });
 
     // 2. 1ère carte pour chaque main joueur
     for (const h of hands) {
@@ -694,6 +714,9 @@ const BlackjackGame = {
       dealerCardsEl.appendChild(this.createCardElement(data.dealerHand[1], true, true));
       await this.sleep(250);
     }
+
+    // Mettre à jour les statuts après distribution sans altérer les cartes
+    this.renderDynamicHands(data, false);
 
     // Afficher des toasts si des sidebets ont gagné dès la distribution
     if (data.sidebets) {
@@ -931,16 +954,23 @@ const BlackjackGame = {
     if (!dealerCardsEl || !data.dealerHand) return;
 
     // Révéler la carte cachée
-    if (data.dealerHand.length >= 2) {
+    if (dealerCardsEl.children.length >= 2 && data.dealerHand.length >= 2) {
       await this.revealHiddenDealerCard(data.dealerHand[1]);
+    } else {
+      dealerCardsEl.innerHTML = '';
+      data.dealerHand.forEach(c => {
+        dealerCardsEl.appendChild(this.createCardElement(c, false, false));
+      });
     }
 
     // Tirer les cartes supplémentaires (index >= 2)
     for (let i = 2; i < data.dealerHand.length; i++) {
-      this.pulseShoe();
-      if (window.sound && typeof window.sound.playCard === 'function') window.sound.playCard();
-      dealerCardsEl.appendChild(this.createCardElement(data.dealerHand[i], false, true));
-      await this.sleep(450);
+      if (dealerCardsEl.children.length <= i) {
+        this.pulseShoe();
+        if (window.sound && typeof window.sound.playCard === 'function') window.sound.playCard();
+        dealerCardsEl.appendChild(this.createCardElement(data.dealerHand[i], false, true));
+        await this.sleep(450);
+      }
     }
 
     if (dealerScoreEl) {

@@ -92,6 +92,7 @@
   height: 140px;
   perspective: 1000px;
   position: relative;
+  flex-shrink: 0;
 }
 
 .bj-card-wrapper.animate-deal {
@@ -123,6 +124,14 @@
   transform: rotateY(180deg);
 }
 
+.bj-card.flipped .bj-card-front {
+  z-index: 1 !important;
+}
+
+.bj-card.flipped .bj-card-back {
+  z-index: 2 !important;
+}
+
 .bj-card-front,
 .bj-card-back {
   position: absolute;
@@ -145,6 +154,7 @@
   font-family: var(--font-body);
   user-select: none;
   transform: rotateY(0deg);
+  z-index: 2;
 }
 
 .bj-card-front.red { color: #dc2626; }
@@ -225,6 +235,7 @@
   justify-content: center;
   transform: rotateY(180deg);
   padding: 6px;
+  z-index: 1;
 }
 
 .card-back-pattern {
