@@ -935,6 +935,22 @@
                   </button>
                 </div>
 
+                <!-- Saisie Personnalisée de la Mise pour l'emplacement actif -->
+                <div style="margin: 0.45rem 0 0.35rem;">
+                  <div style="font-size:0.75rem; font-weight:700; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:0.25rem; display:flex; justify-content:space-between; align-items:center;">
+                    <span>Montant personnalisé :</span>
+                    <span id="bjActiveSpotLabel" style="font-size:0.7rem; color:var(--gold-light); font-weight:700;">Main Principale</span>
+                  </div>
+                  <div class="bet-input-box">
+                    <input type="number" id="bjBetInput" class="bet-input" value="50" min="0" step="10" placeholder="Montant libre...">
+                  </div>
+                  <div class="bet-multipliers" style="margin-top:0.35rem;">
+                    <button type="button" class="btn-mult" data-action="half" id="bjMultHalfBtn">½</button>
+                    <button type="button" class="btn-mult" data-action="double" id="bjMultDoubleBtn">2×</button>
+                    <button type="button" class="btn-mult" data-action="max" id="bjMultMaxBtn">MAX</button>
+                  </div>
+                </div>
+
                 <!-- Sélecteur Multi-mains (1 à 3 mains simultanées) -->
                 <div class="bj-hands-selector-group" style="margin: 0.5rem 0;">
                   <div style="font-size:0.75rem; font-weight:700; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:0.35rem; display:flex; justify-content:space-between;">
@@ -1590,7 +1606,7 @@
 
         <!-- ==================== VUE JEU : VIDÉO POKER (JACKS OR BETTER) ==================== -->
         <section id="view-video-poker" class="section-view">
-          <div class="game-view-container vp-container">
+          <div class="game-view-container">
             <div class="game-header-bar">
               <div class="game-title-group">
                 <button class="btn btn-outline btn-back-lobby">◀ Lobby</button>
@@ -1610,35 +1626,8 @@
               </div>
             </div>
 
-            <div class="game-layout vp-layout">
-              <!-- Zone Plateau Vidéo Poker -->
-              <div class="game-stage vp-stage">
-                <!-- Bannière Résultat -->
-                <div id="vpResultBanner" class="result-banner" style="display:none;"></div>
-
-                <!-- Table des Paiements consultable en permanence -->
-                <div class="vp-paytable-wrapper">
-                  <div class="vp-paytable-header">
-                    <span>TABLE DES GAINS (JACKS OR BETTER)</span>
-                    <span class="vp-paytable-multiplier-header">MULTIPLICATEUR</span>
-                  </div>
-                  <div class="vp-paytable-grid" id="vpPaytableGrid">
-                    <!-- Rempli dynamiquement -->
-                  </div>
-                </div>
-
-                <!-- Tapis de Cartes -->
-                <div class="vp-table-felt">
-                  <div class="vp-cards-container" id="vpCardsContainer">
-                    <!-- 5 slots de cartes -->
-                  </div>
-                  <div class="vp-instruction" id="vpInstruction">
-                    Place ta mise et clique sur DISTRIBUER pour recevoir 5 cartes.
-                  </div>
-                </div>
-              </div>
-
-              <!-- Panneau de Mise & Contrôle -->
+            <div class="game-layout">
+              <!-- Panneau de Mise & Contrôle (Gauche) -->
               <div class="bet-panel vp-bet-panel">
                 <h3 class="panel-title">Mise de Poker</h3>
 
@@ -1669,13 +1658,40 @@
                   🎴 DISTRIBUER
                 </button>
               </div>
+
+              <!-- Zone Plateau Vidéo Poker (Droite) -->
+              <div class="game-stage vp-stage">
+                <!-- Bannière Résultat -->
+                <div id="vpResultBanner" class="result-banner" style="display:none;"></div>
+
+                <!-- Table des Paiements consultable en permanence -->
+                <div class="vp-paytable-wrapper">
+                  <div class="vp-paytable-header">
+                    <span>TABLE DES GAINS (JACKS OR BETTER)</span>
+                    <span class="vp-paytable-multiplier-header">MULTIPLICATEUR</span>
+                  </div>
+                  <div class="vp-paytable-grid" id="vpPaytableGrid">
+                    <!-- Rempli dynamiquement -->
+                  </div>
+                </div>
+
+                <!-- Tapis de Cartes -->
+                <div class="vp-table-felt">
+                  <div class="vp-cards-container" id="vpCardsContainer">
+                    <!-- 5 slots de cartes -->
+                  </div>
+                  <div class="vp-instruction" id="vpInstruction">
+                    Place ta mise et clique sur DISTRIBUER pour recevoir 5 cartes.
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </section>
 
         <!-- ==================== VUE JEU : DRAGON TOWER ==================== -->
         <section id="view-dragon-tower" class="section-view">
-          <div class="game-view-container dt-container">
+          <div class="game-view-container">
             <div class="game-header-bar">
               <div class="game-title-group">
                 <button class="btn btn-outline btn-back-lobby">◀ Lobby</button>
@@ -1695,40 +1711,8 @@
               </div>
             </div>
 
-            <div class="game-layout dt-layout">
-              <!-- Zone Plateau : La Tour Verticale -->
-              <div class="game-stage dt-stage">
-                <!-- Bannière Résultat -->
-                <div id="dtResultBanner" class="result-banner" style="display:none;"></div>
-
-                <!-- Sommet du Dragon (Objectif Final) -->
-                <div class="dt-summit">
-                  <span class="dt-dragon-icon">🐉</span>
-                  <div class="dt-summit-info">
-                    <span class="dt-summit-title">TRÉSOR DU DRAGON (ÉTAGE 9)</span>
-                    <span class="dt-summit-sub">Atteins le sommet pour décrocher le trésor suprême</span>
-                  </div>
-                  <span class="dt-summit-multiplier" id="dtSummitMultiplier">×36.33</span>
-                </div>
-
-                <!-- Arène des 9 Étages -->
-                <div class="dt-tower-arena" id="dtTowerArena">
-                  <!-- Rempli dynamiquement (Étage 1 en bas à Étage 9 en haut) -->
-                </div>
-
-                <!-- Historique récent -->
-                <div class="dt-history-drawer">
-                  <div class="dt-history-title">
-                    <span>📜 DERNIÈRES ASCENSIONS</span>
-                    <span style="font-size:0.65rem; color:var(--text-muted);">10 dernières parties</span>
-                  </div>
-                  <div class="dt-history-list" id="dtHistoryList">
-                    <!-- Rempli dynamiquement -->
-                  </div>
-                </div>
-              </div>
-
-              <!-- Panneau Latéral : Mise, Difficulté & Encaissement -->
+            <div class="game-layout">
+              <!-- Panneau Latéral : Mise, Difficulté & Encaissement (Gauche) -->
               <div class="bet-panel dt-bet-panel">
                 <h3 class="panel-title">Configuration de la Tour</h3>
 
@@ -1784,6 +1768,38 @@
                 <button class="dt-cashout-btn" id="dtCashoutBtn" style="display:none;" disabled>
                   💰 ENCAISSER
                 </button>
+              </div>
+
+              <!-- Zone Plateau : La Tour Verticale (Droite) -->
+              <div class="game-stage dt-stage">
+                <!-- Bannière Résultat -->
+                <div id="dtResultBanner" class="result-banner" style="display:none;"></div>
+
+                <!-- Sommet du Dragon (Objectif Final) -->
+                <div class="dt-summit">
+                  <span class="dt-dragon-icon">🐉</span>
+                  <div class="dt-summit-info">
+                    <span class="dt-summit-title">TRÉSOR DU DRAGON (ÉTAGE 9)</span>
+                    <span class="dt-summit-sub">Atteins le sommet pour décrocher le trésor suprême</span>
+                  </div>
+                  <span class="dt-summit-multiplier" id="dtSummitMultiplier">×36.33</span>
+                </div>
+
+                <!-- Arène des 9 Étages -->
+                <div class="dt-tower-arena" id="dtTowerArena">
+                  <!-- Rempli dynamiquement (Étage 1 en bas à Étage 9 en haut) -->
+                </div>
+
+                <!-- Historique récent -->
+                <div class="dt-history-drawer">
+                  <div class="dt-history-title">
+                    <span>📜 DERNIÈRES ASCENSIONS</span>
+                    <span style="font-size:0.65rem; color:var(--text-muted);">10 dernières parties</span>
+                  </div>
+                  <div class="dt-history-list" id="dtHistoryList">
+                    <!-- Rempli dynamiquement -->
+                  </div>
+                </div>
               </div>
             </div>
           </div>

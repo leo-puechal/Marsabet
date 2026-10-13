@@ -119,6 +119,41 @@ const BlackjackGame = {
       });
     }
 
+    // Saisie Personnalisée de la Mise
+    const betInput = document.getElementById('bjBetInput');
+    if (betInput) {
+      betInput.addEventListener('input', (e) => {
+        if (this.inGame || this.isDealing) return;
+        let val = parseInt(e.target.value, 10);
+        if (isNaN(val) || val < 0) val = 0;
+        this.setCustomBetForActiveSpot(val);
+      });
+    }
+
+    // Multiplicateurs de mise personnalisée (½, 2×, MAX)
+    document.querySelectorAll('#bjBetPanel .btn-mult').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (this.inGame || this.isDealing) return;
+        const action = btn.dataset.action;
+        const spot = this.activeBetSpot || 'main';
+        let currentVal = (spot === 'main') ? this.mainBet : (this.sidebets[spot] || 0);
+        const userCoins = window.State?.user?.coins || 1000;
+
+        if (action === 'half') {
+          currentVal = Math.max(0, Math.floor(currentVal / 2));
+        } else if (action === 'double') {
+          currentVal = Math.min(userCoins, currentVal > 0 ? currentVal * 2 : 50);
+        } else if (action === 'max') {
+          currentVal = Math.max(10, userCoins);
+        }
+
+        this.setCustomBetForActiveSpot(currentVal);
+        const input = document.getElementById('bjBetInput');
+        if (input) input.value = currentVal;
+        this.playChipSound();
+      });
+    });
+
     // Initialisation du drag & drop et du rendu visuel des jetons empilés
     this.initDragAndDrop();
     this.updateBetDisplays();
@@ -148,6 +183,39 @@ const BlackjackGame = {
     document.querySelectorAll('#bjFeltSpots .bj-felt-spot').forEach(s => {
       s.classList.toggle('active-spot', s.dataset.spot === target);
     });
+
+    const labels = {
+      'main': 'Main Principale',
+      'perfectPairs': 'Perfect Pairs (25:1)',
+      'plus3': '21 + 3 (40:1)',
+      'insurance': 'Assurance (2:1)'
+    };
+    const spotLabelEl = document.getElementById('bjActiveSpotLabel');
+    if (spotLabelEl) {
+      spotLabelEl.textContent = labels[target] || 'Main Principale';
+    }
+
+    const betInput = document.getElementById('bjBetInput');
+    if (betInput) {
+      const val = (target === 'main') ? this.mainBet : (this.sidebets[target] || 0);
+      betInput.value = val;
+    }
+  },
+
+  setCustomBetForActiveSpot(val) {
+    if (this.inGame || this.isDealing) return;
+    const spot = this.activeBetSpot || 'main';
+    if (spot === 'main') {
+      this.mainBet = val;
+    } else if (spot === 'perfectPairs') {
+      this.sidebets.perfectPairs = val;
+    } else if (spot === 'plus3') {
+      this.sidebets.plus3 = val;
+    } else if (spot === 'insurance') {
+      const maxIns = Math.max(10, Math.floor(this.mainBet / 2));
+      this.sidebets.insurance = Math.min(maxIns, val);
+    }
+    this.updateBetDisplays(false);
   },
 
   addChipToSpot(spotName, val) {
@@ -420,8 +488,18 @@ const BlackjackGame = {
     return mainTotal + ppTotal + plus3Total + insTotal;
   },
 
-  updateBetDisplays() {
+  updateBetDisplays(syncInput = true) {
     const totalRequired = this.calculateTotalRequired();
+
+    // Synchronisation de la saisie personnalisée
+    if (syncInput) {
+      const betInput = document.getElementById('bjBetInput');
+      if (betInput) {
+        const spot = this.activeBetSpot || 'main';
+        const val = (spot === 'main') ? this.mainBet : (this.sidebets[spot] || 0);
+        betInput.value = val;
+      }
+    }
 
     // Mettre à jour les onglets de mise
     const tabMain = document.getElementById('bjTabAmountMain');
@@ -744,8 +822,13 @@ const BlackjackGame = {
     const doubleBtn = document.getElementById('bjDoubleBtn');
     const splitBtn = document.getElementById('bjSplitBtn');
 
-    // Désactiver le sélecteur de mains pendant une partie en cours
+    // Désactiver le sélecteur de mains et la saisie de mise pendant une partie en cours
     document.querySelectorAll('#bjHandsSelector .bj-hand-pill-btn').forEach(btn => {
+      btn.disabled = (data.status === 'playing');
+    });
+    const betInput = document.getElementById('bjBetInput');
+    if (betInput) betInput.disabled = (data.status === 'playing');
+    document.querySelectorAll('#bjBetPanel .btn-mult').forEach(btn => {
       btn.disabled = (data.status === 'playing');
     });
 

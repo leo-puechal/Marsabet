@@ -3,36 +3,19 @@
    Visual Identity: Deep Navy Felt (#06142B, #0A1E40) + Gold Accents (#D4AF37)
    ========================================================================== */
 
-.vp-container {
-  max-width: 1240px;
-  margin: 0 auto;
-}
-
-.vp-layout {
-  display: grid;
-  grid-template-columns: 1fr 340px;
-  gap: 1.5rem;
-  align-items: stretch;
-}
-
-@media (max-width: 960px) {
-  .vp-layout {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* Zone Plateau de Jeu */
+/* Zone Plateau de Jeu Vidéo Poker */
 .vp-stage {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
-  background: radial-gradient(circle at 50% 20%, #0d2246 0%, #06142b 85%);
-  border: 1px solid rgba(212, 175, 55, 0.25);
-  border-radius: 16px;
-  padding: 1.5rem;
-  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.75rem;
+  background: radial-gradient(circle at 50% 15%, #0d2246 0%, #06142b 90%);
+  padding: 1.25rem 1.5rem;
   position: relative;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
+  max-height: 100%;
 }
 
 .vp-stage::before {
@@ -46,13 +29,16 @@
   pointer-events: none;
 }
 
-/* Paytable */
+/* Paytable compacte & luxueuse */
 .vp-paytable-wrapper {
+  width: 100%;
+  max-width: 680px;
   background: rgba(6, 17, 36, 0.85);
   border: 1px solid rgba(212, 175, 55, 0.3);
-  border-radius: 12px;
-  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  padding: 0.45rem 0.75rem;
   backdrop-filter: blur(8px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
 }
 
 .vp-paytable-header {
@@ -60,24 +46,24 @@
   justify-content: space-between;
   align-items: center;
   font-family: var(--font-display);
-  font-size: 0.75rem;
-  letter-spacing: 1px;
+  font-size: 0.7rem;
+  letter-spacing: 0.8px;
   color: var(--gold-light);
   font-weight: 700;
-  padding-bottom: 0.5rem;
-  margin-bottom: 0.5rem;
+  padding-bottom: 0.25rem;
+  margin-bottom: 0.35rem;
   border-bottom: 1px solid rgba(212, 175, 55, 0.2);
 }
 
 .vp-paytable-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 6px 12px;
+  gap: 4px 8px;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 680px) {
   .vp-paytable-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
@@ -85,13 +71,13 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 5px 8px;
-  border-radius: 6px;
-  font-size: 0.82rem;
+  padding: 3px 6px;
+  border-radius: 5px;
+  font-size: 0.76rem;
   color: #cbd5e1;
-  background: rgba(15, 23, 42, 0.45);
+  background: rgba(15, 23, 42, 0.55);
   border: 1px solid transparent;
-  transition: all 0.25s ease;
+  transition: all 0.2s ease;
 }
 
 .vp-pay-row .vp-pay-name {
@@ -102,14 +88,14 @@
   font-family: var(--font-display);
   font-weight: 700;
   color: var(--gold-light);
-  margin-left: 8px;
+  margin-left: 6px;
 }
 
 .vp-pay-row.highlight {
   background: linear-gradient(90deg, rgba(212, 175, 55, 0.35) 0%, rgba(212, 175, 55, 0.15) 100%);
   border-color: #d4af37;
   color: #ffffff;
-  box-shadow: 0 0 14px rgba(212, 175, 55, 0.4);
+  box-shadow: 0 0 12px rgba(212, 175, 55, 0.4);
   transform: scale(1.02);
   animation: vpPulseGlow 1.4s infinite alternate;
 }
@@ -121,7 +107,7 @@
 
 @keyframes vpPulseGlow {
   0% { box-shadow: 0 0 8px rgba(212, 175, 55, 0.3); }
-  100% { box-shadow: 0 0 18px rgba(212, 175, 55, 0.7); }
+  100% { box-shadow: 0 0 16px rgba(212, 175, 55, 0.7); }
 }
 
 /* Tapis de Table Vidéo Poker */
@@ -130,28 +116,30 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 1.5rem 0.5rem;
+  width: 100%;
+  max-width: 680px;
+  padding: 0.85rem 0.5rem;
   background: radial-gradient(ellipse at center, rgba(14, 43, 84, 0.6) 0%, rgba(6, 20, 43, 0.9) 100%);
-  border: 2px solid rgba(212, 175, 55, 0.2);
-  border-radius: 14px;
+  border: 1.5px solid rgba(212, 175, 55, 0.25);
+  border-radius: 12px;
   position: relative;
-  min-height: 270px;
+  box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.4);
 }
 
 .vp-cards-container {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 14px;
+  gap: 10px;
   width: 100%;
   flex-wrap: nowrap;
   perspective: 1200px;
-  margin-bottom: 1rem;
+  margin-bottom: 0.6rem;
 }
 
 @media (max-width: 680px) {
   .vp-cards-container {
-    gap: 8px;
+    gap: 6px;
   }
 }
 
@@ -160,19 +148,19 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   cursor: pointer;
   user-select: none;
-  transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.3, 1);
+  transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.3, 1);
   position: relative;
 }
 
 .vp-card-slot.can-hold:hover {
-  transform: translateY(-4px);
+  transform: translateY(-3px);
 }
 
 .vp-card-slot.held {
-  transform: translateY(-10px);
+  transform: translateY(-6px);
 }
 
 /* Badge GARDE flottant */
@@ -180,15 +168,15 @@
   background: linear-gradient(135deg, #d4af37 0%, #b89327 100%);
   color: #06142b;
   font-family: var(--font-display);
-  font-size: 0.72rem;
+  font-size: 0.65rem;
   font-weight: 800;
-  letter-spacing: 1px;
-  padding: 3px 10px;
-  border-radius: 12px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4), 0 0 10px rgba(212, 175, 55, 0.5);
+  letter-spacing: 0.8px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4), 0 0 8px rgba(212, 175, 55, 0.5);
   opacity: 0;
   visibility: hidden;
-  transform: translateY(4px);
+  transform: translateY(3px);
   transition: all 0.2s ease;
   pointer-events: none;
 }
@@ -204,11 +192,11 @@
   background: rgba(15, 23, 42, 0.7);
   border: 1px solid rgba(212, 175, 55, 0.3);
   color: #94a3b8;
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 0.5px;
-  padding: 4px 12px;
-  border-radius: 6px;
+  padding: 3px 10px;
+  border-radius: 5px;
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -222,33 +210,33 @@
   background: linear-gradient(135deg, #d4af37 0%, #b89327 100%);
   border-color: #ffe680;
   color: #06142b;
-  box-shadow: 0 0 10px rgba(212, 175, 55, 0.4);
+  box-shadow: 0 0 8px rgba(212, 175, 55, 0.4);
 }
 
 /* Carte Vidéo Poker */
 .vp-card-wrapper {
-  width: 104px;
-  height: 152px;
+  width: 88px;
+  height: 128px;
   perspective: 1000px;
   position: relative;
   flex-shrink: 0;
-  border-radius: 10px;
+  border-radius: 8px;
   transition: box-shadow 0.25s ease;
 }
 
 @media (max-width: 680px) {
   .vp-card-wrapper {
-    width: 64px;
-    height: 96px;
+    width: 58px;
+    height: 86px;
   }
 }
 
 .vp-card-slot.held .vp-card-wrapper {
-  box-shadow: 0 0 18px rgba(212, 175, 55, 0.8), 0 0 32px rgba(212, 175, 55, 0.4);
+  box-shadow: 0 0 16px rgba(212, 175, 55, 0.8), 0 0 28px rgba(212, 175, 55, 0.35);
 }
 
 .vp-card-slot.winning-card .vp-card-wrapper {
-  box-shadow: 0 0 22px rgba(52, 211, 153, 0.9), 0 0 40px rgba(52, 211, 153, 0.4);
+  box-shadow: 0 0 20px rgba(52, 211, 153, 0.9), 0 0 36px rgba(52, 211, 153, 0.4);
   animation: vpWinPulse 1s infinite alternate;
 }
 
@@ -262,8 +250,8 @@
   height: 100%;
   position: relative;
   transform-style: preserve-3d;
-  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-  border-radius: 10px;
+  transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 8px;
 }
 
 .vp-card.is-back {
@@ -277,7 +265,7 @@
   height: 100%;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
-  border-radius: 10px;
+  border-radius: 8px;
   overflow: hidden;
   box-sizing: border-box;
 }
@@ -288,10 +276,10 @@
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  padding: 6px 8px;
+  padding: 5px 6px;
   transform: rotateY(0deg);
   z-index: 2;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
 }
 
 .vp-card-front.red { color: #dc2626; }
@@ -304,16 +292,16 @@
   align-items: center;
   justify-content: center;
   transform: rotateY(180deg);
-  padding: 6px;
+  padding: 4px;
   z-index: 1;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
 }
 
 .vp-card-back-inner {
   width: 100%;
   height: 100%;
   border: 1px dashed rgba(212, 175, 55, 0.4);
-  border-radius: 6px;
+  border-radius: 5px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -322,23 +310,23 @@
 }
 
 .vp-card-back-inner .crest {
-  font-size: 1.8rem;
+  font-size: 1.5rem;
   filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
 }
 
 @media (max-width: 680px) {
   .vp-card-back-inner .crest {
-    font-size: 1.1rem;
+    font-size: 1rem;
   }
 }
 
 .vp-card-back-inner .crest-text {
   font-family: var(--font-display);
-  font-size: 0.55rem;
+  font-size: 0.52rem;
   color: var(--gold-light);
-  letter-spacing: 1px;
+  letter-spacing: 0.8px;
   font-weight: 700;
-  margin-top: 2px;
+  margin-top: 1px;
 }
 
 @media (max-width: 680px) {
@@ -346,34 +334,34 @@
     display: none;
   }
   .vp-card-front {
-    padding: 3px 4px;
+    padding: 2px 3px;
   }
   .card-rank {
-    font-size: 0.85rem !important;
+    font-size: 0.8rem !important;
   }
   .card-suit {
-    font-size: 0.75rem !important;
+    font-size: 0.7rem !important;
   }
   .ace-center {
-    font-size: 1.6rem !important;
+    font-size: 1.4rem !important;
   }
   .figure-illustration {
-    width: 32px !important;
-    height: 40px !important;
+    width: 28px !important;
+    height: 36px !important;
   }
   .figure-avatar {
-    font-size: 1.1rem !important;
+    font-size: 1rem !important;
   }
 }
 
 /* Animation Deal / Flip */
 .vp-card.anim-deal {
-  animation: vpDealFly 0.4s cubic-bezier(0.25, 0.9, 0.35, 1) forwards;
+  animation: vpDealFly 0.35s cubic-bezier(0.25, 0.9, 0.35, 1) forwards;
 }
 
 @keyframes vpDealFly {
   0% {
-    transform: translateY(-80px) scale(0.6) rotate(8deg);
+    transform: translateY(-60px) scale(0.7) rotate(6deg);
     opacity: 0;
   }
   100% {
@@ -384,12 +372,12 @@
 
 /* Instructions sous les cartes */
 .vp-instruction {
-  font-size: 0.9rem;
+  font-size: 0.82rem;
   color: var(--text-secondary);
   text-align: center;
   font-weight: 500;
-  min-height: 24px;
-  letter-spacing: 0.3px;
+  min-height: 20px;
+  letter-spacing: 0.2px;
 }
 
 /* Panneau de Contrôle Latéral */
@@ -401,41 +389,41 @@
 .vp-status-card {
   background: rgba(15, 23, 42, 0.6);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 10px;
-  padding: 0.85rem;
-  margin-bottom: 1rem;
+  border-radius: 8px;
+  padding: 0.7rem;
+  margin-bottom: 0.75rem;
   text-align: center;
 }
 
 .vp-status-label {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  margin-bottom: 4px;
+  margin-bottom: 3px;
 }
 
 .vp-status-val {
   font-family: var(--font-display);
-  font-size: 1.35rem;
+  font-size: 1.25rem;
   font-weight: 800;
   color: var(--gold-light);
 }
 
 .vp-action-btn {
   width: 100%;
-  padding: 1.1rem;
-  font-size: 1.15rem;
+  padding: 1rem;
+  font-size: 1.1rem;
   font-weight: 800;
-  letter-spacing: 1px;
+  letter-spacing: 0.8px;
   margin-top: auto;
-  box-shadow: 0 6px 20px rgba(212, 175, 55, 0.3);
-  transition: all 0.25s ease;
+  box-shadow: 0 4px 16px rgba(212, 175, 55, 0.3);
+  transition: all 0.2s ease;
 }
 
 .vp-action-btn:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 10px 28px rgba(212, 175, 55, 0.45);
+  box-shadow: 0 8px 24px rgba(212, 175, 55, 0.45);
 }
 
 /* Bannière de Résultat */
@@ -443,14 +431,14 @@
   background: linear-gradient(135deg, rgba(16, 185, 129, 0.25) 0%, rgba(6, 95, 70, 0.4) 100%);
   border: 1px solid #10b981;
   color: #34d399;
-  box-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
+  box-shadow: 0 0 16px rgba(16, 185, 129, 0.3);
 }
 
 .result-banner.vp-jackpot {
   background: linear-gradient(135deg, rgba(212, 175, 55, 0.35) 0%, rgba(184, 147, 39, 0.5) 100%);
   border: 2px solid #d4af37;
   color: #ffe680;
-  box-shadow: 0 0 35px rgba(212, 175, 55, 0.6);
+  box-shadow: 0 0 30px rgba(212, 175, 55, 0.6);
   animation: vpPulseGlow 1s infinite alternate;
 }
 
