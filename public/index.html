@@ -624,23 +624,30 @@
                 <div id="slotsResultBanner" class="result-banner" style="display:none;"></div>
 
                 <div class="slots-cabinet" id="slotsCabinet">
-                  <!-- Lumières de Casino -->
-                  <div class="slots-header-lights">
-                    <div class="slot-light"></div>
-                    <div class="slot-light"></div>
-                    <div class="slot-light"></div>
-                    <div class="slot-light"></div>
-                    <div class="slot-light"></div>
-                    <div class="slot-light"></div>
-                    <div class="slot-light"></div>
+                  <!-- Marquee Supérieur & Lumières de Casino -->
+                  <div class="slots-marquee-top">
+                    <div class="slots-header-lights">
+                      <div class="slot-light"></div>
+                      <div class="slot-light"></div>
+                      <div class="slot-light"></div>
+                      <div class="slot-light"></div>
+                      <div class="slot-light"></div>
+                      <div class="slot-light"></div>
+                      <div class="slot-light"></div>
+                    </div>
+                    <div class="slots-marquee-title">
+                      <span class="marquee-star">✦</span>
+                      <span>MACHINE À SOUS COSMIQUE MARSABET</span>
+                      <span class="marquee-star">✦</span>
+                    </div>
                   </div>
 
                   <!-- Bannière Tour Bonus Free Spins -->
                   <div class="slots-freespins-banner" id="slotsFreeSpinsBanner">
-                    <div style="font-size:1.15rem; font-weight:800; color:#38BDF8; letter-spacing:0.5px;">
-                      ⚡ TOURS GRATUITS EN COURS • MULTIPLICATEUR x3
+                    <div class="fs-banner-title">
+                      ⚡ TOURS GRATUITS EN COURS • MULTIPLICATEUR ×3
                     </div>
-                    <div style="font-size:0.9rem; color:#FFF; margin-top:2px;">
+                    <div class="fs-banner-sub">
                       Tour <strong id="fsCurrentNum" style="color:var(--gold-light);">1</strong> sur <strong
                         id="fsTotalNum" style="color:var(--gold-light);">10</strong> • Gains cumulés : <strong
                         id="fsAccumulatedWin" style="color:#38BDF8;">0</strong> 🪙
@@ -651,20 +658,21 @@
                   <div class="slots-reels-stage">
                     <!-- Flanc gauche : Lignes 1 à 10 -->
                     <div class="payline-indicators-column" id="paylinesLeft">
-                      <div class="line-tag" data-line="1" style="--line-color:#FFD700;">1</div>
-                      <div class="line-tag" data-line="2" style="--line-color:#38BDF8;">2</div>
-                      <div class="line-tag" data-line="3" style="--line-color:#F43F5E;">3</div>
-                      <div class="line-tag" data-line="4" style="--line-color:#A855F7;">4</div>
-                      <div class="line-tag" data-line="5" style="--line-color:#22C55E;">5</div>
-                      <div class="line-tag" data-line="6" style="--line-color:#F97316;">6</div>
-                      <div class="line-tag" data-line="7" style="--line-color:#EC4899;">7</div>
-                      <div class="line-tag" data-line="8" style="--line-color:#EAB308;">8</div>
-                      <div class="line-tag" data-line="9" style="--line-color:#06B6D4;">9</div>
-                      <div class="line-tag" data-line="10" style="--line-color:#84CC16;">10</div>
+                      <div class="line-tag" data-line="1" style="--line-color:#FFD700;" title="Ligne 1 : Ligne Centrale (Survoler pour aperçu)">1</div>
+                      <div class="line-tag" data-line="2" style="--line-color:#38BDF8;" title="Ligne 2 : Ligne Haute">2</div>
+                      <div class="line-tag" data-line="3" style="--line-color:#F43F5E;" title="Ligne 3 : Ligne Basse">3</div>
+                      <div class="line-tag" data-line="4" style="--line-color:#A855F7;" title="Ligne 4 : V Plongeant">4</div>
+                      <div class="line-tag" data-line="5" style="--line-color:#22C55E;" title="Ligne 5 : V Inversé">5</div>
+                      <div class="line-tag" data-line="6" style="--line-color:#F97316;" title="Ligne 6 : Descente Douce">6</div>
+                      <div class="line-tag" data-line="7" style="--line-color:#EC4899;" title="Ligne 7 : Montée Douce">7</div>
+                      <div class="line-tag" data-line="8" style="--line-color:#EAB308;" title="Ligne 8 : U Inversé">8</div>
+                      <div class="line-tag" data-line="9" style="--line-color:#06B6D4;" title="Ligne 9 : U Creux">9</div>
+                      <div class="line-tag" data-line="10" style="--line-color:#84CC16;" title="Ligne 10 : Zig-Zag 1">10</div>
                     </div>
 
                     <!-- Grille 5x3 des Rouleaux -->
                     <div class="slots-reels-container" id="slotsReelsContainer">
+                      <div class="slots-glass-glare"></div>
                       <svg class="slots-paylines-svg" id="slotsPaylinesSvg"></svg>
                       <div class="slot-reel" id="slot-reel-0"></div>
                       <div class="slot-reel" id="slot-reel-1"></div>
@@ -675,108 +683,137 @@
 
                     <!-- Flanc droit : Lignes 11 à 20 -->
                     <div class="payline-indicators-column" id="paylinesRight">
-                      <div class="line-tag" data-line="11" style="--line-color:#8B5CF6;">11</div>
-                      <div class="line-tag" data-line="12" style="--line-color:#F59E0B;">12</div>
-                      <div class="line-tag" data-line="13" style="--line-color:#10B981;">13</div>
-                      <div class="line-tag" data-line="14" style="--line-color:#6366F1;">14</div>
-                      <div class="line-tag" data-line="15" style="--line-color:#EF4444;">15</div>
-                      <div class="line-tag" data-line="16" style="--line-color:#14B8A6;">16</div>
-                      <div class="line-tag" data-line="17" style="--line-color:#D946EF;">17</div>
-                      <div class="line-tag" data-line="18" style="--line-color:#F472B6;">18</div>
-                      <div class="line-tag" data-line="19" style="--line-color:#38BDF8;">19</div>
-                      <div class="line-tag" data-line="20" style="--line-color:#FBBF24;">20</div>
+                      <div class="line-tag" data-line="11" style="--line-color:#8B5CF6;" title="Ligne 11 : Zig-Zag 2">11</div>
+                      <div class="line-tag" data-line="12" style="--line-color:#F59E0B;" title="Ligne 12 : Pont Haut">12</div>
+                      <div class="line-tag" data-line="13" style="--line-color:#10B981;" title="Ligne 13 : Pont Bas">13</div>
+                      <div class="line-tag" data-line="14" style="--line-color:#6366F1;" title="Ligne 14 : Créneau Haut">14</div>
+                      <div class="line-tag" data-line="15" style="--line-color:#EF4444;" title="Ligne 15 : Créneau Bas">15</div>
+                      <div class="line-tag" data-line="16" style="--line-color:#14B8A6;" title="Ligne 16 : Pic Médian Haut">16</div>
+                      <div class="line-tag" data-line="17" style="--line-color:#D946EF;" title="Ligne 17 : Creux Médian Bas">17</div>
+                      <div class="line-tag" data-line="18" style="--line-color:#F472B6;" title="Ligne 18 : Creux Profond">18</div>
+                      <div class="line-tag" data-line="19" style="--line-color:#38BDF8;" title="Ligne 19 : Pic Profond">19</div>
+                      <div class="line-tag" data-line="20" style="--line-color:#FBBF24;" title="Ligne 20 : Onde Cosmique">20</div>
                     </div>
+                  </div>
+
+                  <!-- Infobulle Dynamique de Ligne de Paiement -->
+                  <div class="slots-payline-preview-badge" id="slotsPaylinePreviewBadge" style="display:none;">
+                    <span id="slotsPreviewBadgeText">Survolez un numéro pour afficher la ligne</span>
                   </div>
 
                   <!-- Barre Quitte ou Double (Gamble) apparaissant après un gain -->
                   <div class="slots-gamble-bar" id="slotsGambleBar" style="display:none;">
-                    <div style="display:flex; align-items:center; gap:0.5rem;">
-                      <span style="font-size:1.5rem;">🎉</span>
+                    <div class="gamble-bar-info">
+                      <span class="gamble-bar-icon">🎉</span>
                       <div>
-                        <div style="font-size:0.8rem; color:var(--text-muted);">Gain disponible :</div>
-                        <strong style="color:var(--gold-light); font-size:1.1rem;" id="gambleCurrentWinAmount">0
-                          🪙</strong>
+                        <div class="gamble-bar-sub">Gain du tour prêt à doubler :</div>
+                        <strong class="gamble-bar-amt" id="gambleCurrentWinAmount">0 🪙</strong>
                       </div>
                     </div>
-                    <div style="display:flex; gap:0.5rem;">
-                      <button class="btn btn-outline" id="btnCollectGamble"
-                        style="font-size:0.85rem; padding:0.4rem 0.8rem;">
+                    <div class="gamble-bar-actions">
+                      <button class="btn btn-outline btn-gamble-collect-fast" id="btnCollectGamble">
                         💰 Encaisser
                       </button>
-                      <button class="btn btn-gold" id="btnTriggerGamble"
-                        style="font-size:0.85rem; padding:0.4rem 0.8rem;">
-                        🃏 Quitte ou Double (x2)
+                      <button class="btn btn-gold btn-gamble-trigger-fast" id="btnTriggerGamble">
+                        🃏 Quitte ou Double (×2)
                       </button>
                     </div>
                   </div>
 
                   <!-- Bandeau d'information et symboles clés -->
                   <div class="slots-bottom-preview">
-                    <div>🌟 <strong>Wild</strong> : Remplace tout + x2</div>
-                    <div>⚡ <strong>Scatter</strong> : 3+ = Free Spins x3</div>
-                    <div>🪐 <strong>Marsabet</strong> : x2 500</div>
-                    <div>💎 <strong>Diamant</strong> : x1 000</div>
+                    <div class="preview-item">🌟 <strong>Wild</strong> : Tout symbole + ×2</div>
+                    <div class="preview-item">⚡ <strong>Scatter</strong> : 3+ = Free Spins ×3</div>
+                    <div class="preview-item">🪐 <strong>Marsabet</strong> : ×2 500</div>
+                    <div class="preview-item">💎 <strong>Diamant</strong> : ×1 000</div>
                   </div>
                 </div>
               </div>
 
               <!-- Panneau Latéral de Contrôle & Mises -->
-              <div class="bet-panel">
+              <div class="bet-panel slots-bet-panel">
                 <h3 class="panel-title" style="margin-bottom:0.75rem;">Configuration de Mise</h3>
 
-                <!-- Sélecteurs Lignes & Mise par ligne -->
-                <div class="slots-bet-controls">
-                  <div class="control-box">
-                    <label for="slotsLinesCount">Lignes Actives</label>
-                    <div class="control-stepper">
-                      <button type="button" class="btn-step" id="btnStepLinesMinus">-</button>
-                      <span id="displayLinesCount">20</span>
-                      <button type="button" class="btn-step" id="btnStepLinesPlus">+</button>
-                    </div>
+                <!-- Carte 1 : Lignes de Paiement Actives (Interface Intuitive & Moderne) -->
+                <div class="slots-card-box">
+                  <div class="slots-card-header">
+                    <span class="slots-card-title">LIGNES DE PAIEMENT</span>
+                    <span class="slots-lines-badge" id="slotsLinesBadgeDetailed">20 / 20 • 100%</span>
                   </div>
 
-                  <div class="control-box">
-                    <label for="slotsBetPerLineInput">Mise / Ligne</label>
-                    <div style="display:flex; align-items:center; gap:0.35rem;">
-                      <input type="number" id="slotsBetPerLineInput" class="bet-input" value="1" min="1" step="1"
-                        style="width:58px; text-align:center; padding:0.4rem 0.2rem; height:36px; font-weight:700;">
-                      <div class="control-stepper">
-                        <button type="button" class="btn-step" id="btnStepBetMinus">-</button>
-                        <span id="displayBetPerLine" style="display:none;">1</span>
-                        <button type="button" class="btn-step" id="btnStepBetPlus">+</button>
-                      </div>
+                  <!-- Contrôle Stepper Lignes & Saisie directe -->
+                  <div class="slots-stepper-row">
+                    <button type="button" class="btn-step-large" id="btnStepLinesMinus" title="Diminuer les lignes actives">−</button>
+                    <div class="slots-stepper-center">
+                      <input type="number" id="slotsLinesInput" class="slots-num-input" value="20" min="1" max="20" step="1">
+                      <span id="displayLinesCount" style="display:none;">20</span>
+                      <span class="slots-stepper-unit">LIGNES</span>
                     </div>
+                    <button type="button" class="btn-step-large" id="btnStepLinesPlus" title="Augmenter les lignes actives">+</button>
+                  </div>
+
+                  <!-- Raccourcis Rapides de Lignes (Pills) -->
+                  <div class="slots-lines-pills" id="slotsLinesPills">
+                    <button type="button" class="btn-line-pill" data-lines="1">1</button>
+                    <button type="button" class="btn-line-pill" data-lines="5">5</button>
+                    <button type="button" class="btn-line-pill" data-lines="10">10</button>
+                    <button type="button" class="btn-line-pill" data-lines="15">15</button>
+                    <button type="button" class="btn-line-pill active" data-lines="20">20 MAX</button>
+                  </div>
+
+                  <!-- Barre de Couverture des Lignes -->
+                  <div class="slots-coverage-bar-track" title="Couverture des lignes sur la grille">
+                    <div class="slots-coverage-bar-fill" id="slotsCoverageBarFill" style="width: 100%;"></div>
+                  </div>
+                </div>
+
+                <!-- Carte 2 : Mise par Ligne -->
+                <div class="slots-card-box" style="margin-top:0.75rem;">
+                  <div class="slots-card-header">
+                    <span class="slots-card-title">MISE PAR LIGNE</span>
+                    <span class="slots-bet-summary" id="slotsBetPerLineSummary">1 🪙 / ligne</span>
+                  </div>
+
+                  <div class="slots-stepper-row">
+                    <button type="button" class="btn-step-large" id="btnStepBetMinus" title="Diminuer la mise par ligne">−</button>
+                    <div class="slots-stepper-center">
+                      <input type="number" id="slotsBetPerLineInput" class="slots-num-input" value="1" min="1" max="100" step="1">
+                      <span id="displayBetPerLine" style="display:none;">1</span>
+                      <span class="slots-stepper-unit">🪙 / LIGNE</span>
+                    </div>
+                    <button type="button" class="btn-step-large" id="btnStepBetPlus" title="Augmenter la mise par ligne">+</button>
+                  </div>
+
+                  <!-- Puces Rapides de Mise par Ligne (1, 2, 5, 10, 25, 50) -->
+                  <div class="quick-bet-chips slots-chips-grid">
+                    <button type="button" class="casino-chip chip-1 active-chip" data-bet-per-line="1">1 🪙</button>
+                    <button type="button" class="casino-chip chip-2" data-bet-per-line="2">2 🪙</button>
+                    <button type="button" class="casino-chip chip-5" data-bet-per-line="5">5 🪙</button>
+                    <button type="button" class="casino-chip chip-10" data-bet-per-line="10">10 🪙</button>
+                    <button type="button" class="casino-chip chip-25" data-bet-per-line="25">25 🪙</button>
+                    <button type="button" class="casino-chip chip-50" data-bet-per-line="50">50 🪙</button>
+                  </div>
+
+                  <div class="bet-multipliers" style="margin-top:0.45rem;">
+                    <button type="button" class="btn-mult" data-action="min">MIN</button>
+                    <button type="button" class="btn-mult" data-action="half">½</button>
+                    <button type="button" class="btn-mult" data-action="double">2×</button>
+                    <button type="button" class="btn-mult" data-action="max">MAX</button>
                   </div>
                 </div>
 
                 <!-- Affichage Récapitulatif Mise Totale -->
-                <div class="total-bet-display">
-                  <span style="color:var(--text-secondary);">Mise Totale du tour :</span>
-                  <strong id="slotsTotalBetDisplay">20 🪙</strong>
-                </div>
-
-                <!-- Puces de mise rapide -->
-                <div class="quick-bet-chips">
-                  <button class="casino-chip chip-10" data-bet-per-line="1">20 🪙</button>
-                  <button class="casino-chip chip-25" data-bet-per-line="2">40 🪙</button>
-                  <button class="casino-chip chip-50" data-bet-per-line="5">100 🪙</button>
-                  <button class="casino-chip chip-100" data-bet-per-line="10">200 🪙</button>
-                </div>
-
-                <div class="bet-multipliers">
-                  <button class="btn-mult" data-action="min">MIN</button>
-                  <button class="btn-mult" data-action="half">½</button>
-                  <button class="btn-mult" data-action="double">2×</button>
-                  <button class="btn-mult" data-action="max">MAX</button>
+                <div class="total-bet-display" style="margin-top:0.75rem;">
+                  <span style="color:var(--text-secondary); font-size:0.85rem;">Mise Totale du tour :</span>
+                  <strong id="slotsTotalBetDisplay" style="font-size:1.25rem; color:var(--gold-light);">20 🪙</strong>
                 </div>
 
                 <!-- Actions Principales (Spin & Autoplay) -->
-                <div class="slots-action-row">
-                  <button class="btn-autoplay" id="btnSlotsAutoplay" title="Lancer des tours automatiques">
+                <div class="slots-action-row" style="margin-top:0.75rem;">
+                  <button type="button" class="btn-autoplay" id="btnSlotsAutoplay" title="Lancer des tours automatiques">
                     🔁 AUTO
                   </button>
-                  <button class="btn btn-gold" id="slotsSpinBtn"
-                    style="padding:1rem; font-size:1.15rem; font-weight:800;">
+                  <button type="button" class="btn btn-gold btn-slots-spin-master" id="slotsSpinBtn">
                     🎰 TOURNER
                   </button>
                 </div>
@@ -2981,57 +3018,81 @@
 
   <!-- Modale Quitte ou Double (Gamble / Double or Nothing) -->
   <div class="modal-overlay" id="slotsGambleModal">
-    <div class="modal-content" style="max-width:440px; text-align:center;">
+    <div class="modal-content gamble-modal-content">
       <button class="modal-close" id="closeGambleModal">&times;</button>
-      <div
-        style="font-size:0.8rem; font-weight:700; color:var(--gold-primary); text-transform:uppercase; letter-spacing:1px; margin-bottom:0.25rem;">
-        🃏 JEU BONUS FACULTATIF
+      
+      <div class="gamble-header">
+        <span class="gamble-badge">🃏 MINI-JEU DU CASINO</span>
+        <h3 class="gamble-title">Quitte ou Double</h3>
+        <p class="gamble-subtitle">Devine la couleur de la carte cachée pour doubler immédiatement ton gain !</p>
       </div>
-      <h3 style="font-family:var(--font-display); font-size:1.4rem; color:#FFF; margin-bottom:0.25rem;">
-        Quitte ou Double
-      </h3>
-      <p style="font-size:0.85rem; color:var(--text-secondary); margin:0;">
-        Devine la couleur de la carte pour doubler ton gain !
-      </p>
 
-      <div
-        style="display:flex; justify-content:space-around; align-items:center; margin:1rem 0; background:rgba(0,0,0,0.35); padding:0.75rem; border-radius:var(--radius-md); border:1px solid rgba(255,255,255,0.06);">
-        <div>
-          <div style="font-size:0.75rem; color:var(--text-muted);">Mise en jeu</div>
-          <strong id="gambleModalStake" style="color:var(--gold-light); font-size:1.15rem;">0 🪙</strong>
+      <div class="gamble-stakes-board">
+        <div class="gamble-stake-item">
+          <span class="stake-label">Mise en jeu</span>
+          <strong id="gambleModalStake" class="stake-amount">0 🪙</strong>
         </div>
-        <div style="font-size:1.5rem; color:var(--gold-primary);">➔</div>
-        <div>
-          <div style="font-size:0.75rem; color:var(--text-muted);">Gain potentiel (x2)</div>
-          <strong id="gambleModalPotential" style="color:#22C55E; font-size:1.15rem;">0 🪙</strong>
+        <div class="gamble-stake-arrow">➔</div>
+        <div class="gamble-stake-item potential">
+          <span class="stake-label">Gain Potentiel (×2)</span>
+          <strong id="gambleModalPotential" class="potential-amount">0 🪙</strong>
         </div>
       </div>
 
-      <!-- Carte centrale à révéler -->
-      <div class="gamble-card-display" id="gambleCardDisplay">
-        <div id="gambleCardRank" style="font-size:2.8rem; line-height:1;">?</div>
-        <div id="gambleCardSuit" style="font-size:2rem; line-height:1; margin-top:4px;">🃏</div>
+      <!-- Scène 3D Réaliste de la Carte de Casino -->
+      <div class="gamble-card-scene" id="gambleCardScene">
+        <div class="gamble-card-inner" id="gambleCardInner">
+          <!-- Dos de la carte (Visible avant le choix) -->
+          <div class="gamble-card-face gamble-card-back">
+            <div class="card-back-ornament">
+              <div class="card-back-border">
+                <div class="card-back-crest">
+                  <span class="card-back-planet">🪐</span>
+                  <span class="card-back-brand">MARSABET</span>
+                  <span class="card-back-sub">CASINO VIP</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Face avant de la carte (Révélée lors du tirage) -->
+          <div class="gamble-card-face gamble-card-front" id="gambleCardFront">
+            <div class="card-corner card-corner-tl">
+              <span class="card-rank" id="gambleCardRankTL">?</span>
+              <span class="card-suit" id="gambleCardSuitTL">🃏</span>
+            </div>
+            <div class="card-center">
+              <span class="card-center-suit" id="gambleCardCenterSuit">🃏</span>
+            </div>
+            <div class="card-corner card-corner-br">
+              <span class="card-rank" id="gambleCardRankBR">?</span>
+              <span class="card-suit" id="gambleCardSuitBR">🃏</span>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div id="gambleFeedbackMsg"
-        style="display:none; font-size:0.95rem; font-weight:700; margin-bottom:1rem; padding:0.5rem; border-radius:6px;">
-      </div>
+      <!-- Ancien sélecteur pour compatibilité DOM si requise -->
+      <div id="gambleCardDisplay" style="display:none;"></div>
+
+      <div id="gambleFeedbackMsg" class="gamble-feedback" style="display:none;"></div>
 
       <!-- Boutons de choix Rouge / Noir -->
-      <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem; margin-bottom:1rem;"
-        id="gambleChoiceButtonsRow">
-        <button class="btn btn-outline" id="btnGambleChooseRed"
-          style="border-color:#EF4444; color:#F87171; font-weight:800; font-size:1rem; padding:0.75rem;">
-          ♥️ ♦️ ROUGE
+      <div class="gamble-choice-row" id="gambleChoiceButtonsRow">
+        <button type="button" class="btn-gamble-choice btn-gamble-red" id="btnGambleChooseRed">
+          <span class="choice-icon">♥️ ♦️</span>
+          <span class="choice-title">ROUGE</span>
+          <span class="choice-payout">Multiplicateur ×2</span>
         </button>
-        <button class="btn btn-outline" id="btnGambleChooseBlack"
-          style="border-color:#38BDF8; color:#93C5FD; font-weight:800; font-size:1rem; padding:0.75rem;">
-          ♠️ ♣️ NOIR
+        <button type="button" class="btn-gamble-choice btn-gamble-black" id="btnGambleChooseBlack">
+          <span class="choice-icon">♠️ ♣️</span>
+          <span class="choice-title">NOIR</span>
+          <span class="choice-payout">Multiplicateur ×2</span>
         </button>
       </div>
 
       <!-- Bouton Encaisser -->
-      <button class="btn btn-gold" id="btnGambleCashout" style="width:100%; padding:0.75rem; font-weight:700;">
+      <button type="button" class="btn btn-gold btn-gamble-cashout" id="btnGambleCashout">
         💰 Encaisser et Conserver mon gain
       </button>
     </div>

@@ -1,127 +1,263 @@
-/* =========================================================
-   MARSABET CASINO - 5x3 VIDEO SLOT MACHINE (CANDY LUXE)
-   ========================================================= */
+/* ==========================================================================
+   MARSABET CASINO — 5x3 VIDEO SLOT MACHINE (COSMIC LUXURY EDITION)
+   Color Palette: Deep Navy Felt (#06142B, #0B1933) + Gold Foil (#D4AF37, #FFE680)
+   ========================================================================== */
 
+/* ==========================================================================
+   1. CABINET DE LA MACHINE À SOUS
+   ========================================================================== */
 .slots-cabinet {
-  background: var(--bg-secondary);
-  border: 1px solid var(--bg-glass-border);
-  border-radius: var(--radius-2xl);
-  padding: 1.5rem;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
-  max-width: 860px;
+  background: radial-gradient(circle at 50% 15%, #0d2552 0%, #06142b 85%);
+  border: 2px solid rgba(212, 175, 55, 0.45);
+  border-radius: 20px;
+  padding: 1.25rem 1.4rem;
+  box-shadow: 
+    0 24px 64px rgba(0, 0, 0, 0.85),
+    0 0 40px rgba(212, 175, 55, 0.15),
+    inset 0 1px 2px rgba(255, 255, 255, 0.2);
+  max-width: 900px;
   width: 100%;
   position: relative;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .slots-cabinet.bonus-mode {
-  border-color: var(--candy-pink);
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), 0 0 35px rgba(255, 45, 135, 0.35);
+  border-color: #38bdf8;
+  box-shadow: 
+    0 24px 64px rgba(0, 0, 0, 0.9),
+    0 0 50px rgba(56, 189, 248, 0.35),
+    inset 0 0 30px rgba(56, 189, 248, 0.15);
+  animation: cabinetBonusGlow 2.5s infinite alternate;
+}
+
+@keyframes cabinetBonusGlow {
+  0% { box-shadow: 0 24px 64px rgba(0, 0, 0, 0.9), 0 0 35px rgba(56, 189, 248, 0.25); }
+  100% { box-shadow: 0 24px 64px rgba(0, 0, 0, 0.9), 0 0 60px rgba(56, 189, 248, 0.5); }
+}
+
+/* Marquee Supérieur & Ampoules LED */
+.slots-marquee-top {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.85rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+  position: relative;
 }
 
 .slots-header-lights {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 0.6rem;
-  margin-bottom: 0.85rem;
+  gap: 0.85rem;
 }
 
 .slot-light {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: var(--candy-pink);
-  opacity: 0.7;
-  box-shadow: 0 0 8px currentColor;
+  background: #ffd700;
+  box-shadow: 0 0 10px #ffd700, 0 0 20px rgba(255, 215, 0, 0.6);
+  animation: lightPulse 1.2s infinite alternate;
 }
 
-.slot-light:nth-child(2n) { background: var(--candy-mint); }
-.slot-light:nth-child(3n) { background: var(--candy-gold); }
+.slot-light:nth-child(2) { background: #38bdf8; box-shadow: 0 0 10px #38bdf8; animation-delay: 0.2s; }
+.slot-light:nth-child(3) { background: #10b981; box-shadow: 0 0 10px #10b981; animation-delay: 0.4s; }
+.slot-light:nth-child(4) { background: #ffd700; box-shadow: 0 0 10px #ffd700; animation-delay: 0.6s; }
+.slot-light:nth-child(5) { background: #f43f5e; box-shadow: 0 0 10px #f43f5e; animation-delay: 0.8s; }
+.slot-light:nth-child(6) { background: #a855f7; box-shadow: 0 0 10px #a855f7; animation-delay: 1.0s; }
+.slot-light:nth-child(7) { background: #ffd700; box-shadow: 0 0 10px #ffd700; animation-delay: 1.2s; }
 
+@keyframes lightPulse {
+  0% { transform: scale(0.85); opacity: 0.5; }
+  100% { transform: scale(1.15); opacity: 1; }
+}
+
+.slots-marquee-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-display, 'Outfit', sans-serif);
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 2px;
+  color: var(--gold-light, #ffe680);
+  text-shadow: 0 0 12px rgba(255, 230, 128, 0.6);
+  text-transform: uppercase;
+}
+
+.marquee-star {
+  color: #ffd700;
+  font-size: 0.75rem;
+  animation: starTwinkle 2s infinite ease-in-out alternate;
+}
+
+@keyframes starTwinkle {
+  0% { transform: scale(0.8); opacity: 0.6; }
+  100% { transform: scale(1.2); opacity: 1; }
+}
+
+/* Bannière Free Spins */
 .slots-freespins-banner {
   display: none;
-  background: linear-gradient(135deg, rgba(255, 45, 135, 0.18) 0%, rgba(255, 159, 67, 0.18) 100%);
-  border: 1px solid var(--candy-pink);
-  border-radius: var(--radius-md);
-  padding: 0.65rem 1.25rem;
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.2) 0%, rgba(14, 165, 233, 0.35) 100%);
+  border: 1.5px solid #38bdf8;
+  border-radius: 10px;
+  padding: 0.65rem 1rem;
   margin-bottom: 0.85rem;
   text-align: center;
+  box-shadow: 0 0 20px rgba(56, 189, 248, 0.3);
+  backdrop-filter: blur(8px);
 }
 
 .slots-freespins-banner.active {
   display: block;
+  animation: fsBannerPulse 2s infinite alternate;
 }
 
+@keyframes fsBannerPulse {
+  0% { box-shadow: 0 0 15px rgba(56, 189, 248, 0.25); }
+  100% { box-shadow: 0 0 30px rgba(56, 189, 248, 0.55); }
+}
+
+.fs-banner-title {
+  font-family: var(--font-display, sans-serif);
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #38bdf8;
+  letter-spacing: 0.8px;
+}
+
+.fs-banner-sub {
+  font-size: 0.85rem;
+  color: #ffffff;
+  margin-top: 2px;
+}
+
+/* ==========================================================================
+   2. ARÈNE DES 5 ROULEAUX & LIGNES LATÉRALES
+   ========================================================================== */
 .slots-reels-stage {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
 }
 
+/* Colonnes des Tags de Lignes (Flanc gauche 1-10 & Flanc droit 11-20) */
 .payline-indicators-column {
   display: flex;
   flex-direction: column;
-  justify-content: space-around;
-  height: 310px;
-  width: 26px;
+  justify-content: space-between;
+  height: 312px;
+  width: 32px;
+  z-index: 15;
 }
 
 .line-tag {
-  width: 24px;
-  height: 24px;
-  border-radius: var(--radius-xs);
-  font-size: 0.68rem;
+  width: 30px;
+  height: 27px;
+  border-radius: 6px;
+  font-size: 0.72rem;
   font-weight: 800;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--bg-card);
-  color: var(--text-secondary);
-  border: 1px solid var(--bg-glass-border);
-  transition: all 0.18s ease;
+  background: rgba(15, 23, 42, 0.75);
+  color: #94a3b8;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  cursor: pointer;
   user-select: none;
+  transition: all 0.2s cubic-bezier(0.2, 0.8, 0.3, 1);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  position: relative;
 }
 
 .line-tag.active {
-  background: var(--line-color, var(--candy-pink));
+  background: var(--line-color, #ffd700);
   color: #ffffff;
-  transform: scale(1.15);
-  box-shadow: 0 0 10px currentColor;
+  border-color: rgba(255, 255, 255, 0.4);
+  box-shadow: 0 0 10px var(--line-color), inset 0 1px 2px rgba(255, 255, 255, 0.5);
+  font-weight: 900;
+  opacity: 1;
 }
 
-/* 5x3 Reels Container */
+.line-tag:not(.active) {
+  opacity: 0.35;
+  filter: grayscale(0.6);
+}
+
+.line-tag:hover {
+  transform: scale(1.22);
+  z-index: 20;
+  opacity: 1;
+  box-shadow: 0 0 16px var(--line-color, #ffd700);
+  border-color: #ffffff;
+  color: #ffffff;
+}
+
+/* Conteneur des 5 Rouleaux */
 .slots-reels-container {
   flex: 1;
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   gap: 8px;
-  background: #08050e;
-  border: 2px solid var(--bg-glass-border);
-  border-radius: var(--radius-lg);
-  padding: 10px;
+  background: #040c1b;
+  border: 2px solid rgba(212, 175, 55, 0.35);
+  border-radius: 12px;
+  padding: 8px;
   overflow: hidden;
   position: relative;
-  box-shadow: inset 0 6px 18px rgba(0, 0, 0, 0.7);
+  box-shadow: 
+    inset 0 10px 30px rgba(0, 0, 0, 0.85),
+    inset 0 -10px 30px rgba(0, 0, 0, 0.85),
+    0 8px 24px rgba(0, 0, 0, 0.5);
 }
 
+/* Reflet de vitre luxueuse */
+.slots-glass-glare {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 40%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.01) 80%, transparent 100%);
+  pointer-events: none;
+  z-index: 12;
+  border-radius: 10px 10px 0 0;
+}
+
+/* Calque SVG des lignes de paiement */
 .slots-paylines-svg {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   pointer-events: none;
-  z-index: 10;
+  z-index: 11;
 }
 
 .payline-svg-path {
   fill: none;
-  stroke-width: 4px;
+  stroke-width: 4.5px;
   stroke-linecap: round;
   stroke-linejoin: round;
+  filter: drop-shadow(0 0 6px currentColor) drop-shadow(0 0 14px currentColor);
+  animation: lineDash 0.75s ease-in-out;
+}
+
+.payline-svg-preview {
+  fill: none;
+  stroke-width: 3.5px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 8 4;
   filter: drop-shadow(0 0 8px currentColor);
-  animation: lineDash 0.8s ease-in-out;
+  animation: previewDash 1s linear infinite;
 }
 
 @keyframes lineDash {
@@ -129,14 +265,22 @@
   to { stroke-dasharray: 1000, 0; }
 }
 
+@keyframes previewDash {
+  0% { stroke-dashoffset: 0; }
+  100% { stroke-dashoffset: -24; }
+}
+
+/* Rouleau Individuel */
 .slot-reel {
-  height: 300px;
-  background: var(--bg-secondary);
-  border-radius: var(--radius-sm);
-  border: 1px solid rgba(255, 45, 135, 0.15);
+  height: 296px;
+  background: radial-gradient(circle at 50% 50%, #091a38 0%, #051024 100%);
+  border-radius: 8px;
+  border: 1px solid rgba(212, 175, 55, 0.18);
   overflow: hidden;
   position: relative;
-  box-shadow: inset 0 14px 24px rgba(0, 0, 0, 0.7), inset 0 -14px 24px rgba(0, 0, 0, 0.7);
+  box-shadow: 
+    inset 0 16px 20px rgba(0, 0, 0, 0.7),
+    inset 0 -16px 20px rgba(0, 0, 0, 0.7);
 }
 
 .slot-strip {
@@ -147,112 +291,785 @@
 
 .slot-strip.spinning {
   animation: reelSpinFast 0.12s linear infinite;
-  filter: blur(1.5px);
+  filter: blur(2px);
 }
 
 @keyframes reelSpinFast {
   0% { transform: translateY(0); }
-  100% { transform: translateY(-300px); }
+  100% { transform: translateY(-296px); }
 }
 
+/* Cellule de Symbole */
 .slot-cell {
-  height: 100px;
+  height: 98px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   user-select: none;
   position: relative;
-  transition: all 0.2s ease;
+  margin: 1px 2px;
+  border-radius: 6px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.02) 0%, rgba(0, 0, 0, 0.2) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  transition: all 0.22s ease;
 }
 
 .cell-icon {
-  font-size: 2.9rem;
+  font-size: 2.85rem;
   line-height: 1;
-  transition: transform 0.2s ease;
+  transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.3, 1);
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.5));
 }
 
 .cell-badge {
   font-size: 0.62rem;
   font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  padding: 2px 6px;
-  border-radius: var(--radius-full);
-  margin-top: 4px;
+  letter-spacing: 0.05em;
+  padding: 1.5px 6px;
+  border-radius: 999px;
+  margin-top: 3px;
   line-height: 1.1;
+  background: rgba(15, 23, 42, 0.8);
+  color: #cbd5e1;
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+/* Thèmes Visuels par Symbole */
 .slot-cell[data-symbol="wild"] {
-  background: radial-gradient(circle, rgba(255, 159, 67, 0.25) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(212, 175, 55, 0.22) 0%, transparent 75%);
 }
 .slot-cell[data-symbol="wild"] .cell-badge {
-  background: var(--candy-gold);
-  color: #161121;
+  background: linear-gradient(90deg, #d4af37 0%, #ffe680 100%);
+  color: #06142b;
+  font-weight: 900;
+  border-color: #ffd700;
+  box-shadow: 0 0 8px rgba(212, 175, 55, 0.5);
 }
 
 .slot-cell[data-symbol="scatter"] {
-  background: radial-gradient(circle, rgba(255, 45, 135, 0.25) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.22) 0%, transparent 75%);
 }
 .slot-cell[data-symbol="scatter"] .cell-badge {
-  background: var(--candy-pink);
+  background: linear-gradient(90deg, #0284c7 0%, #38bdf8 100%);
   color: #ffffff;
+  font-weight: 900;
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.5);
 }
 
+.slot-cell[data-symbol="mars"] {
+  background: radial-gradient(circle, rgba(244, 63, 94, 0.2) 0%, transparent 75%);
+}
 .slot-cell[data-symbol="mars"] .cell-badge {
-  background: var(--candy-cherry);
+  background: linear-gradient(90deg, #e11d48 0%, #fb7185 100%);
   color: #ffffff;
+  box-shadow: 0 0 8px rgba(244, 63, 94, 0.5);
 }
 
+.slot-cell[data-symbol="diamond"] {
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.2) 0%, transparent 75%);
+}
 .slot-cell[data-symbol="diamond"] .cell-badge {
-  background: var(--candy-mint);
-  color: #0e091a;
+  background: linear-gradient(90deg, #059669 0%, #34d399 100%);
+  color: #06142b;
+  font-weight: 900;
 }
 
+/* Cellule Gagnante Animée */
 .slot-cell.win-cell {
-  background: rgba(5, 230, 180, 0.22) !important;
-  border: 2px solid var(--candy-mint);
-  border-radius: var(--radius-sm);
-  z-index: 5;
-  box-shadow: 0 0 16px rgba(5, 230, 180, 0.4);
+  background: radial-gradient(circle, rgba(212, 175, 55, 0.35) 0%, rgba(6, 20, 43, 0.8) 100%) !important;
+  border: 2px solid #ffd700 !important;
+  box-shadow: 0 0 18px rgba(255, 215, 0, 0.65), inset 0 0 10px rgba(255, 215, 0, 0.3);
+  z-index: 8;
+  animation: winCellPulse 1.2s infinite alternate ease-in-out;
 }
 
 .slot-cell.win-cell .cell-icon {
   transform: scale(1.18);
+  filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.7));
 }
 
+@keyframes winCellPulse {
+  0% { transform: scale(0.98); box-shadow: 0 0 12px rgba(255, 215, 0, 0.4); }
+  100% { transform: scale(1.02); box-shadow: 0 0 24px rgba(255, 215, 0, 0.85); }
+}
+
+/* Infobulle Dynamique de Ligne */
+.slots-payline-preview-badge {
+  margin-top: 0.6rem;
+  background: rgba(6, 17, 36, 0.95);
+  border: 1px solid rgba(212, 175, 55, 0.4);
+  border-radius: 6px;
+  padding: 0.35rem 0.85rem;
+  text-align: center;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--gold-light, #ffe680);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  animation: fadeIn 0.2s ease;
+}
+
+/* Barre Quitte ou Double */
 .slots-gamble-bar {
-  display: none;
-  background: var(--bg-card);
-  border: 1px solid var(--bg-glass-border);
-  border-radius: var(--radius-md);
+  display: flex;
+  background: linear-gradient(90deg, rgba(212, 175, 55, 0.15) 0%, rgba(6, 20, 43, 0.9) 100%);
+  border: 1.5px solid rgba(212, 175, 55, 0.5);
+  border-radius: 10px;
   padding: 0.75rem 1.15rem;
   margin-top: 0.85rem;
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
   gap: 0.75rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  animation: slideDownGamble 0.35s cubic-bezier(0.2, 0.8, 0.3, 1);
 }
 
-.slots-bottom-preview {
-  margin-top: 0.85rem;
-  background: var(--bg-secondary);
-  border: 1px solid var(--bg-glass-border);
-  border-radius: var(--radius-md);
-  padding: 0.65rem 1rem;
+@keyframes slideDownGamble {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.gamble-bar-info {
   display: flex;
-  justify-content: space-between;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.gamble-bar-icon {
+  font-size: 1.6rem;
+  filter: drop-shadow(0 0 6px rgba(212, 175, 55, 0.5));
+}
+
+.gamble-bar-sub {
+  font-size: 0.75rem;
+  color: var(--text-secondary, #94a3b8);
+}
+
+.gamble-bar-amt {
+  font-family: var(--font-display, sans-serif);
+  font-size: 1.15rem;
+  color: var(--gold-light, #ffe680);
+  text-shadow: 0 0 8px rgba(255, 230, 128, 0.6);
+}
+
+.gamble-bar-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* Bandeau Informations Symboles */
+.slots-bottom-preview {
+  margin-top: 0.75rem;
+  background: rgba(6, 17, 36, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 0.5rem 0.85rem;
+  display: flex;
+  justify-content: space-around;
   align-items: center;
   flex-wrap: wrap;
   gap: 0.5rem;
-  font-size: 0.82rem;
-  color: var(--text-secondary);
+  font-size: 0.78rem;
+  color: #cbd5e1;
 }
 
-/* Controls in Left Bet Panel */
-.slots-bet-controls {
+.preview-item strong {
+  color: var(--gold-light, #ffe680);
+}
+
+/* ==========================================================================
+   3. PANNEAU LATÉRAL : CONFIGURATION DES MISES & LIGNES
+   ========================================================================== */
+.slots-bet-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.slots-card-box {
+  background: rgba(6, 17, 36, 0.8);
+  border: 1px solid rgba(212, 175, 55, 0.22);
+  border-radius: 10px;
+  padding: 0.65rem 0.85rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.slots-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.45rem;
+}
+
+.slots-card-title {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #94a3b8;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+.slots-lines-badge {
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: var(--gold-light, #ffe680);
+  background: rgba(212, 175, 55, 0.15);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  border-radius: 4px;
+  padding: 1px 6px;
+}
+
+.slots-bet-summary {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #38bdf8;
+}
+
+/* Stepper de Valeurs */
+.slots-stepper-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 3px 6px;
+}
+
+.btn-step-large {
+  width: 34px;
+  height: 34px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  font-size: 1.15rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-step-large:hover:not(:disabled) {
+  background: rgba(212, 175, 55, 0.25);
+  border-color: #d4af37;
+  color: #ffe680;
+  transform: scale(1.05);
+}
+
+.btn-step-large:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.slots-stepper-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+}
+
+.slots-num-input {
+  width: 100%;
+  max-width: 80px;
+  background: transparent;
+  border: none;
+  color: #ffffff;
+  font-family: var(--font-display, sans-serif);
+  font-size: 1.15rem;
+  font-weight: 800;
+  text-align: center;
+  outline: none;
+  padding: 0;
+}
+
+.slots-stepper-unit {
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: #64748b;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+/* Pills de Raccourcis pour Lignes */
+.slots-lines-pills {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+  margin-top: 0.5rem;
+}
+
+.btn-line-pill {
+  padding: 4px 0;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 5px;
+  color: #cbd5e1;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.btn-line-pill:hover {
+  background: rgba(212, 175, 55, 0.2);
+  border-color: #d4af37;
+  color: #ffffff;
+}
+
+.btn-line-pill.active {
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.4) 0%, rgba(212, 175, 55, 0.15) 100%);
+  border-color: #ffd700;
+  color: #ffe680;
+  font-weight: 800;
+  box-shadow: 0 0 8px rgba(212, 175, 55, 0.3);
+}
+
+/* Barre de Couverture */
+.slots-coverage-bar-track {
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 999px;
+  margin-top: 0.5rem;
+  overflow: hidden;
+}
+
+.slots-coverage-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #38bdf8 0%, #10b981 50%, #ffd700 100%);
+  border-radius: 999px;
+  transition: width 0.3s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+/* Grille des Jetons de Mise par Ligne */
+.slots-chips-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 5px;
+  margin-top: 0.5rem;
+}
+
+.slots-chips-grid .casino-chip {
+  padding: 5px 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-radius: 6px;
+}
+
+/* Bouton SPIN Maître */
+.btn-slots-spin-master {
+  width: 100%;
+  padding: 0.95rem 1rem !important;
+  font-family: var(--font-display, sans-serif) !important;
+  font-size: 1.2rem !important;
+  font-weight: 800 !important;
+  letter-spacing: 1px !important;
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 50%, #b45309 100%) !important;
+  border: 1.5px solid #fde68a !important;
+  border-radius: 10px !important;
+  box-shadow: 
+    0 6px 20px rgba(217, 119, 6, 0.4),
+    inset 0 1px 2px rgba(255, 255, 255, 0.4) !important;
+  color: #06142b !important;
+  transition: all 0.2s cubic-bezier(0.2, 0.8, 0.3, 1) !important;
+}
+
+.btn-slots-spin-master:hover:not(:disabled) {
+  transform: translateY(-2px) scale(1.01) !important;
+  box-shadow: 
+    0 10px 28px rgba(217, 119, 6, 0.6),
+    inset 0 1px 2px rgba(255, 255, 255, 0.6) !important;
+}
+
+.btn-slots-spin-master:active:not(:disabled) {
+  transform: translateY(1px) !important;
+}
+
+.btn-slots-spin-master:disabled {
+  opacity: 0.6 !important;
+  filter: grayscale(0.4) !important;
+  cursor: not-allowed !important;
+}
+
+/* ==========================================================================
+   4. MODALE & CARTE 3D RÉALISTE : QUITTE OU DOUBLE (GAMBLE)
+   ========================================================================== */
+.gamble-modal-content {
+  max-width: 460px;
+  background: radial-gradient(circle at 50% 20%, #0c2044 0%, #061124 100%) !important;
+  border: 2px solid rgba(212, 175, 55, 0.5) !important;
+  border-radius: 16px !important;
+  padding: 1.5rem !important;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.9), 0 0 35px rgba(212, 175, 55, 0.25) !important;
+  text-align: center;
+}
+
+.gamble-header {
+  margin-bottom: 0.85rem;
+}
+
+.gamble-badge {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--gold-light, #ffe680);
+  background: rgba(212, 175, 55, 0.15);
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  border-radius: 999px;
+  padding: 2px 10px;
+  letter-spacing: 1px;
+  margin-bottom: 0.25rem;
+}
+
+.gamble-title {
+  font-family: var(--font-display, sans-serif);
+  font-size: 1.45rem;
+  color: #ffffff;
+  margin: 0.15rem 0;
+  font-weight: 800;
+}
+
+.gamble-subtitle {
+  font-size: 0.82rem;
+  color: #94a3b8;
+  margin: 0;
+}
+
+/* Tableau des Mises */
+.gamble-stakes-board {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  background: rgba(6, 17, 36, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 0.65rem 0.85rem;
+  margin: 0.85rem 0;
+}
+
+.gamble-stake-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.stake-label {
+  font-size: 0.72rem;
+  color: #64748b;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.stake-amount {
+  font-family: var(--font-display, sans-serif);
+  font-size: 1.15rem;
+  color: var(--gold-light, #ffe680);
+}
+
+.gamble-stake-arrow {
+  font-size: 1.3rem;
+  color: var(--gold-primary, #d4af37);
+}
+
+.potential-amount {
+  font-family: var(--font-display, sans-serif);
+  font-size: 1.25rem;
+  color: #34d399;
+  text-shadow: 0 0 10px rgba(52, 211, 153, 0.5);
+}
+
+/* Scène de la Carte 3D */
+.gamble-card-scene {
+  width: 140px;
+  height: 200px;
+  margin: 1rem auto;
+  perspective: 1200px;
+}
+
+.gamble-card-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 12px;
+  transform-style: preserve-3d;
+  transition: transform 0.65s cubic-bezier(0.2, 0.85, 0.3, 1.15);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.65);
+}
+
+.gamble-card-inner.flipped {
+  transform: rotateY(180deg);
+}
+
+.gamble-card-inner.is-win {
+  box-shadow: 0 0 35px rgba(52, 211, 153, 0.75), 0 12px 30px rgba(0, 0, 0, 0.65);
+}
+
+.gamble-card-inner.is-loss {
+  box-shadow: 0 0 35px rgba(239, 68, 68, 0.75), 0 12px 30px rgba(0, 0, 0, 0.65);
+}
+
+.gamble-card-face {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 12px;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Dos de la carte (Luxury Casino Pattern) */
+.gamble-card-back {
+  background: radial-gradient(circle at 50% 50%, #0d2552 0%, #061124 100%);
+  border: 3px solid #d4af37;
+  padding: 6px;
+}
+
+.card-back-ornament {
+  width: 100%;
+  height: 100%;
+  border: 1px dashed rgba(212, 175, 55, 0.6);
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: 
+    repeating-linear-gradient(45deg, rgba(212, 175, 55, 0.04) 0px, rgba(212, 175, 55, 0.04) 4px, transparent 4px, transparent 8px);
+}
+
+.card-back-border {
+  width: 84%;
+  height: 84%;
+  border: 1px solid rgba(212, 175, 55, 0.5);
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.card-back-crest {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.card-back-planet {
+  font-size: 2.2rem;
+  filter: drop-shadow(0 0 8px rgba(212, 175, 55, 0.7));
+}
+
+.card-back-brand {
+  font-family: var(--font-display, sans-serif);
+  font-size: 0.65rem;
+  font-weight: 900;
+  color: #ffd700;
+  letter-spacing: 1px;
+}
+
+.card-back-sub {
+  font-size: 0.52rem;
+  font-weight: 700;
+  color: #94a3b8;
+  letter-spacing: 0.5px;
+}
+
+/* Face avant de la carte (Blanche / Ivoire avec Indices) */
+.gamble-card-front {
+  background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%);
+  border: 2px solid #e2e8f0;
+  transform: rotateY(180deg);
+  padding: 8px;
+  justify-content: space-between;
+  color: #0f172a;
+}
+
+.gamble-card-front.card-red {
+  color: #dc2626 !important;
+}
+
+.gamble-card-front.card-black {
+  color: #0f172a !important;
+}
+
+.card-corner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1;
+  width: 24px;
+}
+
+.card-corner-tl {
+  align-self: flex-start;
+}
+
+.card-corner-br {
+  align-self: flex-end;
+  transform: rotate(180deg);
+}
+
+.card-rank {
+  font-family: var(--font-display, sans-serif);
+  font-size: 1.35rem;
+  font-weight: 900;
+}
+
+.card-suit {
+  font-size: 1.1rem;
+  margin-top: 1px;
+}
+
+.card-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+}
+
+.card-center-suit {
+  font-size: 3.4rem;
+  line-height: 1;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.15));
+}
+
+/* Feedback Message */
+.gamble-feedback {
+  font-size: 0.88rem;
+  font-weight: 700;
+  margin-bottom: 0.85rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  line-height: 1.3;
+}
+
+/* Boutons de Choix Rouge / Noir */
+.gamble-choice-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 0.75rem;
-  margin-top: 1rem;
+  margin-bottom: 0.85rem;
+}
+
+.btn-gamble-choice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 0.5rem;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.2, 0.8, 0.3, 1);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+}
+
+.btn-gamble-red {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.25) 0%, rgba(185, 28, 28, 0.4) 100%);
+  border: 2px solid #ef4444;
+  color: #ffffff;
+}
+
+.btn-gamble-red:hover:not(:disabled) {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.45) 0%, rgba(185, 28, 28, 0.6) 100%);
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.5);
+  transform: translateY(-2px);
+}
+
+.btn-gamble-black {
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.6) 0%, rgba(15, 23, 42, 0.85) 100%);
+  border: 2px solid #38bdf8;
+  color: #ffffff;
+}
+
+.btn-gamble-black:hover:not(:disabled) {
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.25) 0%, rgba(15, 23, 42, 0.95) 100%);
+  box-shadow: 0 0 20px rgba(56, 189, 248, 0.45);
+  transform: translateY(-2px);
+}
+
+.choice-icon {
+  font-size: 1.4rem;
+  margin-bottom: 2px;
+}
+
+.choice-title {
+  font-family: var(--font-display, sans-serif);
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+.choice-payout {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+
+.btn-gamble-cashout {
+  width: 100%;
+  padding: 0.75rem !important;
+  font-weight: 800 !important;
+  font-size: 0.95rem !important;
+  border-radius: 8px !important;
+}
+
+/* ==========================================================================
+   5. RESPONSIVE
+   ========================================================================== */
+@media (max-width: 768px) {
+  .slots-cabinet {
+    padding: 0.85rem 0.65rem;
+  }
+
+  .payline-indicators-column {
+    width: 22px;
+    height: 250px;
+  }
+
+  .line-tag {
+    width: 20px;
+    height: 22px;
+    font-size: 0.58rem;
+    border-radius: 4px;
+  }
+
+  .slot-reel {
+    height: 240px;
+  }
+
+  .slot-cell {
+    height: 80px;
+  }
+
+  .cell-icon {
+    font-size: 2.2rem;
+  }
+
+  .cell-badge {
+    font-size: 0.52rem;
+    padding: 1px 4px;
+  }
+
+  .slots-reels-container {
+    gap: 4px;
+    padding: 5px;
+  }
+
+  .gamble-card-scene {
+    width: 120px;
+    height: 170px;
+  }
+
+  .card-center-suit {
+    font-size: 2.6rem;
+  }
 }
