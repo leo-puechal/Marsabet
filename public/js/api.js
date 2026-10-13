@@ -239,10 +239,10 @@ const API = {
     return this.request('/games/blackjack/state');
   },
 
-  async dealBlackjack(bet, handsCount = 1) {
+  async dealBlackjack(bet, handsCount = 1, sidebets = {}) {
     return this.request('/games/blackjack/deal', {
       method: 'POST',
-      body: JSON.stringify({ bet, handsCount })
+      body: JSON.stringify({ bet, handsCount, sidebets })
     });
   },
 

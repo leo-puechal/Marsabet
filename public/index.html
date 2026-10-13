@@ -774,22 +774,57 @@
                     <div class="bj-cards-row" id="bjDealerCards"></div>
                   </div>
 
-                  <!-- Zone Mains Joueur (Main unique ou Deux Mains si Split) -->
+                  <!-- SPOTS DE MISES SUR LE TAPIS (Blackjack & Sidebets) -->
+                  <div class="bj-table-felt-spots" id="bjFeltSpots">
+                    <!-- Spot Perfect Pairs -->
+                    <div class="bj-felt-spot" id="bjFeltSpotPP" data-spot="perfectPairs" title="Cliquer pour miser sur Perfect Pairs">
+                      <span class="bj-spot-sublabel">Sidebet</span>
+                      <span class="bj-spot-title">Perfect Pairs</span>
+                      <div class="bj-spot-chip-display" id="bjFeltDisplayPP">0 🪙</div>
+                      <span class="bj-spot-odds">25:1</span>
+                    </div>
+
+                    <!-- Spot Mise Principale -->
+                    <div class="bj-felt-spot bj-felt-spot-main active-spot" id="bjFeltSpotMain" data-spot="main" title="Cliquer pour miser sur la main principale">
+                      <span class="bj-spot-sublabel">Mise Principale</span>
+                      <span class="bj-spot-title">Blackjack</span>
+                      <div class="bj-spot-chip-display" id="bjFeltDisplayMain">50 🪙</div>
+                      <span class="bj-spot-odds">Paie 3:2</span>
+                    </div>
+
+                    <!-- Spot 21+3 -->
+                    <div class="bj-felt-spot" id="bjFeltSpotPlus3" data-spot="plus3" title="Cliquer pour miser sur 21+3">
+                      <span class="bj-spot-sublabel">Sidebet</span>
+                      <span class="bj-spot-title">21 + 3</span>
+                      <div class="bj-spot-chip-display" id="bjFeltDisplayPlus3">0 🪙</div>
+                      <span class="bj-spot-odds">40:1</span>
+                    </div>
+
+                    <!-- Spot Assurance -->
+                    <div class="bj-felt-spot" id="bjFeltSpotInsurance" data-spot="insurance" title="Assurance si le croupier montre un As">
+                      <span class="bj-spot-sublabel">Option</span>
+                      <span class="bj-spot-title">Assurance</span>
+                      <div class="bj-spot-chip-display" id="bjFeltDisplayInsurance">0 🪙</div>
+                      <span class="bj-spot-odds">2:1</span>
+                    </div>
+                  </div>
+
+                  <!-- Zone Mains Joueur (Support dynamique pour 1 à 4 mains avec Split) -->
                   <div class="bj-player-area" id="bjPlayerArea">
                     <div class="bj-split-container" id="bjPlayerHandsContainer">
-                      <!-- Main 1 -->
-                      <div class="bj-hand-box bj-hand-active" id="bjHandBox1">
+                      <!-- Main 1 par défaut -->
+                      <div class="bj-hand-box bj-hand-active" id="bjHandBox1" data-hand-id="1">
                         <div class="bj-area-label">
                           <span id="bjHandTitle1">Ta Main</span>
                           <span class="bj-score-badge" id="bjPlayerScore">-</span>
                           <span class="bj-hand-tag" id="bjHandTag1" style="display:none;">En cours</span>
                           <span class="bj-hand-bet-badge" id="bjHandBetDisplay1" style="display:none;">50 🪙</span>
                         </div>
-                        <div class="bj-cards-row" id="bjPlayerCards"></div>
+                        <div class="bj-cards-row" id="bjPlayerCards1"></div>
                       </div>
 
-                      <!-- Main 2 (activée si Split ou 2-3 mains) -->
-                      <div class="bj-hand-box" id="bjHandBox2" style="display:none;">
+                      <!-- Main 2 par défaut (masquée tant que non activée) -->
+                      <div class="bj-hand-box" id="bjHandBox2" data-hand-id="2" style="display:none;">
                         <div class="bj-area-label">
                           <span id="bjHandTitle2">Main 2</span>
                           <span class="bj-score-badge" id="bjPlayerScore2">-</span>
@@ -799,8 +834,8 @@
                         <div class="bj-cards-row" id="bjPlayerCards2"></div>
                       </div>
 
-                      <!-- Main 3 (activée si 3 mains) -->
-                      <div class="bj-hand-box" id="bjHandBox3" style="display:none;">
+                      <!-- Main 3 par défaut (masquée tant que non activée) -->
+                      <div class="bj-hand-box" id="bjHandBox3" data-hand-id="3" style="display:none;">
                         <div class="bj-area-label">
                           <span id="bjHandTitle3">Main 3</span>
                           <span class="bj-score-badge" id="bjPlayerScore3">-</span>
@@ -824,16 +859,37 @@
                 </div>
               </div>
 
-              <!-- Panneau de Mise -->
-              <div class="bet-panel">
-                <h3 class="panel-title">Mise par Main</h3>
+              <!-- Panneau de Mise Blackjack avec Jetons Visuels & Sidebets -->
+              <div class="bet-panel" id="bjBetPanel">
+                <div class="bj-panel-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.4rem;">
+                  <h3 class="panel-title" style="margin:0;">Mises & Jetons</h3>
+                  <button type="button" class="btn btn-outline" id="bjClearAllBetsBtn" style="font-size:0.75rem; padding:0.25rem 0.55rem; border-color:#2f4553; color:#b1bad3;">
+                    🗑️ Tout effacer
+                  </button>
+                </div>
 
-                <div class="bet-input-box">
-                  <input type="number" id="bjBetInput" class="bet-input" value="50" min="10" step="10">
+                <!-- Sélecteur de zone active -->
+                <div class="bj-spot-tabs" id="bjSpotTabs">
+                  <button type="button" class="bj-spot-tab active" data-target="main">
+                    <span>Principale</span>
+                    <strong id="bjTabAmountMain">50 🪙</strong>
+                  </button>
+                  <button type="button" class="bj-spot-tab" data-target="perfectPairs">
+                    <span>Pairs (25:1)</span>
+                    <strong id="bjTabAmountPP">0 🪙</strong>
+                  </button>
+                  <button type="button" class="bj-spot-tab" data-target="plus3">
+                    <span>21+3 (40:1)</span>
+                    <strong id="bjTabAmountPlus3">0 🪙</strong>
+                  </button>
+                  <button type="button" class="bj-spot-tab" data-target="insurance">
+                    <span>Assur. (2:1)</span>
+                    <strong id="bjTabAmountIns">0 🪙</strong>
+                  </button>
                 </div>
 
                 <!-- Sélecteur Multi-mains (1 à 3 mains simultanées) -->
-                <div class="bj-hands-selector-group" style="margin: 0.6rem 0;">
+                <div class="bj-hands-selector-group" style="margin: 0.5rem 0;">
                   <div style="font-size:0.75rem; font-weight:700; color:#b1bad3; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:0.35rem; display:flex; justify-content:space-between;">
                     <span>Mains en parallèle</span>
                     <span id="bjHandsCountBadge" style="color:#00e701;">1 main</span>
@@ -843,28 +899,70 @@
                     <button type="button" class="bj-hand-pill-btn" data-hands="2">2 Mains</button>
                     <button type="button" class="bj-hand-pill-btn" data-hands="3">3 Mains</button>
                   </div>
-                  <div id="bjTotalBetSummary" style="font-size:0.8rem; color:#b1bad3; margin-top:0.4rem; padding:0.35rem 0.6rem; background:#0f212e; border:1px solid #2f4553; border-radius:6px; display:flex; justify-content:space-between; align-items:center;">
-                    <span>Mise totale :</span>
-                    <strong style="color:var(--gold-light); font-family:var(--font-mono); font-size:0.9rem;" id="bjTotalBetDisplay">50 🪙</strong>
+                </div>
+
+                <!-- Rack de Jetons de Casino Visuels (10, 50, 100, 500, 1000) -->
+                <div style="font-size:0.75rem; font-weight:700; color:#b1bad3; text-transform:uppercase; letter-spacing:0.05em; margin:0.4rem 0 0.3rem 0;">
+                  Clique pour ajouter :
+                </div>
+                <div class="bj-chips-rack" id="bjChipsRack">
+                  <button type="button" class="bj-casino-chip chip-10" data-val="10" title="Ajouter 10 🪙">
+                    <span class="chip-inner">10</span>
+                  </button>
+                  <button type="button" class="bj-casino-chip chip-50 active-chip" data-val="50" title="Ajouter 50 🪙">
+                    <span class="chip-inner">50</span>
+                  </button>
+                  <button type="button" class="bj-casino-chip chip-100" data-val="100" title="Ajouter 100 🪙">
+                    <span class="chip-inner">100</span>
+                  </button>
+                  <button type="button" class="bj-casino-chip chip-500" data-val="500" title="Ajouter 500 🪙">
+                    <span class="chip-inner">500</span>
+                  </button>
+                  <button type="button" class="bj-casino-chip chip-1000" data-val="1000" title="Ajouter 1000 🪙">
+                    <span class="chip-inner">1K</span>
+                  </button>
+                </div>
+
+                <!-- Boutons d'actions rapides sur les mises -->
+                <div class="bj-bet-action-btns" style="display:flex; gap:0.35rem; margin-top:0.5rem;">
+                  <button type="button" class="btn btn-outline" id="bjRebetBtn" style="flex:1; font-size:0.72rem; padding:0.35rem 0.2rem;" title="Reprendre la mise précédente">
+                    🔄 Rejouer
+                  </button>
+                  <button type="button" class="btn btn-outline" id="bjDoubleBetsBtn" style="flex:1; font-size:0.72rem; padding:0.35rem 0.2rem;" title="Doubler toutes les mises">
+                    ✖️2 Doubler
+                  </button>
+                  <button type="button" class="btn btn-outline" id="bjClearActiveSpotBtn" style="flex:1; font-size:0.72rem; padding:0.35rem 0.2rem;" title="Vider l'emplacement actif">
+                    🗑️ Vider spot
+                  </button>
+                </div>
+
+                <!-- Récapitulatif détaillé du coût total calculé -->
+                <div class="bj-cost-breakdown" id="bjCostBreakdown" style="margin-top:0.5rem; padding:0.55rem; background:#0f212e; border:1px solid #2f4553; border-radius:8px; font-size:0.78rem;">
+                  <div style="display:flex; justify-content:space-between; margin-bottom:2px; color:#b1bad3;">
+                    <span>Principale :</span>
+                    <span id="bjBreakdownMain">50 🪙 × 1 = 50 🪙</span>
+                  </div>
+                  <div id="bjBreakdownPPWrapper" style="display:none; justify-content:space-between; margin-bottom:2px; color:#b1bad3;">
+                    <span>Perfect Pairs :</span>
+                    <span id="bjBreakdownPP">0 🪙</span>
+                  </div>
+                  <div id="bjBreakdownPlus3Wrapper" style="display:none; justify-content:space-between; margin-bottom:2px; color:#b1bad3;">
+                    <span>21+3 :</span>
+                    <span id="bjBreakdownPlus3">0 🪙</span>
+                  </div>
+                  <div id="bjBreakdownInsWrapper" style="display:none; justify-content:space-between; margin-bottom:2px; color:#b1bad3;">
+                    <span>Assurance :</span>
+                    <span id="bjBreakdownIns">0 🪙</span>
+                  </div>
+                  <div style="border-top:1px solid #2f4553; margin-top:4px; padding-top:4px; display:flex; justify-content:space-between; align-items:center;">
+                    <strong style="color:#ffffff;">Mise totale :</strong>
+                    <strong id="bjTotalBetDisplay" style="color:var(--gold-light); font-size:1.05rem; font-family:var(--font-mono);">50 🪙</strong>
                   </div>
                 </div>
 
-                <div class="quick-bet-chips">
-                  <button class="casino-chip chip-25" data-val="25">25</button>
-                  <button class="casino-chip chip-50" data-val="50">50</button>
-                  <button class="casino-chip chip-100" data-val="100">100</button>
-                  <button class="casino-chip chip-500" data-val="500">500</button>
-                </div>
-
-                <div class="bet-multipliers">
-                  <button class="btn-mult" data-action="half">½</button>
-                  <button class="btn-mult" data-action="double">2×</button>
-                  <button class="btn-mult" data-action="max">MAX</button>
-                </div>
-
                 <button class="btn btn-gold" id="bjDealBtn"
-                  style="padding: 1rem; font-size: 1.15rem; margin-top: auto;">
-                  🃏 DISTRIBUER (DEAL)
+                  style="padding: 0.95rem; font-size: 1.12rem; margin-top: 0.7rem; font-weight:800;">
+                  🃏 DISTRIBUER (50 🪙)
                 </button>
               </div>
             </div>

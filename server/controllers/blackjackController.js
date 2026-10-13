@@ -70,6 +70,16 @@ function parseSessionHands(session) {
   return hands;
 }
 
+// Parse les sidebets depuis la session
+function parseSessionSidebets(session) {
+  if (session && session.sidebets) {
+    try {
+      return JSON.parse(session.sidebets);
+    } catch (e) {}
+  }
+  return null;
+}
+
 // Synchronise l'état des mains en base de données
 function syncSessionColumns(sessionData, hands, userId) {
   const h1 = hands[0] || { cards: [], bet: 0, status: null, canDouble: false, canSplit: false };
@@ -81,6 +91,7 @@ function syncSessionColumns(sessionData, hands, userId) {
     SET deck = ?,
         hands = ?,
         hands_count = ?,
+        sidebets = ?,
         player_hand = ?,
         player_hand_2 = ?,
         player_hand_3 = ?,
@@ -102,6 +113,7 @@ function syncSessionColumns(sessionData, hands, userId) {
     JSON.stringify(sessionData.deck),
     JSON.stringify(hands),
     hands.length,
+    sessionData.sidebets ? JSON.stringify(sessionData.sidebets) : null,
     JSON.stringify(h1.cards),
     h2 ? JSON.stringify(h2.cards) : null,
     h3 ? JSON.stringify(h3.cards) : null,
@@ -133,7 +145,7 @@ function getNextPlayingHandId(hands, currentHandId) {
 }
 
 // Résout le tour complet contre le croupier
-function resolveMultiHandGame(userId, deck, hands, dealerHand) {
+function resolveMultiHandGame(userId, deck, hands, dealerHand, sessionSidebets = null) {
   // Si toutes les mains ont sauté (bust), le croupier ne tire pas de carte supplémentaire
   const allBusted = hands.every(h => h.status === 'bust' || h.score > 21);
 
@@ -176,8 +188,28 @@ function resolveMultiHandGame(userId, deck, hands, dealerHand) {
     }
   }
 
-  const totalBet = hands.reduce((sum, h) => sum + h.bet, 0);
-  const totalPayout = hands.reduce((sum, h) => sum + h.payout, 0);
+  // Résolution finale de l'Assurance si présente
+  if (sessionSidebets && sessionSidebets.insurance && sessionSidebets.insurance.bet > 0) {
+    const insRes = blackjackEngine.evaluateInsurance(dealerHand, sessionSidebets.insurance.bet);
+    sessionSidebets.insurance = insRes;
+  }
+
+  // Recalcul des totaux de sidebets
+  let totalSidebetsBet = sessionSidebets ? (sessionSidebets.totalSidebetsBet || 0) : 0;
+  let totalSidebetsPayout = 0;
+  if (sessionSidebets) {
+    (sessionSidebets.perfectPairs || []).forEach(p => { totalSidebetsPayout += (p.payout || 0); });
+    (sessionSidebets.plus3 || []).forEach(p => { totalSidebetsPayout += (p.payout || 0); });
+    if (sessionSidebets.insurance) {
+      totalSidebetsPayout += (sessionSidebets.insurance.payout || 0);
+    }
+    sessionSidebets.totalSidebetsPayout = totalSidebetsPayout;
+  }
+
+  const mainBetsTotal = hands.reduce((sum, h) => sum + h.bet, 0);
+  const mainPayoutTotal = hands.reduce((sum, h) => sum + h.payout, 0);
+  const totalBet = mainBetsTotal + totalSidebetsBet;
+  const totalPayout = mainPayoutTotal + totalSidebetsPayout;
 
   // Suppression de la session en base
   db.prepare('DELETE FROM blackjack_sessions WHERE user_id = ?').run(userId);
@@ -187,6 +219,9 @@ function resolveMultiHandGame(userId, deck, hands, dealerHand) {
     multiHand: true,
     handsCount: hands.length,
     hands,
+    sidebets: sessionSidebets,
+    mainPayout: mainPayoutTotal,
+    sidebetsPayout: totalSidebetsPayout,
     dealerHand,
     dealerScore: dealerCalc.score
   }, true);
@@ -201,7 +236,12 @@ function resolveMultiHandGame(userId, deck, hands, dealerHand) {
     handsCount: hands.length,
     hands,
     totalBet,
+    mainBet: mainBetsTotal,
     payout: totalPayout,
+    mainPayout: mainPayoutTotal,
+    sidebetsPayout: totalSidebetsPayout,
+    sidebets: sessionSidebets,
+    net: totalPayout - totalBet,
     dealerHand,
     dealerScore: dealerCalc.score,
     coins: newCoins,
@@ -232,6 +272,7 @@ exports.getBlackjackState = (req, res) => {
   }
 
   const hands = parseSessionHands(session);
+  const sidebets = parseSessionSidebets(session);
   const dealerHand = JSON.parse(session.dealer_hand);
   const isPlaying = session.status === 'playing';
 
@@ -253,9 +294,11 @@ exports.getBlackjackState = (req, res) => {
     activeHand: activeHandId,
     dealerHand: visibleDealerHand,
     dealerScore,
+    dealerUpcard: dealerHand[0],
     canDouble: currentHand ? currentHand.canDouble : false,
     canSplit: currentHand ? currentHand.canSplit : false,
-    totalBet: hands.reduce((sum, h) => sum + (h.bet || 0), 0),
+    sidebets,
+    totalBet: hands.reduce((sum, h) => sum + (h.bet || 0), 0) + (sidebets?.totalSidebetsBet || 0),
     // Compatibilité descendante
     bet: h1 ? h1.bet : session.bet,
     bet2: h2 ? h2.bet : 0,
@@ -275,6 +318,7 @@ exports.dealBlackjack = (req, res) => {
     const userId = req.user.id;
     const bet = Number(req.body.bet);
     let handsCount = Number(req.body.handsCount) || 1;
+    const rawSidebets = req.body.sidebets || {};
 
     if (!Number.isInteger(bet) || bet < 10) {
       return res.status(400).json({ error: 'Mise invalide (minimum 10 jetons par main).' });
@@ -284,7 +328,16 @@ exports.dealBlackjack = (req, res) => {
       return res.status(400).json({ error: 'Nombre de mains invalide (choisis entre 1 et 3 mains).' });
     }
 
-    const totalBet = bet * handsCount;
+    // Gestion et calcul des sidebets
+    const ppPerHand = Math.max(0, parseInt(rawSidebets.perfectPairs, 10) || 0);
+    const p3PerHand = Math.max(0, parseInt(rawSidebets.plus3, 10) || 0);
+    const insuranceBet = Math.max(0, parseInt(rawSidebets.insurance, 10) || 0);
+
+    const mainBetTotal = bet * handsCount;
+    const ppTotal = ppPerHand * handsCount;
+    const p3Total = p3PerHand * handsCount;
+    const totalSidebetsBet = ppTotal + p3Total + insuranceBet;
+    const totalBetRequired = mainBetTotal + totalSidebetsBet;
 
     // Vérifier si une partie est déjà active
     const existing = db.prepare("SELECT * FROM blackjack_sessions WHERE user_id = ? AND status = 'playing'").get(userId);
@@ -293,28 +346,52 @@ exports.dealBlackjack = (req, res) => {
     }
 
     const user = db.prepare('SELECT coins FROM users WHERE id = ?').get(userId);
-    if (!user || user.coins < totalBet) {
+    if (!user || user.coins < totalBetRequired) {
       return res.status(400).json({
-        error: `Solde insuffisant pour miser ${handsCount} main${handsCount > 1 ? 's' : ''} (${totalBet} jetons requis).`
+        error: `Solde insuffisant pour ce tour (${totalBetRequired} jetons requis : ${handsCount} main${handsCount > 1 ? 's' : ''} × ${bet} 🪙 + mises annexes : ${totalSidebetsBet} 🪙, solde actuel : ${user ? user.coins : 0} 🪙).`
       });
     }
 
     // Déduire la mise totale immédiatement et de façon atomique
-    const updateDeduct = db.prepare('UPDATE users SET coins = coins - ? WHERE id = ? AND coins >= ?').run(totalBet, userId, totalBet);
+    const updateDeduct = db.prepare('UPDATE users SET coins = coins - ? WHERE id = ? AND coins >= ?').run(totalBetRequired, userId, totalBetRequired);
     if (updateDeduct.changes === 0) {
       return res.status(400).json({
-        error: `Solde insuffisant pour miser ${handsCount} main${handsCount > 1 ? 's' : ''} (${totalBet} jetons requis).`
+        error: `Solde insuffisant pour ce tour (${totalBetRequired} jetons requis).`
       });
     }
 
-    const coinsAfterDeduct = user.coins - totalBet;
+    const coinsAfterDeduct = user.coins - totalBetRequired;
     const deck = blackjackEngine.createDeck();
+
+    const dealerHand = [deck.pop(), deck.pop()];
+    const dealerUpcard = dealerHand[0];
+    const dealerCalc = blackjackEngine.calculateHand(dealerHand);
+
+    const sidebetsDetails = {
+      perfectPairs: [],
+      plus3: [],
+      insurance: null,
+      totalSidebetsBet,
+      totalSidebetsPayout: 0
+    };
+
+    let sidebetsPayoutSum = 0;
 
     const hands = [];
     for (let i = 0; i < handsCount; i++) {
       const cards = [deck.pop(), deck.pop()];
       const calc = blackjackEngine.calculateHand(cards);
       const isBJ = calc.isBlackjack;
+
+      // Évaluation des sidebets pour cette main
+      const ppRes = blackjackEngine.evaluatePerfectPairs(cards[0], cards[1], ppPerHand);
+      const p3Res = blackjackEngine.evaluate21Plus3(cards[0], cards[1], dealerUpcard, p3PerHand);
+
+      sidebetsDetails.perfectPairs.push({ handId: i + 1, ...ppRes });
+      sidebetsDetails.plus3.push({ handId: i + 1, ...p3Res });
+
+      sidebetsPayoutSum += (ppRes.payout || 0) + (p3Res.payout || 0);
+
       hands.push({
         id: i + 1,
         cards,
@@ -324,21 +401,32 @@ exports.dealBlackjack = (req, res) => {
         bet,
         status: isBJ ? 'blackjack' : (i === 0 ? 'playing' : 'waiting'),
         canDouble: !isBJ,
-        canSplit: blackjackEngine.canSplit(cards) && (coinsAfterDeduct >= bet)
+        canSplit: blackjackEngine.canSplit(cards) && (coinsAfterDeduct >= bet),
+        sidebets: {
+          perfectPairs: ppRes,
+          plus3: p3Res
+        }
       });
     }
 
-    const dealerHand = [deck.pop(), deck.pop()];
-    const dealerCalc = blackjackEngine.calculateHand(dealerHand);
+    // Évaluation de l'Assurance
+    if (dealerUpcard.rank === 'A' && insuranceBet > 0) {
+      const insRes = blackjackEngine.evaluateInsurance(dealerHand, insuranceBet);
+      sidebetsDetails.insurance = insRes;
+      sidebetsPayoutSum += (insRes.payout || 0);
+    } else if (insuranceBet > 0) {
+      sidebetsDetails.insurance = { bet: insuranceBet, win: false, payout: 0, label: 'Non applicable (pas d’As)' };
+    }
 
-    // Cas de fin immédiate dès le deal :
-    // - Le croupier a un Blackjack naturel OU toutes les mains du joueur ont un Blackjack
+    sidebetsDetails.totalSidebetsPayout = sidebetsPayoutSum;
+
+    // Fin immédiate dès le deal si dealer a Blackjack naturel OU toutes les mains ont Blackjack
     if (dealerCalc.isBlackjack || hands.every(h => h.isBlackjack)) {
-      const finalResult = resolveMultiHandGame(userId, deck, hands, dealerHand);
+      const finalResult = resolveMultiHandGame(userId, deck, hands, dealerHand, sidebetsDetails);
       return res.json(finalResult);
     }
 
-    // Trouver la première main active (non-Blackjack)
+    // Trouver la première main active
     const firstActive = hands.find(h => !h.isBlackjack) || hands[0];
     firstActive.status = 'playing';
     const activeHandId = firstActive.id;
@@ -350,7 +438,7 @@ exports.dealBlackjack = (req, res) => {
 
     db.prepare(`
       INSERT OR REPLACE INTO blackjack_sessions (
-        user_id, deck, hands, hands_count,
+        user_id, deck, hands, hands_count, sidebets,
         player_hand, player_hand_2, player_hand_3,
         dealer_hand, bet, bet_2, bet_3,
         status, active_hand,
@@ -358,12 +446,13 @@ exports.dealBlackjack = (req, res) => {
         can_split, split_aces,
         status_1, status_2, status_3
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'playing', ?, ?, ?, ?, ?, 0, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'playing', ?, ?, ?, ?, ?, 0, ?, ?, ?)
     `).run(
       userId,
       JSON.stringify(deck),
       JSON.stringify(hands),
       hands.length,
+      JSON.stringify(sidebetsDetails),
       JSON.stringify(h1.cards),
       h2 ? JSON.stringify(h2.cards) : null,
       h3 ? JSON.stringify(h3.cards) : null,
@@ -388,8 +477,10 @@ exports.dealBlackjack = (req, res) => {
       hands,
       activeHand: activeHandId,
       bet,
-      totalBet,
+      totalBet: totalBetRequired,
+      sidebets: sidebetsDetails,
       dealerHand: [dealerHand[0], { rank: '?', suit: '?', color: 'hidden' }],
+      dealerUpcard: dealerHand[0],
       dealerScore: blackjackEngine.calculateHand([dealerHand[0]]).score,
       canDouble: firstActive.canDouble,
       canSplit: firstActive.canSplit,
@@ -418,6 +509,7 @@ exports.splitBlackjack = (req, res) => {
     }
 
     const hands = parseSessionHands(session);
+    const sidebets = parseSessionSidebets(session);
     const activeHand = hands.find(h => h.id === session.active_hand);
     if (!activeHand || !activeHand.canSplit) {
       return res.status(400).json({ error: 'Le split n’est pas disponible sur cette main.' });
@@ -455,9 +547,8 @@ exports.splitBlackjack = (req, res) => {
     activeHand.canSplit = false;
     activeHand.status = isAces ? 'stand' : 'playing';
 
-    const newHandId = hands.length + 1;
+    const activeIdx = hands.indexOf(activeHand);
     const newHand = {
-      id: newHandId,
       cards: hand2Cards,
       score: calc2.score,
       bet,
@@ -466,15 +557,23 @@ exports.splitBlackjack = (req, res) => {
       canSplit: false,
       isSplit: true
     };
-    hands.splice(hands.indexOf(activeHand) + 1, 0, newHand);
+    // Insérer la deuxième main immédiatement après la main splittée
+    hands.splice(activeIdx + 1, 0, newHand);
+
+    // Renuméroter proprement tous les IDs pour correspondre aux index 1, 2, 3...
+    hands.forEach((h, idx) => {
+      h.id = idx + 1;
+    });
+
+    const activeHandId = activeHand.id;
 
     // Si As splittés et toutes les mains en stand : terminer immédiatement
     if (hands.every(h => h.status !== 'playing' && h.status !== 'waiting')) {
-      const finalResult = resolveMultiHandGame(userId, deck, hands, dealerHand);
+      const finalResult = resolveMultiHandGame(userId, deck, hands, dealerHand, sidebets);
       return res.json(finalResult);
     }
 
-    syncSessionColumns({ deck, activeHand: activeHand.id, status: 'playing' }, hands, userId);
+    syncSessionColumns({ deck, activeHand: activeHandId, status: 'playing', sidebets }, hands, userId);
     const remainingCoins = db.prepare('SELECT coins FROM users WHERE id = ?').get(userId).coins;
 
     return res.json({
@@ -482,11 +581,12 @@ exports.splitBlackjack = (req, res) => {
       status: 'playing',
       handsCount: hands.length,
       hands,
-      activeHand: activeHand.id,
+      activeHand: activeHandId,
       dealerHand: [dealerHand[0], { rank: '?', suit: '?', color: 'hidden' }],
       dealerScore: blackjackEngine.calculateHand([dealerHand[0]]).score,
       canDouble: activeHand.canDouble,
       canSplit: false,
+      sidebets,
       coins: remainingCoins,
       playerHand: hands[0].cards,
       playerScore: hands[0].score,
@@ -511,6 +611,7 @@ exports.hitBlackjack = (req, res) => {
     const deck = JSON.parse(session.deck);
     const dealerHand = JSON.parse(session.dealer_hand);
     const hands = parseSessionHands(session);
+    const sidebets = parseSessionSidebets(session);
     const activeHand = hands.find(h => h.id === session.active_hand);
 
     if (!activeHand) {
@@ -534,12 +635,12 @@ exports.hitBlackjack = (req, res) => {
       const nextId = getNextPlayingHandId(hands, activeHand.id);
       if (nextId === null) {
         // Toutes les mains du joueur ont fini -> tour du croupier
-        const finalResult = resolveMultiHandGame(userId, deck, hands, dealerHand);
+        const finalResult = resolveMultiHandGame(userId, deck, hands, dealerHand, sidebets);
         return res.json(finalResult);
       } else {
         const nextHand = hands.find(h => h.id === nextId);
         nextHand.status = 'playing';
-        syncSessionColumns({ deck, activeHand: nextId, status: 'playing' }, hands, userId);
+        syncSessionColumns({ deck, activeHand: nextId, status: 'playing', sidebets }, hands, userId);
 
         return res.json({
           activeGame: true,
@@ -547,6 +648,7 @@ exports.hitBlackjack = (req, res) => {
           handsCount: hands.length,
           hands,
           activeHand: nextId,
+          sidebets,
           dealerHand: [dealerHand[0], { rank: '?', suit: '?', color: 'hidden' }],
           dealerScore: blackjackEngine.calculateHand([dealerHand[0]]).score,
           canDouble: nextHand.canDouble,
@@ -563,7 +665,7 @@ exports.hitBlackjack = (req, res) => {
     }
 
     // La main active continue
-    syncSessionColumns({ deck, activeHand: activeHand.id, status: 'playing' }, hands, userId);
+    syncSessionColumns({ deck, activeHand: activeHand.id, status: 'playing', sidebets }, hands, userId);
 
     return res.json({
       activeGame: true,
@@ -571,6 +673,7 @@ exports.hitBlackjack = (req, res) => {
       handsCount: hands.length,
       hands,
       activeHand: activeHand.id,
+      sidebets,
       dealerHand: [dealerHand[0], { rank: '?', suit: '?', color: 'hidden' }],
       dealerScore: blackjackEngine.calculateHand([dealerHand[0]]).score,
       canDouble: false,
@@ -600,6 +703,7 @@ exports.standBlackjack = (req, res) => {
     const deck = JSON.parse(session.deck);
     const dealerHand = JSON.parse(session.dealer_hand);
     const hands = parseSessionHands(session);
+    const sidebets = parseSessionSidebets(session);
     const activeHand = hands.find(h => h.id === session.active_hand);
 
     if (!activeHand) {
@@ -610,13 +714,13 @@ exports.standBlackjack = (req, res) => {
 
     const nextId = getNextPlayingHandId(hands, activeHand.id);
     if (nextId === null) {
-      const finalResult = resolveMultiHandGame(userId, deck, hands, dealerHand);
+      const finalResult = resolveMultiHandGame(userId, deck, hands, dealerHand, sidebets);
       return res.json(finalResult);
     }
 
     const nextHand = hands.find(h => h.id === nextId);
     nextHand.status = 'playing';
-    syncSessionColumns({ deck, activeHand: nextId, status: 'playing' }, hands, userId);
+    syncSessionColumns({ deck, activeHand: nextId, status: 'playing', sidebets }, hands, userId);
 
     return res.json({
       activeGame: true,
@@ -624,6 +728,7 @@ exports.standBlackjack = (req, res) => {
       handsCount: hands.length,
       hands,
       activeHand: nextId,
+      sidebets,
       dealerHand: [dealerHand[0], { rank: '?', suit: '?', color: 'hidden' }],
       dealerScore: blackjackEngine.calculateHand([dealerHand[0]]).score,
       canDouble: nextHand.canDouble,
@@ -653,6 +758,7 @@ exports.doubleBlackjack = (req, res) => {
     const deck = JSON.parse(session.deck);
     const dealerHand = JSON.parse(session.dealer_hand);
     const hands = parseSessionHands(session);
+    const sidebets = parseSessionSidebets(session);
     const activeHand = hands.find(h => h.id === session.active_hand);
 
     if (!activeHand || !activeHand.canDouble) {
@@ -680,13 +786,13 @@ exports.doubleBlackjack = (req, res) => {
 
     const nextId = getNextPlayingHandId(hands, activeHand.id);
     if (nextId === null) {
-      const finalResult = resolveMultiHandGame(userId, deck, hands, dealerHand);
+      const finalResult = resolveMultiHandGame(userId, deck, hands, dealerHand, sidebets);
       return res.json(finalResult);
     }
 
     const nextHand = hands.find(h => h.id === nextId);
     nextHand.status = 'playing';
-    syncSessionColumns({ deck, activeHand: nextId, status: 'playing' }, hands, userId);
+    syncSessionColumns({ deck, activeHand: nextId, status: 'playing', sidebets }, hands, userId);
 
     return res.json({
       activeGame: true,
@@ -694,6 +800,7 @@ exports.doubleBlackjack = (req, res) => {
       handsCount: hands.length,
       hands,
       activeHand: nextId,
+      sidebets,
       dealerHand: [dealerHand[0], { rank: '?', suit: '?', color: 'hidden' }],
       dealerScore: blackjackEngine.calculateHand([dealerHand[0]]).score,
       canDouble: nextHand.canDouble,

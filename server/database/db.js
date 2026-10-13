@@ -59,6 +59,7 @@ function initDb() {
       status_3 TEXT DEFAULT NULL,
       hands_count INTEGER NOT NULL DEFAULT 1,
       hands TEXT DEFAULT NULL,
+      sidebets TEXT DEFAULT NULL,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 
@@ -221,6 +222,11 @@ function initDb() {
     db.exec("ALTER TABLE blackjack_sessions ADD COLUMN bet_3 INTEGER NOT NULL DEFAULT 0");
     db.exec("ALTER TABLE blackjack_sessions ADD COLUMN status_3 TEXT DEFAULT NULL");
     db.exec("ALTER TABLE blackjack_sessions ADD COLUMN can_double_3 INTEGER NOT NULL DEFAULT 1");
+  }
+
+  const hasSidebetsCol = bjCols.some(c => c.name === 'sidebets');
+  if (!hasSidebetsCol) {
+    db.exec("ALTER TABLE blackjack_sessions ADD COLUMN sidebets TEXT DEFAULT NULL");
   }
 
   // Table des Demandes de Livraison Directe (remplace le système de code de retrait)
