@@ -104,6 +104,32 @@ const Router = {
     this.handleRoute(window.location.pathname, true);
   },
 
+  isAdminUser() {
+    return !!(window.State && window.State.isAuthenticated && window.State.user && (window.State.user.role === 'admin' || window.State.user.role === 'bde'));
+  },
+
+  checkRouteAccess(viewName) {
+    if (viewName === 'admin') {
+      const isAuth = !!(window.State && window.State.isAuthenticated);
+      const isAdmin = this.isAdminUser();
+
+      if (!isAdmin) {
+        if (!isAuth) {
+          if (window.UI) {
+            window.UI.showToast('Accès restreint. Veuillez vous connecter avec un compte Administrateur BDE.', 'error', 4500);
+            setTimeout(() => window.UI.openAuthModal('login'), 350);
+          }
+        } else {
+          if (window.UI) {
+            window.UI.showToast('Accès interdit. Cette section est strictement réservée aux membres du BDE.', 'error', 4500);
+          }
+        }
+        return false;
+      }
+    }
+    return true;
+  },
+
   resolveRoute(path) {
     const cleanPath = this.normalizePath(path);
     if (this.routes[cleanPath]) {
@@ -120,7 +146,13 @@ const Router = {
   },
 
   navigate(path, replace = false) {
-    const routeInfo = this.resolveRoute(path);
+    let routeInfo = this.resolveRoute(path);
+
+    // Contrôle d'accès sécurisé pour les routes protégées (/admin)
+    if (!this.checkRouteAccess(routeInfo.view)) {
+      routeInfo = { path: '/lobby', view: 'lobby', param: null };
+      replace = true;
+    }
 
     if (window.location.pathname !== routeInfo.path) {
       if (replace) {
@@ -135,10 +167,14 @@ const Router = {
 
   handleRoute(path, isInitial = false) {
     const cleanPath = this.normalizePath(path);
-    const routeInfo = this.resolveRoute(cleanPath);
+    let routeInfo = this.resolveRoute(cleanPath);
 
-    // Normaliser l'URL si inconnue
-    if (routeInfo.path === '/lobby' && cleanPath !== '/' && cleanPath !== '/lobby') {
+    // Contrôle d'accès sécurisé (pour chargement direct par URL ou rafraîchissement)
+    if (!this.checkRouteAccess(routeInfo.view)) {
+      routeInfo = { path: '/lobby', view: 'lobby', param: null };
+      window.history.replaceState({ path: '/lobby', view: 'lobby' }, '', '/lobby');
+    } else if (routeInfo.path === '/lobby' && cleanPath !== '/' && cleanPath !== '/lobby') {
+      // Normaliser l'URL si inconnue
       window.history.replaceState({ path: '/lobby', view: 'lobby' }, '', '/lobby');
     }
 
@@ -156,6 +192,12 @@ const Router = {
 
   renderView(viewName, isInitial = false, param = null) {
     if (!window.UI) return;
+
+    // Protection supplémentaire avant le rendu visuel
+    if (viewName === 'admin' && !this.isAdminUser()) {
+      viewName = 'lobby';
+    }
+
     window.UI.switchView(viewName);
 
     // Déclencher les chargeurs de données selon la vue

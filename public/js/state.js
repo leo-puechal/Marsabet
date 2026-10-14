@@ -179,6 +179,8 @@ const State = {
       const isAdmin = this.user.role === 'admin' || this.user.role === 'bde';
       if (adminNavLink) adminNavLink.style.display = isAdmin ? 'inline-flex' : 'none';
       if (sidebarAdminItem) sidebarAdminItem.style.display = isAdmin ? 'list-item' : 'none';
+      const profileAdminBox = document.getElementById('profileAdminBox');
+      if (profileAdminBox) profileAdminBox.style.display = isAdmin ? 'flex' : 'none';
 
       // Actualiser le statut du bouton de bonus quotidien
       const dailyBtn = document.getElementById('claimDailyBtn');
@@ -211,6 +213,8 @@ const State = {
       if (sidebarLogoutBtn) sidebarLogoutBtn.style.display = 'none';
       if (adminNavLink) adminNavLink.style.display = 'none';
       if (sidebarAdminItem) sidebarAdminItem.style.display = 'none';
+      const profileAdminBox = document.getElementById('profileAdminBox');
+      if (profileAdminBox) profileAdminBox.style.display = 'none';
 
       this.updateStreakDots(0);
     }

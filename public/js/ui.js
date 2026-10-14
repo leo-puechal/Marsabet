@@ -127,6 +127,25 @@ const UI = {
 
   // Switch views
   switchView(viewName, updateUrl = true) {
+    if (viewName === 'admin') {
+      const isAuth = !!(window.State && window.State.isAuthenticated);
+      const isAdmin = !!(isAuth && window.State.user && (window.State.user.role === 'admin' || window.State.user.role === 'bde'));
+
+      if (!isAdmin) {
+        if (!isAuth) {
+          this.showToast('Accès restreint. Veuillez vous connecter avec un compte Administrateur BDE.', 'error', 4500);
+          setTimeout(() => this.openAuthModal('login'), 350);
+        } else {
+          this.showToast('Accès interdit. Cette section est strictement réservée aux membres du BDE.', 'error', 4500);
+        }
+
+        viewName = 'lobby';
+        if (updateUrl && window.Router) {
+          window.Router.navigate('/lobby', true);
+        }
+      }
+    }
+
     const views = document.querySelectorAll('.section-view');
     views.forEach(v => v.classList.remove('active'));
 

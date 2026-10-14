@@ -206,14 +206,34 @@ exports.claimDailyBonus = (req, res) => {
   });
 };
 
+const failedAdminAttempts = new Map();
+
 exports.becomeAdmin = (req, res) => {
+  const userId = req.user.id;
+  const now = Date.now();
+
+  const attempt = failedAdminAttempts.get(userId) || { count: 0, lockedUntil: 0 };
+  if (attempt.lockedUntil > now) {
+    const remainingMin = Math.ceil((attempt.lockedUntil - now) / 60000);
+    return res.status(429).json({ error: `Trop de tentatives erronées. Accès verrouillé pour ${remainingMin} minute(s).` });
+  }
+
   const { secretKey } = req.body;
   const adminSecret = process.env.ADMIN_SECRET_KEY || config.adminSecretKey || 'darkrider84';
 
   if (!secretKey || secretKey.trim() !== adminSecret.trim()) {
+    attempt.count += 1;
+    if (attempt.count >= 3) {
+      attempt.lockedUntil = now + (15 * 60 * 1000); // 15 min lock
+      failedAdminAttempts.set(userId, attempt);
+      return res.status(429).json({ error: 'Trop de tentatives erronées. Accès temporairement bloqué pendant 15 minutes.' });
+    }
+    failedAdminAttempts.set(userId, attempt);
     return res.status(403).json({ error: 'Code administrateur incorrect.' });
   }
 
+  // Succès : réinitialiser les tentatives
+  failedAdminAttempts.delete(userId);
   db.prepare("UPDATE users SET role = 'admin' WHERE id = ?").run(req.user.id);
   const updatedUser = db.prepare('SELECT id, username, role, coins FROM users WHERE id = ?').get(req.user.id);
 

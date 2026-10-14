@@ -21,11 +21,20 @@ document.addEventListener('DOMContentLoaded', async () => {
       e.preventDefault();
       const view = link.dataset.view;
       if (view) {
-        window.UI.switchView(view);
-        if (view === 'leaderboard') loadLeaderboard();
-        if (view === 'profile') loadProfile();
         if (view === 'admin') {
-          if (window.AdminBDE) window.AdminBDE.switchTab('orders');
+          const isAdmin = !!(window.State && window.State.isAuthenticated && window.State.user && (window.State.user.role === 'admin' || window.State.user.role === 'bde'));
+          if (!isAdmin) {
+            window.UI?.showToast('Accès interdit. Cette section est strictement réservée au BDE.', 'error');
+            return;
+          }
+        }
+        if (window.Router && window.Router.viewToPath[view]) {
+          window.Router.navigate(window.Router.viewToPath[view]);
+        } else {
+          window.UI.switchView(view);
+          if (view === 'leaderboard') loadLeaderboard();
+          if (view === 'profile') loadProfile();
+          if (view === 'admin' && window.AdminBDE) window.AdminBDE.switchTab('orders');
         }
       }
     });
@@ -183,6 +192,14 @@ document.addEventListener('DOMContentLoaded', async () => {
       const view = link.dataset.view;
       if (view) {
         e.preventDefault();
+        if (view === 'admin') {
+          const isAdmin = !!(window.State && window.State.isAuthenticated && window.State.user && (window.State.user.role === 'admin' || window.State.user.role === 'bde'));
+          if (!isAdmin) {
+            window.UI?.showToast('Accès interdit. Cette section est strictement réservée au BDE.', 'error');
+            closeMobileDrawer();
+            return;
+          }
+        }
         if (window.Router && window.Router.viewToPath[view]) {
           window.Router.navigate(window.Router.viewToPath[view]);
         } else {
@@ -353,33 +370,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (window.VideoPokerGame) window.VideoPokerGame.init();
   if (window.DragonTowerGame) window.DragonTowerGame.init();
   if (window.AdminBDE) window.AdminBDE.init();
-  if (window.Router) window.Router.init();
 
-  // Devenir Admin avec code secret
-  const becomeAdminBtn = document.getElementById('becomeAdminBtn');
-  if (becomeAdminBtn) {
-    becomeAdminBtn.addEventListener('click', async () => {
-      const secret = prompt('Entre le mot de passe secret BDE');
-      if (!secret) return;
-      try {
-        const res = await window.API.becomeAdmin(secret);
-        window.State.user.role = 'admin';
-        window.State.updateUI();
-        window.UI.showToast(res.message, 'success');
-        if (window.Router) {
-          window.Router.navigate('/admin');
-        } else {
-          window.UI.switchView('admin');
-        }
-        if (window.AdminBDE) window.AdminBDE.switchTab('orders');
-      } catch (err) {
-        window.UI.showToast(err.message, 'error');
-      }
-    });
-  }
-
-  // Vérification de la session utilisateur persistante
+  // Vérification de la session utilisateur persistante AVANT le routage
   await checkSession();
+
+  // Initialisation du Router sécurisé une fois la session authentifiée
+  if (window.Router) window.Router.init();
   loadGlobalStats();
 });
 

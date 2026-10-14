@@ -244,7 +244,20 @@ const AdminBDE = {
     }
   },
 
+  checkPermission() {
+    const isAdmin = !!(window.State && window.State.isAuthenticated && window.State.user && (window.State.user.role === 'admin' || window.State.user.role === 'bde'));
+    if (!isAdmin) {
+      if (window.UI) {
+        window.UI.switchView('lobby');
+      }
+      return false;
+    }
+    return true;
+  },
+
   switchTab(tab) {
+    if (!this.checkPermission()) return;
+
     this.activeTab = tab;
     document.querySelectorAll('.admin-tab-btn').forEach(b => {
       b.classList.toggle('active', b.dataset.tab === tab);
