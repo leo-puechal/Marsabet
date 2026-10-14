@@ -2,6 +2,7 @@ const db = require('../database/db');
 const fortuneWheelService = require('../services/fortuneWheelService');
 const promoCodeService = require('../services/promoCodeService');
 const socketService = require('../services/socketService');
+const presenceService = require('../services/presenceService');
 
 // Récupérer toutes les demandes de livraison directe pour le suivi BDE
 exports.getAllDeliveries = (req, res) => {
@@ -464,6 +465,17 @@ exports.updateUserIdentity = (req, res) => {
   } catch (err) {
     console.error('Erreur updateUserIdentity admin:', err);
     return res.status(500).json({ error: 'Erreur lors de la modification de l\'identité.' });
+  }
+};
+
+// Récupérer la liste des joueurs actuellement connectés en temps réel
+exports.getOnlinePlayers = (req, res) => {
+  try {
+    const summary = presenceService.getOnlineSummary();
+    return res.json(summary);
+  } catch (err) {
+    console.error('Erreur getOnlinePlayers admin:', err);
+    return res.status(500).json({ error: 'Impossible de récupérer la liste des joueurs connectés.' });
   }
 };
 

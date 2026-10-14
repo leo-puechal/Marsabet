@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const config = require('../config/config');
 const db = require('../database/db');
+const presenceService = require('../services/presenceService');
 
 function authMiddleware(req, res, next) {
   let token = null;
@@ -24,6 +25,7 @@ function authMiddleware(req, res, next) {
     }
 
     req.user = user;
+    presenceService.recordActivity(user.id);
     next();
   } catch (err) {
     return res.status(401).json({ error: 'Session expirée ou invalide. Veuillez vous reconnecter.' });

@@ -1,7 +1,9 @@
 // Admin BDE Module for Marsabet
 
 const AdminBDE = {
-  activeTab: 'orders', // 'orders', 'promos', 'wheels'
+  activeTab: 'orders', // 'orders', 'users', 'online', 'promos', 'wheels', etc.
+  onlinePlayersCache: [],
+  onlineSearchTimeout: null,
 
   init() {
     this.bindEvents();
@@ -15,6 +17,33 @@ const AdminBDE = {
         this.switchTab(tab);
       });
     });
+
+    // Filtres des Joueurs en Ligne
+    const onlineSearch = document.getElementById('adminOnlineSearchInput');
+    if (onlineSearch) {
+      onlineSearch.addEventListener('input', () => {
+        clearTimeout(this.onlineSearchTimeout);
+        this.onlineSearchTimeout = setTimeout(() => this.renderOnlinePlayers(), 250);
+      });
+    }
+
+    const onlineStatusFilter = document.getElementById('adminOnlineStatusFilter');
+    if (onlineStatusFilter) {
+      onlineStatusFilter.addEventListener('change', () => this.renderOnlinePlayers());
+    }
+
+    const onlineSortSelect = document.getElementById('adminOnlineSortSelect');
+    if (onlineSortSelect) {
+      onlineSortSelect.addEventListener('change', () => this.renderOnlinePlayers());
+    }
+
+    const refreshOnlineBtn = document.getElementById('adminRefreshOnlineBtn');
+    if (refreshOnlineBtn) {
+      refreshOnlineBtn.addEventListener('click', () => {
+        this.loadOnlinePlayers(true);
+        window.UI?.showToast('Liste des joueurs en ligne actualisée.', 'info', 1500);
+      });
+    }
 
     // Filtres des demandes de livraison
     const statusFilter = document.getElementById('adminOrdersStatusFilter');
@@ -221,6 +250,7 @@ const AdminBDE = {
       b.classList.toggle('active', b.dataset.tab === tab);
     });
 
+    const areaOnline = document.getElementById('adminTabOnline');
     const areaOrders = document.getElementById('adminTabOrders');
     const areaUsers = document.getElementById('adminTabUsers');
     const areaPromos = document.getElementById('adminTabPromos');
@@ -228,6 +258,7 @@ const AdminBDE = {
     const areaContests = document.getElementById('adminTabContests');
     const areaAnnouncements = document.getElementById('adminTabAnnouncements');
 
+    if (areaOnline) areaOnline.style.display = (tab === 'online') ? 'block' : 'none';
     if (areaOrders) areaOrders.style.display = (tab === 'orders') ? 'block' : 'none';
     if (areaUsers) areaUsers.style.display = (tab === 'users') ? 'block' : 'none';
     if (areaPromos) areaPromos.style.display = (tab === 'promos') ? 'block' : 'none';
@@ -235,6 +266,10 @@ const AdminBDE = {
     if (areaContests) areaContests.style.display = (tab === 'contests') ? 'block' : 'none';
     if (areaAnnouncements) areaAnnouncements.style.display = (tab === 'announcements') ? 'block' : 'none';
 
+    if (tab === 'online') {
+      this.loadOnlinePlayers();
+      if (window.SyncEngine) window.SyncEngine.subscribeAdminPresence();
+    }
     if (tab === 'orders') this.loadOrders();
     if (tab === 'users') this.loadUsers();
     if (tab === 'promos') this.loadPromoCodes();
@@ -1735,6 +1770,219 @@ const AdminBDE = {
       console.error('Erreur deleteAnnouncement:', err);
       window.UI?.showToast(err.message || 'Erreur lors de la suppression.', 'error');
     }
+  },
+
+  // ==========================================
+  // SECTION JOUEURS EN LIGNE (ADMIN BDE)
+  // ==========================================
+
+  async loadOnlinePlayers(showLoading = false) {
+    const tbody = document.getElementById('adminOnlinePlayersList');
+    if (showLoading && tbody && this.onlinePlayersCache.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:2.5rem; color:var(--text-muted);"><span class="live-pulse-dot" style="margin-right:0.5rem;"></span> Détection des joueurs connectés...</td></tr>`;
+    }
+    try {
+      const res = await window.API.adminGetOnlinePlayers();
+      if (res) {
+        this.onOnlinePlayersUpdated(res);
+      }
+    } catch (err) {
+      console.error('Erreur chargement joueurs en ligne:', err);
+      if (tbody && this.onlinePlayersCache.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:2rem; color:var(--lose-red);">Erreur lors de la récupération des joueurs en ligne (${err.message || 'serveur injoignable'}).</td></tr>`;
+      }
+    }
+  },
+
+  onOnlinePlayersUpdated(data) {
+    if (!data) return;
+    this.onlinePlayersCache = Array.isArray(data.players) ? data.players : [];
+
+    // Mise à jour des cartes de synthèse
+    const totalCount = Number(data.totalOnline !== undefined ? data.totalOnline : this.onlinePlayersCache.length);
+    const totalTabs = Number(data.totalTabs !== undefined ? data.totalTabs : this.onlinePlayersCache.reduce((s, p) => s + (p.tabCount || 1), 0));
+    const totalCoins = Number(data.totalCoins !== undefined ? data.totalCoins : this.onlinePlayersCache.reduce((s, p) => s + (p.coins || 0), 0));
+    const activeCount = Number(data.activeRecentCount !== undefined ? data.activeRecentCount : this.onlinePlayersCache.filter(p => (p.idleSeconds || 0) <= 120).length);
+
+    const elTotal = document.getElementById('adminOnlineTotalCount');
+    const elActive = document.getElementById('adminOnlineActiveCount');
+    const elTabs = document.getElementById('adminOnlineTotalTabs');
+    const elCoins = document.getElementById('adminOnlineTotalCoins');
+    const elBadge = document.getElementById('adminOnlineTabBadge');
+
+    if (elTotal) elTotal.textContent = totalCount;
+    if (elActive) elActive.textContent = activeCount;
+    if (elTabs) elTabs.textContent = totalTabs;
+    if (elCoins) elCoins.textContent = `${totalCoins.toLocaleString('fr-FR')} 🪙`;
+    if (elBadge) {
+      elBadge.textContent = totalCount;
+      elBadge.style.display = totalCount > 0 ? 'inline-flex' : 'none';
+    }
+
+    // Si l'onglet actif est "online", rafraîchir l'affichage du tableau
+    if (this.activeTab === 'online') {
+      this.renderOnlinePlayers();
+    }
+  },
+
+  renderOnlinePlayers() {
+    const tbody = document.getElementById('adminOnlinePlayersList');
+    if (!tbody) return;
+
+    const esc = typeof window.escapeHtml === 'function' ? window.escapeHtml : (s) => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+    const formatDuration = (seconds) => {
+      if (seconds < 45) return "À l'instant";
+      if (seconds < 90) return "Il y a 1 min";
+      if (seconds < 3600) return `Il y a ${Math.floor(seconds / 60)} min`;
+      const hours = Math.floor(seconds / 3600);
+      const mins = Math.floor((seconds % 3600) / 60);
+      if (mins === 0) return `Il y a ${hours} h`;
+      return `Il y a ${hours} h ${mins} min`;
+    };
+
+    const formatAgo = (seconds) => {
+      if (seconds < 20) return "à l'instant";
+      if (seconds < 60) return `${Math.floor(seconds)} s`;
+      if (seconds < 3600) return `${Math.floor(seconds / 60)} min`;
+      const hours = Math.floor(seconds / 3600);
+      return `${hours} h`;
+    };
+
+    const searchQuery = (document.getElementById('adminOnlineSearchInput')?.value || '').toLowerCase().trim();
+    const statusFilter = document.getElementById('adminOnlineStatusFilter')?.value || 'all';
+    const sortBy = document.getElementById('adminOnlineSortSelect')?.value || 'connected:desc';
+
+    // Filtrer la liste
+    let players = this.onlinePlayersCache.filter(p => {
+      if (searchQuery) {
+        const usernameMatch = (p.username || '').toLowerCase().includes(searchQuery);
+        const firstMatch = (p.firstName || '').toLowerCase().includes(searchQuery);
+        const lastMatch = (p.lastName || '').toLowerCase().includes(searchQuery);
+        const fullMatch = `${p.firstName || ''} ${p.lastName || ''}`.toLowerCase().includes(searchQuery);
+        if (!usernameMatch && !firstMatch && !lastMatch && !fullMatch) return false;
+      }
+
+      const idle = p.idleSeconds !== undefined ? p.idleSeconds : Math.floor((Date.now() - (p.lastActivityAt || p.connectedAt || Date.now())) / 1000);
+
+      if (statusFilter === 'active' && idle > 120) return false;
+      if (statusFilter === 'idle' && idle <= 120) return false;
+      if (statusFilter === 'multitab' && (p.tabCount || 1) <= 1) return false;
+
+      return true;
+    });
+
+    // Trier la liste
+    players.sort((a, b) => {
+      switch (sortBy) {
+        case 'connected:asc':
+          return (a.connectedAt || 0) - (b.connectedAt || 0);
+        case 'connected:desc':
+          return (b.connectedAt || 0) - (a.connectedAt || 0);
+        case 'activity:desc':
+          return (b.lastActivityAt || 0) - (a.lastActivityAt || 0);
+        case 'coins:desc':
+          return (b.coins || 0) - (a.coins || 0);
+        case 'coins:asc':
+          return (a.coins || 0) - (b.coins || 0);
+        case 'username:asc':
+          return (a.username || '').localeCompare(b.username || '');
+        case 'name:asc': {
+          const nameA = `${a.lastName || ''} ${a.firstName || ''}`.trim() || a.username || '';
+          const nameB = `${b.lastName || ''} ${b.firstName || ''}`.trim() || b.username || '';
+          return nameA.localeCompare(nameB);
+        }
+        default:
+          return (b.connectedAt || 0) - (a.connectedAt || 0);
+      }
+    });
+
+    if (players.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="7" style="text-align:center; padding:3rem 1.5rem; color:var(--text-muted);">
+            <div style="font-size:2.2rem; margin-bottom:0.6rem;">💤</div>
+            <div style="font-weight:700; color:var(--text-secondary); margin-bottom:0.25rem;">Aucun joueur en ligne</div>
+            <div style="font-size:0.85rem;">${searchQuery || statusFilter !== 'all' ? 'Aucun élève connecté ne correspond aux filtres actuels.' : 'Aucun élève n\'est actuellement connecté sur le site.'}</div>
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
+    const now = Date.now();
+    tbody.innerHTML = players.map(p => {
+      const connectedSec = p.connectedSeconds !== undefined ? p.connectedSeconds : Math.max(0, Math.floor((now - (p.connectedAt || now)) / 1000));
+      const idleSec = p.idleSeconds !== undefined ? p.idleSeconds : Math.max(0, Math.floor((now - (p.lastActivityAt || now)) / 1000));
+      const connectedDateStr = p.connectedAt ? new Date(p.connectedAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '--:--';
+      
+      const tabCount = p.tabCount || 1;
+      const initial = (p.username || '?').charAt(0).toUpperCase();
+
+      // Badge d'activité
+      let activityBadge = '';
+      if (idleSec <= 120) {
+        activityBadge = `<span class="online-status-pill status-active" title="Dernière interaction il y a ${idleSec}s"><span class="pulse-icon">●</span> Actif (${formatAgo(idleSec)})</span>`;
+      } else if (idleSec <= 600) {
+        activityBadge = `<span class="online-status-pill status-idle" title="Inactif depuis ${formatAgo(idleSec)}">⏸️ Inactif (${formatAgo(idleSec)})</span>`;
+      } else {
+        activityBadge = `<span class="online-status-pill status-away" title="Aucune interaction depuis ${formatAgo(idleSec)}">💤 Absent (${formatAgo(idleSec)})</span>`;
+      }
+
+      // Nom & Prénom
+      let fullNameDisplay = '<span style="color:var(--text-muted); font-style:italic;">Non renseigné</span>';
+      if (p.lastName || p.firstName) {
+        const last = (p.lastName || '').toUpperCase();
+        const first = p.firstName || '';
+        fullNameDisplay = `<div style="font-weight:600; color:#FFF;">${esc(last)} ${esc(first)}</div>`;
+      }
+
+      // Sessions
+      const sessionsDisplay = tabCount > 1
+        ? `<span class="tab-counter-pill multi" title="${tabCount} onglets ou fenêtres ouverts">📱💻 ${tabCount} onglets</span>`
+        : `<span class="tab-counter-pill" title="1 onglet ouvert">💻 1 onglet</span>`;
+
+      // Rôle
+      const roleBadge = p.role === 'admin'
+        ? `<span class="admin-role-badge role-admin" style="font-size:0.68rem; padding:0.18rem 0.5rem;">👑 Admin BDE</span>`
+        : `<span class="admin-role-badge role-student" style="font-size:0.68rem; padding:0.18rem 0.5rem;">🎓 Élève</span>`;
+
+      // Safe JSON data for button
+      const safeUsernameAttr = esc(p.username);
+
+      return `
+        <tr>
+          <td>
+            <div class="admin-user-cell">
+              <div class="admin-user-avatar">${esc(initial)}</div>
+              <div>
+                <div style="font-weight:700; color:var(--gold-light); font-size:0.95rem;">${esc(p.username)}</div>
+                <div style="margin-top:0.2rem;">${roleBadge}</div>
+              </div>
+            </div>
+          </td>
+          <td>${fullNameDisplay}</td>
+          <td>
+            <span style="font-weight:700; color:var(--gold-primary); font-family:var(--font-mono); font-size:0.95rem;">
+              ${Number(p.coins || 0).toLocaleString('fr-FR')} 🪙
+            </span>
+          </td>
+          <td>
+            <div style="font-weight:600; color:#FFF;">${formatDuration(connectedSec)}</div>
+            <div style="font-size:0.75rem; color:var(--text-muted);">Depuis ${connectedDateStr}</div>
+          </td>
+          <td>${activityBadge}</td>
+          <td>${sessionsDisplay}</td>
+          <td style="text-align:right;">
+            <button class="admin-btn-action admin-btn-coins" 
+              onclick="AdminBDE.openUserCoinsModal({ id: ${p.userId}, username: '${safeUsernameAttr}', coins: ${Number(p.coins || 0)} })"
+              title="Ajuster le solde de ${safeUsernameAttr}">
+              💰 Solde
+            </button>
+          </td>
+        </tr>
+      `;
+    }).join('');
   }
 };
 

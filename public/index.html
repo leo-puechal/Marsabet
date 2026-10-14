@@ -2236,12 +2236,104 @@
 
             <!-- Navigation par Onglets Admin -->
             <div class="admin-tabs-nav">
+              <button class="admin-tab-btn" data-tab="online">
+                <span class="live-pulse-dot" style="margin-right:0.35rem;"></span> Joueurs en ligne <span class="badge-online-count" id="adminOnlineTabBadge">0</span>
+              </button>
               <button class="admin-tab-btn active" data-tab="orders">📦 Demandes de Livraison Directe</button>
               <button class="admin-tab-btn" data-tab="users">👥 Utilisateurs & Soldes</button>
               <button class="admin-tab-btn" data-tab="promos">🎟️ Codes Promo BDE</button>
               <button class="admin-tab-btn" data-tab="wheels">🎡 Récompenses des Roues</button>
               <button class="admin-tab-btn" data-tab="contests">🏆 Concours & Défis</button>
               <button class="admin-tab-btn" data-tab="announcements">📢 Annonces BDE</button>
+            </div>
+
+            <!-- Onglet 0 : Joueurs en Ligne en Temps Réel (Admin BDE) -->
+            <div id="adminTabOnline" style="display:none;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem; flex-wrap:wrap; gap:1rem;">
+                <div>
+                  <div style="display:flex; align-items:center; gap:0.6rem; margin-bottom:0.35rem;">
+                    <span class="live-pulse-dot" title="Flux temps réel actif"></span>
+                    <h3 style="font-family:var(--font-display); font-size:1.35rem; color:var(--gold-light); margin:0;">
+                      🟢 Joueurs Actuellement en Ligne
+                    </h3>
+                  </div>
+                  <p style="color:var(--text-secondary); font-size:0.85rem; margin:0;">
+                    Visualise en direct les élèves connectés au site, leur durée de session, leur solde et leur dernière activité.
+                  </p>
+                </div>
+                <div style="display:flex; gap:0.6rem; flex-wrap:wrap; align-items:center;">
+                  <span id="adminOnlineLiveStatus" class="online-sync-badge">
+                    <span class="pulse-icon">●</span> En direct (Socket.io)
+                  </span>
+                  <button class="btn btn-outline" id="adminRefreshOnlineBtn" style="padding:0.45rem 0.9rem; font-size:0.85rem;">
+                    🔄 Actualiser
+                  </button>
+                </div>
+              </div>
+
+              <!-- Métriques rapides de fréquentation -->
+              <div class="rewards-summary-bar" style="margin-bottom:1.5rem;">
+                <div class="summary-metric">
+                  <span class="metric-val" id="adminOnlineTotalCount">0</span>
+                  <span class="metric-lbl">Joueurs Connectés</span>
+                </div>
+                <div class="summary-metric">
+                  <span class="metric-val" id="adminOnlineActiveCount">0</span>
+                  <span class="metric-lbl">Actifs (&lt; 2 min)</span>
+                </div>
+                <div class="summary-metric">
+                  <span class="metric-val" id="adminOnlineTotalTabs">0</span>
+                  <span class="metric-lbl">Onglets & Sessions</span>
+                </div>
+                <div class="summary-metric">
+                  <span class="metric-val" id="adminOnlineTotalCoins">0 🪙</span>
+                  <span class="metric-lbl">Solde Total en Ligne</span>
+                </div>
+              </div>
+
+              <!-- Filtres et Recherche -->
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:0.75rem;">
+                <div style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center; flex:1; max-width:850px;">
+                  <input type="text" id="adminOnlineSearchInput" class="form-input" placeholder="🔍 Rechercher un pseudo ou nom/prénom..." style="min-width:220px; flex:1; padding:0.45rem 0.8rem; font-size:0.85rem;">
+                  
+                  <select id="adminOnlineStatusFilter" style="background:#0a1f44; color:#FFF; border:1px solid var(--gold-primary); border-radius:6px; padding:0.45rem 0.8rem; font-size:0.85rem;">
+                    <option value="all">Tous les états</option>
+                    <option value="active">Actifs récemment (&lt; 2 min)</option>
+                    <option value="idle">Inactifs (&ge; 2 min)</option>
+                    <option value="multitab">Plusieurs onglets (&gt; 1)</option>
+                  </select>
+
+                  <select id="adminOnlineSortSelect" style="background:#0a1f44; color:#FFF; border:1px solid var(--gold-primary); border-radius:6px; padding:0.45rem 0.8rem; font-size:0.85rem;">
+                    <option value="connected:desc">⏱️ Connexion la plus récente</option>
+                    <option value="connected:asc">⏳ Connexion la plus ancienne</option>
+                    <option value="activity:desc">⚡ Dernière activité (plus récent)</option>
+                    <option value="coins:desc">💰 Solde le plus élevé</option>
+                    <option value="coins:asc">🪙 Solde le moins élevé</option>
+                    <option value="username:asc">👤 Pseudo (A-Z)</option>
+                    <option value="name:asc">🔤 Nom / Prénom (A-Z)</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Tableau des Joueurs Connectés -->
+              <div class="admin-table-container">
+                <table class="admin-table">
+                  <thead>
+                    <tr>
+                      <th style="min-width:180px;">Joueur</th>
+                      <th>Nom & Prénom</th>
+                      <th>Solde actuel</th>
+                      <th>Connecté depuis</th>
+                      <th>Dernière activité</th>
+                      <th>Sessions</th>
+                      <th style="text-align:right; min-width:120px;">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="adminOnlinePlayersList">
+                    <tr><td colspan="7" style="text-align:center; padding:2rem; color:var(--text-muted);">Chargement des joueurs en ligne...</td></tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
 
             <!-- Onglet 1 : Suivi et Gestion des Livraisons Directes -->

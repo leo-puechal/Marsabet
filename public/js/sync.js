@@ -10,6 +10,7 @@
 
     init() {
       this.initSocket();
+      this.setupActivityTracking();
       this.startPolling();
       this.setupVisibilityListener();
       console.log('🔄 Moteur de synchronisation LAN Marsabet initialisé (Socket.io + Polling 6s).');
@@ -83,6 +84,26 @@
           }
         });
 
+        // 7. Mise à jour en temps réel des joueurs connectés (Admin BDE)
+        this.socket.on('admin:online_players_updated', (data) => {
+          if (!data) return;
+          // Mettre à jour les badges de compteur en ligne
+          const count = Number(data.totalOnline || 0);
+          const badgeTab = document.getElementById('adminOnlineTabBadge');
+          if (badgeTab) {
+            badgeTab.textContent = count;
+            badgeTab.style.display = count > 0 ? 'inline-flex' : 'none';
+          }
+          const badgeHeader = document.getElementById('adminOnlineBadge');
+          if (badgeHeader) {
+            badgeHeader.textContent = count;
+          }
+
+          if (window.AdminBDE && typeof window.AdminBDE.onOnlinePlayersUpdated === 'function') {
+            window.AdminBDE.onOnlinePlayersUpdated(data);
+          }
+        });
+
       } catch (err) {
         console.warn('Erreur initialisation Socket.io:', err);
       }
@@ -94,7 +115,43 @@
       const token = window.API ? window.API.getToken() : localStorage.getItem('marsabet_token');
       if (token) {
         this.socket.emit('authenticate', token);
+        // Si l'utilisateur a le rôle admin, s'abonner également aux présences
+        if (window.State && window.State.user && window.State.user.role === 'admin') {
+          this.subscribeAdminPresence();
+        }
       }
+    },
+
+    // Signale une déconnexion volontaire au serveur pour nettoyer immédiatement la présence
+    notifyLogout() {
+      if (this.socket && this.socket.connected) {
+        this.socket.emit('logout');
+      }
+    },
+
+    // Demande au serveur de s'abonner aux mises à jour de présence admin
+    subscribeAdminPresence() {
+      if (this.socket && this.socket.connected) {
+        this.socket.emit('admin:subscribe_presence');
+      }
+    },
+
+    // Écoute les interactions utilisateur (clics, touches, défilements) pour maintenir le timestamp d'activité
+    setupActivityTracking() {
+      let lastActivitySent = 0;
+      const sendActivity = () => {
+        const now = Date.now();
+        if (now - lastActivitySent > 25000) { // maximum une émission toutes les 25 secondes
+          lastActivitySent = now;
+          if (this.socket && this.socket.connected) {
+            this.socket.emit('activity');
+          }
+        }
+      };
+
+      ['click', 'keydown', 'touchstart', 'scroll', 'mousemove'].forEach(evt => {
+        window.addEventListener(evt, sendActivity, { passive: true });
+      });
     },
 
     // Ajout visuel fluide d'un nouveau gain en direct dans le bandeau ticker
@@ -167,8 +224,12 @@
         window.loadLeaderboard();
       } else if (currentView === 'lobby' && typeof window.loadGlobalStats === 'function') {
         window.loadGlobalStats();
-      } else if (currentView === 'admin' && window.AdminBDE && typeof window.AdminBDE.loadDeliveries === 'function') {
-        window.AdminBDE.loadDeliveries();
+      } else if (currentView === 'admin' && window.AdminBDE) {
+        if (window.AdminBDE.activeTab === 'online' && typeof window.AdminBDE.loadOnlinePlayers === 'function') {
+          window.AdminBDE.loadOnlinePlayers(false);
+        } else if (typeof window.AdminBDE.loadDeliveries === 'function') {
+          window.AdminBDE.loadDeliveries();
+        }
       }
     },
 

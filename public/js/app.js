@@ -277,6 +277,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (confirmLogoutBtn) {
     confirmLogoutBtn.addEventListener('click', () => {
       closeLogoutModal();
+      if (window.SyncEngine) window.SyncEngine.notifyLogout();
       window.API.clearToken();
       window.State.setUser(null);
       window.UI.showToast('Déconnecté avec succès.', 'info');

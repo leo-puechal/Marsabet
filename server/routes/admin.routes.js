@@ -14,6 +14,9 @@ router.get('/deliveries', adminController.getAllDeliveries);
 router.patch('/deliveries/:id/deliver', adminController.markDelivered);
 router.get('/orders', adminController.getAllDeliveries);
 
+// Joueurs actuellement connectés en temps réel
+router.get('/online-players', adminController.getOnlinePlayers);
+
 
 // Codes promo BDE
 router.get('/promo-codes', adminController.getPromoCodes);

@@ -128,6 +128,11 @@ const API = {
     });
   },
 
+  // Joueurs en ligne en temps réel (Admin BDE)
+  async adminGetOnlinePlayers() {
+    return this.request('/admin/online-players');
+  },
+
   // Admin BDE Endpoints pour le suivi des livraisons
   async adminGetDeliveries(status = 'all', search = '') {
     let url = `/admin/deliveries?status=${encodeURIComponent(status)}`;
