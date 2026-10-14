@@ -15,6 +15,8 @@ function initDb() {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       username TEXT UNIQUE NOT NULL COLLATE NOCASE,
       password_hash TEXT NOT NULL,
+      first_name TEXT DEFAULT '',
+      last_name TEXT DEFAULT '',
       coins INTEGER NOT NULL DEFAULT 1000,
       role TEXT NOT NULL DEFAULT 'student',
       daily_streak INTEGER NOT NULL DEFAULT 0,
@@ -190,6 +192,14 @@ function initDb() {
   const hasVipRank = userColumns.some(c => c.name === 'vip_rank');
   if (!hasVipRank) {
     db.exec("ALTER TABLE users ADD COLUMN vip_rank TEXT NOT NULL DEFAULT 'Bronze'");
+  }
+  const hasFirstName = userColumns.some(c => c.name === 'first_name');
+  if (!hasFirstName) {
+    db.exec("ALTER TABLE users ADD COLUMN first_name TEXT DEFAULT ''");
+  }
+  const hasLastName = userColumns.some(c => c.name === 'last_name');
+  if (!hasLastName) {
+    db.exec("ALTER TABLE users ADD COLUMN last_name TEXT DEFAULT ''");
   }
 
   // Migration de shop_items pour ajouter stock, initial_stock, is_active, created_at, variants, unit si absents
@@ -409,6 +419,28 @@ function initDb() {
     CREATE INDEX IF NOT EXISTS idx_contest_status ON contests(status);
     CREATE INDEX IF NOT EXISTS idx_contest_part_score ON contest_participants(contest_id, score DESC);
     CREATE INDEX IF NOT EXISTS idx_contest_part_user ON contest_participants(user_id);
+
+    CREATE TABLE IF NOT EXISTS announcements (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      title TEXT NOT NULL,
+      content TEXT NOT NULL,
+      is_active INTEGER NOT NULL DEFAULT 1,
+      expires_at DATETIME DEFAULT NULL,
+      created_by INTEGER REFERENCES users(id),
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS user_announcement_views (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      announcement_id INTEGER NOT NULL REFERENCES announcements(id) ON DELETE CASCADE,
+      viewed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(user_id, announcement_id)
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_uav_user ON user_announcement_views(user_id);
+    CREATE INDEX IF NOT EXISTS idx_uav_announcement ON user_announcement_views(announcement_id);
   `);
 
 

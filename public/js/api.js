@@ -49,10 +49,23 @@ const API = {
   },
 
   // Auth endpoints
-  async register(username, password) {
+  async register(username, password, lastName, firstName) {
+    let payload;
+    if (typeof username === 'object' && username !== null) {
+      payload = username;
+    } else {
+      payload = {
+        username,
+        password,
+        lastName,
+        firstName,
+        last_name: lastName,
+        first_name: firstName
+      };
+    }
     return this.request('/auth/register', {
       method: 'POST',
-      body: JSON.stringify({ username, password })
+      body: JSON.stringify(payload)
     });
   },
 
@@ -161,6 +174,13 @@ const API = {
     return this.request(`/admin/users/${encodeURIComponent(userId)}/role`, {
       method: 'PATCH',
       body: JSON.stringify({ role })
+    });
+  },
+
+  async adminUpdateUserIdentity(userId, data) {
+    return this.request(`/admin/users/${encodeURIComponent(userId)}/identity`, {
+      method: 'PATCH',
+      body: JSON.stringify(data)
     });
   },
 
@@ -414,6 +434,47 @@ const API = {
 
   async adminDeleteContest(id) {
     return this.request(`/contests/${id}`, {
+      method: 'DELETE'
+    });
+  },
+
+  // Annonces Officielles BDE
+  async getUnreadAnnouncements() {
+    return this.request('/announcements/unread');
+  },
+
+  async markAnnouncementRead(id) {
+    return this.request(`/announcements/${id}/view`, {
+      method: 'POST'
+    });
+  },
+
+  async adminGetAnnouncements() {
+    return this.request('/admin/announcements');
+  },
+
+  async adminCreateAnnouncement(data) {
+    return this.request('/admin/announcements', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  },
+
+  async adminUpdateAnnouncement(id, data) {
+    return this.request(`/admin/announcements/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    });
+  },
+
+  async adminToggleAnnouncement(id) {
+    return this.request(`/admin/announcements/${id}/toggle`, {
+      method: 'PATCH'
+    });
+  },
+
+  async adminDeleteAnnouncement(id) {
+    return this.request(`/admin/announcements/${id}`, {
       method: 'DELETE'
     });
   }

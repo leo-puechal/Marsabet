@@ -1952,6 +1952,10 @@
                 <div>
                   <h2 class="profile-name" id="profileUsername">Mon Profil</h2>
                   <div class="profile-rank-tag" id="profileRank">Rang #1</div>
+                  <div id="profileFullNameContainer" style="display:flex; align-items:center; gap:0.4rem; font-size:0.85rem; color:var(--text-secondary); margin-top:0.35rem;">
+                    <span>👤 <strong id="profileFullNameText" style="color:#FFF;">-</strong></span>
+                    <span style="font-size:0.7rem; background:rgba(212,175,55,0.12); border:1px solid rgba(212,175,55,0.3); padding:2px 6px; border-radius:4px; color:var(--gold-light);" title="Ces informations ne peuvent pas être modifiées par l'élève">Identité vérifiée 🔒</span>
+                  </div>
                 </div>
               </div>
               <div>
@@ -2237,6 +2241,7 @@
               <button class="admin-tab-btn" data-tab="promos">🎟️ Codes Promo BDE</button>
               <button class="admin-tab-btn" data-tab="wheels">🎡 Récompenses des Roues</button>
               <button class="admin-tab-btn" data-tab="contests">🏆 Concours & Défis</button>
+              <button class="admin-tab-btn" data-tab="announcements">📢 Annonces BDE</button>
             </div>
 
             <!-- Onglet 1 : Suivi et Gestion des Livraisons Directes -->
@@ -2598,6 +2603,63 @@
               </div>
             </div>
 
+            <!-- Onglet 6 : Annonces BDE Officielles -->
+            <div id="adminTabAnnouncements" style="display:none;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem; flex-wrap:wrap; gap:1rem;">
+                <div>
+                  <h3 style="font-family:var(--font-display); font-size:1.3rem; color:var(--gold-light); margin-bottom:0.25rem;">
+                    📢 Annonces Officielles BDE
+                  </h3>
+                  <p style="color:var(--text-secondary); font-size:0.85rem; margin:0;">
+                    Publie des annonces affichées sous forme de popup bloquante lors de la première connexion des élèves.
+                  </p>
+                </div>
+                <div style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center;">
+                  <button class="btn btn-outline" id="adminRefreshAnnouncementsBtn" style="padding:0.45rem 0.9rem; font-size:0.85rem;">
+                    🔄 Actualiser
+                  </button>
+                  <button class="btn btn-gold" id="adminOpenCreateAnnouncementBtn" style="padding:0.45rem 1rem; font-size:0.85rem; font-weight:700;">
+                    ➕ Nouvelle Annonce
+                  </button>
+                </div>
+              </div>
+
+              <!-- Métriques rapides des annonces -->
+              <div class="rewards-summary-bar" style="margin-bottom:1.5rem;">
+                <div class="summary-metric">
+                  <span class="metric-val" id="adminTotalAnnouncementsCount">0</span>
+                  <span class="metric-lbl">Total Annonces</span>
+                </div>
+                <div class="summary-metric">
+                  <span class="metric-val" id="adminActiveAnnouncementsCount">0</span>
+                  <span class="metric-lbl">Annonces Actives</span>
+                </div>
+                <div class="summary-metric">
+                  <span class="metric-val" id="adminTotalAnnouncementViewsCount">0</span>
+                  <span class="metric-lbl">Lectures Cumulées</span>
+                </div>
+              </div>
+
+              <!-- Tableau des Annonces -->
+              <div class="admin-table-container">
+                <table class="leader-table">
+                  <thead>
+                    <tr>
+                      <th style="min-width:240px;">Titre & Message</th>
+                      <th>Date Publication</th>
+                      <th>Expiration</th>
+                      <th>Vues par les élèves</th>
+                      <th>Statut</th>
+                      <th style="text-align:right; min-width:160px;">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="adminAnnouncementsList">
+                    <tr><td colspan="6" style="text-align:center; padding:2rem; color:var(--text-muted);">Chargement des annonces...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
           </div>
         </section>
 
@@ -2929,6 +2991,118 @@
     </div>
   </div>
 
+  <!-- Modale Admin : Correction Identité Élève (Nom & Prénom) -->
+  <div class="modal-overlay" id="adminUserIdentityModal">
+    <div class="modal-content" style="max-width:440px;">
+      <button class="modal-close" id="closeAdminUserIdentityModal">&times;</button>
+      <h3 style="font-family:var(--font-display); font-size:1.3rem; color:var(--gold-light); margin-bottom:0.35rem;">
+        ✏️ Corriger l'Identité de l'Élève
+      </h3>
+      <p style="font-size:0.83rem; color:var(--text-secondary); margin-bottom:1.25rem; line-height:1.4;">
+        Modification réservée aux administrateurs BDE pour corriger les fautes de frappe avérées.
+      </p>
+      <form id="formAdminUserIdentity">
+        <input type="hidden" id="adminIdentityUserId">
+
+        <div class="form-group" style="margin-bottom:0.85rem;">
+          <label class="form-label">Pseudo du compte</label>
+          <input type="text" id="adminIdentityUsername" class="form-input" disabled style="opacity:0.7; background:rgba(255,255,255,0.05); cursor:not-allowed;">
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem; margin-bottom:1.25rem;">
+          <div class="form-group" style="margin:0;">
+            <label class="form-label" for="adminIdentityLastName">Nom <span style="color:#EF4444;">*</span></label>
+            <input type="text" id="adminIdentityLastName" class="form-input" required placeholder="ex: Dupont">
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label class="form-label" for="adminIdentityFirstName">Prénom <span style="color:#EF4444;">*</span></label>
+            <input type="text" id="adminIdentityFirstName" class="form-input" required placeholder="ex: Thomas">
+          </div>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:0.75rem;">
+          <button type="button" class="btn btn-outline" id="btnCancelUserIdentityModal" style="padding:0.6rem 1.1rem;">Annuler</button>
+          <button type="submit" class="btn btn-gold" id="btnSubmitUserIdentityModal" style="padding:0.6rem 1.3rem;">
+            💾 Enregistrer l'Identité
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modale Admin : Création / Modification d'une Annonce Officielle BDE -->
+  <div class="modal-overlay" id="adminAnnouncementModal">
+    <div class="modal-content" style="max-width:520px;">
+      <button class="modal-close" id="closeAdminAnnouncementModal">&times;</button>
+      <h3 id="adminAnnouncementModalTitle" style="font-family:var(--font-display); font-size:1.35rem; color:var(--gold-light); margin-bottom:0.35rem;">
+        📢 Publier une Annonce Officielle BDE
+      </h3>
+      <p style="font-size:0.83rem; color:var(--text-secondary); margin-bottom:1.25rem; line-height:1.4;">
+        Cette annonce sera présentée sous forme de modal à chaque élève lors de sa prochaine connexion jusqu'à ce qu'il clique sur "J'ai compris".
+      </p>
+      <form id="formAdminAnnouncement">
+        <input type="hidden" id="adminAnnounceId">
+
+        <div class="form-group" style="margin-bottom:1rem;">
+          <label class="form-label" for="adminAnnounceTitle">Titre de l'annonce <span style="color:#EF4444;">*</span></label>
+          <input type="text" id="adminAnnounceTitle" class="form-input" required placeholder="ex: 🚀 Tournoi Blackjack et Soirée BDE ce jeudi !" maxlength="100">
+        </div>
+
+        <div class="form-group" style="margin-bottom:1rem;">
+          <label class="form-label" for="adminAnnounceContent">Message complet <span style="color:#EF4444;">*</span></label>
+          <textarea id="adminAnnounceContent" class="form-input" rows="5" required placeholder="Écris ton message d'annonce ici..." style="resize:vertical; line-height:1.5;"></textarea>
+        </div>
+
+        <div class="form-group" style="margin-bottom:1.2rem;">
+          <label class="form-label" for="adminAnnounceExpiresAt">
+            Date d'expiration <span style="color:var(--text-muted); font-size:0.8rem; font-weight:normal;">(optionnelle)</span>
+          </label>
+          <input type="datetime-local" id="adminAnnounceExpiresAt" class="form-input" style="color-scheme:dark;">
+          <span style="font-size:0.75rem; color:var(--text-muted); margin-top:0.25rem; display:block;">
+            Après cette date, l'annonce expirée ne sera plus affichée aux élèves.
+          </span>
+        </div>
+
+        <div class="form-group" style="margin-bottom:1.25rem; display:flex; align-items:center; gap:0.6rem;">
+          <input type="checkbox" id="adminAnnounceActive" checked style="width:18px; height:18px; accent-color:var(--gold-primary); cursor:pointer;">
+          <label for="adminAnnounceActive" style="color:#FFF; font-size:0.9rem; cursor:pointer; font-weight:600;">
+            Annonce active (visible dès maintenant)
+          </label>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:0.75rem;">
+          <button type="button" class="btn btn-outline" id="btnCancelAdminAnnouncementModal" style="padding:0.6rem 1.1rem;">Annuler</button>
+          <button type="submit" class="btn btn-gold" id="btnSubmitAdminAnnouncementModal" style="padding:0.6rem 1.3rem;">
+            💾 Publier l'Annonce
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modale Élève : Annonces Officielles BDE (Bloquante à la connexion) -->
+  <div class="modal-overlay" id="studentAnnouncementModal" style="z-index:99999;">
+    <div class="modal-content" style="max-width:520px; text-align:center; border:2px solid var(--gold-primary); box-shadow:0 0 50px rgba(212,175,55,0.35); padding:2rem 1.8rem; background:linear-gradient(180deg, #071938 0%, #030b1a 100%);">
+      <div style="display:inline-flex; align-items:center; justify-content:center; width:64px; height:64px; background:rgba(212,175,55,0.15); border:2px solid var(--gold-primary); border-radius:50%; font-size:2.2rem; margin-bottom:0.75rem; box-shadow:0 0 25px rgba(212,175,55,0.3);">
+        📢
+      </div>
+      <div>
+        <span id="studentAnnounceCounter" style="display:none; font-size:0.75rem; text-transform:uppercase; letter-spacing:1px; color:var(--gold-light); background:rgba(212,175,55,0.15); border:1px solid rgba(212,175,55,0.35); border-radius:20px; padding:3px 12px; font-weight:700;">
+          Annonce 1 sur 2
+        </span>
+      </div>
+      <h3 id="studentAnnounceTitle" style="font-family:var(--font-display); font-size:1.45rem; color:#FFF; margin-bottom:0.75rem; line-height:1.35; margin-top:0.6rem;">
+        Titre de l'annonce
+      </h3>
+      <div id="studentAnnounceContent" style="background:rgba(255,255,255,0.04); border:1px solid rgba(212,175,55,0.2); border-radius:8px; padding:1.25rem; font-size:0.95rem; color:var(--text-secondary); text-align:left; line-height:1.6; margin-bottom:1.5rem; max-height:280px; overflow-y:auto; white-space:pre-wrap;">
+        Message
+      </div>
+      <button type="button" class="btn btn-gold" id="btnAcknowledgeAnnouncement" style="width:100%; padding:0.85rem; font-size:1.05rem; font-weight:700; letter-spacing:0.5px; box-shadow:0 4px 15px rgba(212,175,55,0.3);">
+        👍 J'ai compris
+      </button>
+    </div>
+  </div>
+
   <!-- Modale Connexion / Inscription -->
   <div class="modal-overlay" id="authModal">
     <div class="modal-content">
@@ -2964,6 +3138,21 @@
 
       <!-- Formulaire Inscription -->
       <form id="formRegister" style="display:none;">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem; margin-bottom:0.75rem;">
+          <div class="form-group" style="margin:0;">
+            <label class="form-label" for="regLastName">Nom <span style="color:#EF4444;">*</span></label>
+            <input type="text" id="regLastName" class="form-input" placeholder="ex: Dupont" required maxlength="50" autocomplete="family-name">
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label class="form-label" for="regFirstName">Prénom <span style="color:#EF4444;">*</span></label>
+            <input type="text" id="regFirstName" class="form-input" placeholder="ex: Thomas" required maxlength="50" autocomplete="given-name">
+          </div>
+        </div>
+
+        <div style="background:rgba(212,175,55,0.08); border:1px solid rgba(212,175,55,0.25); border-radius:6px; padding:0.65rem 0.85rem; font-size:0.78rem; color:var(--gold-light); margin-bottom:0.9rem; line-height:1.45;">
+          ℹ️ <strong>Information importante :</strong> Ces informations servent uniquement à t’identifier lors de la récupération de tes récompenses physiques. Elles ne pourront plus être modifiées après l’inscription.
+        </div>
+
         <div class="form-group">
           <label class="form-label" for="regUsername">Choisis un Pseudo</label>
           <input type="text" id="regUsername" class="form-input" placeholder="3 à 20 caractères" required minlength="3"

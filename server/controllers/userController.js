@@ -57,7 +57,7 @@ exports.getProfile = (req, res) => {
     }
 
     const user = db.prepare(`
-      SELECT id, username, role, coins, daily_streak, last_daily_claim, last_free_spin, free_spin_streak, total_wagered, total_won, games_played, biggest_win, created_at
+      SELECT id, username, first_name, last_name, role, coins, daily_streak, last_daily_claim, last_free_spin, free_spin_streak, total_wagered, total_won, games_played, biggest_win, created_at
       FROM users WHERE id = ?
     `).get(userId);
 

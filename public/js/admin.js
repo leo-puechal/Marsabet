@@ -141,6 +141,24 @@ const AdminBDE = {
       });
     }
 
+    // Modal Correction Identité Utilisateur (Nom / Prénom)
+    const closeIdentityModalBtn = document.getElementById('closeAdminUserIdentityModal');
+    const cancelIdentityModalBtn = document.getElementById('btnCancelUserIdentityModal');
+    const formUserIdentity = document.getElementById('formAdminUserIdentity');
+
+    if (closeIdentityModalBtn) {
+      closeIdentityModalBtn.addEventListener('click', () => this.closeUserIdentityModal());
+    }
+    if (cancelIdentityModalBtn) {
+      cancelIdentityModalBtn.addEventListener('click', () => this.closeUserIdentityModal());
+    }
+    if (formUserIdentity) {
+      formUserIdentity.addEventListener('submit', (e) => {
+        e.preventDefault();
+        this.submitUserIdentity();
+      });
+    }
+
     // Gestion des Concours BDE
     const openContestBtn = document.getElementById('adminOpenCreateContestBtn');
     if (openContestBtn) {
@@ -169,6 +187,32 @@ const AdminBDE = {
         this.saveContest();
       });
     }
+
+    // Gestion des Annonces Officielles BDE
+    const openAnnounceBtn = document.getElementById('adminOpenCreateAnnouncementBtn');
+    const closeAnnounceModalBtn = document.getElementById('closeAdminAnnouncementModal');
+    const cancelAnnounceModalBtn = document.getElementById('btnCancelAdminAnnouncementModal');
+    const refreshAnnounceBtn = document.getElementById('adminRefreshAnnouncementsBtn');
+    const formAnnounce = document.getElementById('formAdminAnnouncement');
+
+    if (openAnnounceBtn) {
+      openAnnounceBtn.addEventListener('click', () => this.openAnnouncementModal());
+    }
+    if (closeAnnounceModalBtn) {
+      closeAnnounceModalBtn.addEventListener('click', () => this.closeAnnouncementModal());
+    }
+    if (cancelAnnounceModalBtn) {
+      cancelAnnounceModalBtn.addEventListener('click', () => this.closeAnnouncementModal());
+    }
+    if (refreshAnnounceBtn) {
+      refreshAnnounceBtn.addEventListener('click', () => this.loadAnnouncements());
+    }
+    if (formAnnounce) {
+      formAnnounce.addEventListener('submit', (e) => {
+        e.preventDefault();
+        this.saveAnnouncement();
+      });
+    }
   },
 
   switchTab(tab) {
@@ -182,18 +226,21 @@ const AdminBDE = {
     const areaPromos = document.getElementById('adminTabPromos');
     const areaWheels = document.getElementById('adminTabWheels');
     const areaContests = document.getElementById('adminTabContests');
+    const areaAnnouncements = document.getElementById('adminTabAnnouncements');
 
     if (areaOrders) areaOrders.style.display = (tab === 'orders') ? 'block' : 'none';
     if (areaUsers) areaUsers.style.display = (tab === 'users') ? 'block' : 'none';
     if (areaPromos) areaPromos.style.display = (tab === 'promos') ? 'block' : 'none';
     if (areaWheels) areaWheels.style.display = (tab === 'wheels') ? 'block' : 'none';
     if (areaContests) areaContests.style.display = (tab === 'contests') ? 'block' : 'none';
+    if (areaAnnouncements) areaAnnouncements.style.display = (tab === 'announcements') ? 'block' : 'none';
 
     if (tab === 'orders') this.loadOrders();
     if (tab === 'users') this.loadUsers();
     if (tab === 'promos') this.loadPromoCodes();
     if (tab === 'wheels') this.loadWheels();
     if (tab === 'contests') this.loadContests();
+    if (tab === 'announcements') this.loadAnnouncements();
   },
 
   // ==========================================
@@ -296,6 +343,61 @@ const AdminBDE = {
         submitBtn.disabled = false;
         submitBtn.innerHTML = '💾 Enregistrer le Solde';
       }
+    }
+  },
+
+  openUserIdentityModal(user) {
+    if (!user) return;
+    const modal = document.getElementById('adminUserIdentityModal');
+    if (!modal) return;
+
+    const idInput = document.getElementById('adminIdentityUserId');
+    const usernameInput = document.getElementById('adminIdentityUsername');
+    const lastInput = document.getElementById('adminIdentityLastName');
+    const firstInput = document.getElementById('adminIdentityFirstName');
+
+    if (idInput) idInput.value = user.id;
+    if (usernameInput) usernameInput.value = user.username || '';
+    if (lastInput) lastInput.value = user.last_name || '';
+    if (firstInput) firstInput.value = user.first_name || '';
+
+    modal.classList.add('active');
+  },
+
+  closeUserIdentityModal() {
+    const modal = document.getElementById('adminUserIdentityModal');
+    if (modal) modal.classList.remove('active');
+  },
+
+  async submitUserIdentity() {
+    const idInput = document.getElementById('adminIdentityUserId');
+    const lastInput = document.getElementById('adminIdentityLastName');
+    const firstInput = document.getElementById('adminIdentityFirstName');
+
+    if (!idInput || !idInput.value || !lastInput || !firstInput) return;
+
+    const userId = idInput.value;
+    const lastName = lastInput.value.trim();
+    const firstName = firstInput.value.trim();
+
+    if (!lastName || !firstName) {
+      window.UI.showToast('Le nom et le prénom sont obligatoires.', 'warning');
+      return;
+    }
+
+    try {
+      const res = await window.API.adminUpdateUserIdentity(userId, { firstName, lastName });
+      window.UI.showToast(res.message || 'Identité mise à jour avec succès !', 'success');
+      this.closeUserIdentityModal();
+      this.loadUsers();
+
+      // Si l'admin a modifié sa propre identité, rafraîchir le state local
+      if (window.State && window.State.user && String(window.State.user.id) === String(userId)) {
+        window.State.updateUser({ first_name: firstName, last_name: lastName });
+      }
+    } catch (err) {
+      console.error('Erreur updateUserIdentity:', err);
+      window.UI.showToast(err.message || 'Erreur lors de la modification de l\'identité.', 'error');
     }
   },
 
@@ -425,6 +527,9 @@ const AdminBDE = {
                     ${isSelf ? '<span style="font-size:0.7rem; background:rgba(212,175,55,0.25); color:var(--gold-light); padding:1px 6px; border-radius:4px;">(Toi)</span>' : ''}
                     ${isMaster ? '<span style="font-size:0.7rem; background:rgba(168,85,247,0.25); color:#E9D5FF; padding:1px 6px; border-radius:4px;">Maître</span>' : ''}
                   </div>
+                  <div style="font-size:0.8rem; color:var(--text-secondary); margin-top:2px;">
+                    ${escapeHtml(u.first_name || '')} ${escapeHtml(u.last_name || '')}
+                  </div>
                   <div style="font-size:0.75rem; color:var(--text-muted); font-family:var(--font-mono);">ID #${u.id}</div>
                 </div>
               </div>
@@ -450,6 +555,9 @@ const AdminBDE = {
               <div style="display:inline-flex; gap:0.4rem; justify-content:flex-end; flex-wrap:wrap;">
                 <button class="admin-btn-action admin-btn-coins" onclick="AdminBDE.openUserCoinsModal(${JSON.stringify(u).replace(/"/g, '&quot;')})" title="Modifier le solde de pièces">
                   🪙 Solde
+                </button>
+                <button class="admin-btn-action" style="border-color:#38BDF8; color:#38BDF8;" onclick="AdminBDE.openUserIdentityModal(${JSON.stringify(u).replace(/"/g, '&quot;')})" title="Corriger Nom et Prénom (faute de frappe)">
+                  ✏️ Identité
                 </button>
                 ${!isMaster && !isSelf ? `
                   <button class="admin-btn-action admin-btn-role" onclick="AdminBDE.confirmToggleUserRole(${u.id}, '${escapeHtml(u.username)}', '${u.role}')" title="${isAdmin ? 'Rétrograder en élève' : 'Promouvoir en Admin BDE'}">
@@ -1409,6 +1517,222 @@ const AdminBDE = {
       window.UI?.showToast('Concours supprimé.', 'info');
       this.loadContests();
     } catch (err) {
+      window.UI?.showToast(err.message || 'Erreur lors de la suppression.', 'error');
+    }
+  },
+
+  // ==========================================
+  // GESTION DES ANNONCES OFFICIELLES BDE
+  // ==========================================
+  async loadAnnouncements() {
+    const listEl = document.getElementById('adminAnnouncementsList');
+    if (!listEl) return;
+
+    listEl.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:2rem; color:var(--text-muted);"><span class="spinner-small" style="display:inline-block; margin-right:8px;"></span> Chargement des annonces...</td></tr>';
+
+    try {
+      const res = await window.API.adminGetAnnouncements();
+      const announcements = res.announcements || [];
+      const totalStudents = res.totalStudents || 0;
+      this.announcementsCache = announcements;
+
+      // Métriques
+      const totalCountEl = document.getElementById('adminTotalAnnouncementsCount');
+      const activeCountEl = document.getElementById('adminActiveAnnouncementsCount');
+      const viewsCountEl = document.getElementById('adminTotalAnnouncementViewsCount');
+
+      const activeCount = announcements.filter(a => a.is_active && !a.is_expired).length;
+      const totalViews = announcements.reduce((sum, a) => sum + (a.views_count || 0), 0);
+
+      if (totalCountEl) totalCountEl.textContent = announcements.length.toLocaleString('fr-FR');
+      if (activeCountEl) activeCountEl.textContent = activeCount.toLocaleString('fr-FR');
+      if (viewsCountEl) viewsCountEl.textContent = totalViews.toLocaleString('fr-FR');
+
+      if (announcements.length === 0) {
+        listEl.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:2.5rem; color:var(--text-muted);">Aucune annonce publiée pour le moment. Clique sur "Nouvelle Annonce" pour en créer une !</td></tr>';
+        return;
+      }
+
+      listEl.innerHTML = announcements.map(ann => {
+        const isExpired = ann.is_expired;
+        const isActive = ann.is_active;
+
+        let statusBadge = '';
+        if (isExpired) {
+          statusBadge = '<span style="background:rgba(239,68,68,0.2); color:#F87171; border:1px solid rgba(239,68,68,0.4); padding:2px 8px; border-radius:4px; font-size:0.75rem; font-weight:700;">⏱️ Expirée</span>';
+        } else if (isActive) {
+          statusBadge = '<span style="background:rgba(16,185,129,0.2); color:#34D399; border:1px solid rgba(16,185,129,0.4); padding:2px 8px; border-radius:4px; font-size:0.75rem; font-weight:700;">🟢 Active</span>';
+        } else {
+          statusBadge = '<span style="background:rgba(156,163,175,0.2); color:#9CA3AF; border:1px solid rgba(156,163,175,0.4); padding:2px 8px; border-radius:4px; font-size:0.75rem; font-weight:700;">⚪ Inactive</span>';
+        }
+
+        const dateStr = ann.created_at ? new Date(ann.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-';
+        const expStr = ann.expires_at ? new Date(ann.expires_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '<span style="color:var(--text-muted);">Permanente</span>';
+
+        const viewsStat = `${ann.views_count}/${ann.total_students} élèves <span style="color:var(--text-muted); font-size:0.75rem;">(${ann.percentage_viewed}%)</span>`;
+
+        return `
+          <tr>
+            <td>
+              <div style="font-weight:700; color:#FFF; font-size:0.95rem; margin-bottom:0.25rem;">
+                📢 ${escapeHtml(ann.title)}
+              </div>
+              <div style="font-size:0.8rem; color:var(--text-muted); line-height:1.4; max-width:340px; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;">
+                ${escapeHtml(ann.content)}
+              </div>
+            </td>
+            <td><span style="font-size:0.82rem; color:var(--text-secondary);">${dateStr}</span></td>
+            <td><span style="font-size:0.82rem; color:var(--text-secondary);">${expStr}</span></td>
+            <td>
+              <div style="font-weight:700; color:var(--gold-light); font-size:0.9rem;">
+                ${viewsStat}
+              </div>
+              <div style="width:100%; height:4px; background:rgba(255,255,255,0.1); border-radius:2px; margin-top:4px; overflow:hidden;">
+                <div style="width:${Math.min(100, ann.percentage_viewed)}%; height:100%; background:var(--gold-primary);"></div>
+              </div>
+            </td>
+            <td>${statusBadge}</td>
+            <td style="text-align:right;">
+              <div style="display:inline-flex; gap:0.4rem; justify-content:flex-end; flex-wrap:wrap;">
+                <button class="admin-btn-action" style="border-color:#F59E0B; color:#FBBF24;" onclick="AdminBDE.openAnnouncementModal(${JSON.stringify(ann).replace(/"/g, '&quot;')})" title="Modifier cette annonce">
+                  ✏️ Modifier
+                </button>
+                <button class="admin-btn-action" style="border-color:${isActive ? '#9CA3AF' : '#10B981'}; color:${isActive ? '#D1D5DB' : '#34D399'};" onclick="AdminBDE.toggleAnnouncement(${ann.id})" title="${isActive ? 'Désactiver l’annonce' : 'Activer l’annonce'}">
+                  ${isActive ? '⏸️ Désactiver' : '▶️ Activer'}
+                </button>
+                <button class="admin-btn-action admin-btn-delete" onclick="AdminBDE.deleteAnnouncement(${ann.id}, '${escapeHtml(ann.title)}')" title="Supprimer définitivement l'annonce">
+                  🗑️
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    } catch (err) {
+      console.error('Erreur loadAnnouncements:', err);
+      listEl.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:2rem; color:#EF4444;">Erreur lors du chargement des annonces.</td></tr>';
+    }
+  },
+
+  openAnnouncementModal(ann = null) {
+    const modal = document.getElementById('adminAnnouncementModal');
+    if (!modal) return;
+
+    const modalTitle = document.getElementById('adminAnnouncementModalTitle');
+    const idInput = document.getElementById('adminAnnounceId');
+    const titleInput = document.getElementById('adminAnnounceTitle');
+    const contentInput = document.getElementById('adminAnnounceContent');
+    const expiresInput = document.getElementById('adminAnnounceExpiresAt');
+    const activeCheck = document.getElementById('adminAnnounceActive');
+    const submitBtn = document.getElementById('btnSubmitAdminAnnouncementModal');
+
+    if (ann) {
+      if (modalTitle) modalTitle.textContent = '✏️ Modifier l\'Annonce BDE';
+      if (idInput) idInput.value = ann.id;
+      if (titleInput) titleInput.value = ann.title || '';
+      if (contentInput) contentInput.value = ann.content || '';
+      if (expiresInput) {
+        if (ann.expires_at) {
+          const d = new Date(ann.expires_at);
+          // Format YYYY-MM-DDTHH:MM pour input datetime-local
+          const pad = n => String(n).padStart(2, '0');
+          expiresInput.value = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+        } else {
+          expiresInput.value = '';
+        }
+      }
+      if (activeCheck) activeCheck.checked = Boolean(ann.is_active);
+      if (submitBtn) submitBtn.textContent = '💾 Mettre à jour l\'Annonce';
+    } else {
+      if (modalTitle) modalTitle.textContent = '📢 Publier une Annonce Officielle BDE';
+      if (idInput) idInput.value = '';
+      if (titleInput) titleInput.value = '';
+      if (contentInput) contentInput.value = '';
+      if (expiresInput) expiresInput.value = '';
+      if (activeCheck) activeCheck.checked = true;
+      if (submitBtn) submitBtn.textContent = '💾 Publier l\'Annonce';
+    }
+
+    modal.classList.add('active');
+  },
+
+  closeAnnouncementModal() {
+    const modal = document.getElementById('adminAnnouncementModal');
+    if (modal) modal.classList.remove('active');
+  },
+
+  async saveAnnouncement() {
+    const id = document.getElementById('adminAnnounceId')?.value;
+    const title = document.getElementById('adminAnnounceTitle')?.value.trim();
+    const content = document.getElementById('adminAnnounceContent')?.value.trim();
+    const expiresAt = document.getElementById('adminAnnounceExpiresAt')?.value || null;
+    const isActive = document.getElementById('adminAnnounceActive')?.checked ? 1 : 0;
+    const submitBtn = document.getElementById('btnSubmitAdminAnnouncementModal');
+
+    if (!title || !content) {
+      window.UI?.showToast('Le titre et le message sont obligatoires.', 'warning');
+      return;
+    }
+
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Enregistrement...';
+    }
+
+    try {
+      if (id) {
+        await window.API.adminUpdateAnnouncement(id, {
+          title,
+          content,
+          expires_at: expiresAt,
+          is_active: isActive
+        });
+        window.UI?.showToast('Annonce mise à jour avec succès !', 'success');
+      } else {
+        await window.API.adminCreateAnnouncement({
+          title,
+          content,
+          expires_at: expiresAt,
+          is_active: isActive
+        });
+        window.UI?.showToast('Annonce publiée avec succès !', 'success');
+      }
+
+      this.closeAnnouncementModal();
+      this.loadAnnouncements();
+    } catch (err) {
+      console.error('Erreur saveAnnouncement:', err);
+      window.UI?.showToast(err.message || 'Erreur lors de l\'enregistrement de l\'annonce.', 'error');
+    } finally {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = id ? '💾 Mettre à jour l\'Annonce' : '💾 Publier l\'Annonce';
+      }
+    }
+  },
+
+  async toggleAnnouncement(id) {
+    try {
+      const res = await window.API.adminToggleAnnouncement(id);
+      window.UI?.showToast(res.message || 'Statut mis à jour !', 'info');
+      this.loadAnnouncements();
+    } catch (err) {
+      console.error('Erreur toggleAnnouncement:', err);
+      window.UI?.showToast(err.message || 'Erreur lors du basculement.', 'error');
+    }
+  },
+
+  async deleteAnnouncement(id, title) {
+    if (!confirm(`Es-tu sûr de vouloir supprimer définitivement l'annonce "${title}" ? Toutes les statistiques de lecture seront effacées.`)) {
+      return;
+    }
+
+    try {
+      await window.API.adminDeleteAnnouncement(id);
+      window.UI?.showToast('Annonce supprimée définitivement.', 'info');
+      this.loadAnnouncements();
+    } catch (err) {
+      console.error('Erreur deleteAnnouncement:', err);
       window.UI?.showToast(err.message || 'Erreur lors de la suppression.', 'error');
     }
   }

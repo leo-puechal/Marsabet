@@ -80,6 +80,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.UI.closeAuthModal();
         window.UI.showToast(data.message, 'success');
         window.sound.playWin();
+        if (window.AnnouncementManager) {
+          window.AnnouncementManager.check();
+        }
       } catch (err) {
         window.UI.showToast(err.message, 'error');
       }
@@ -91,11 +94,18 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (formRegister) {
     formRegister.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const username = document.getElementById('regUsername').value;
+      const lastName = document.getElementById('regLastName')?.value.trim();
+      const firstName = document.getElementById('regFirstName')?.value.trim();
+      const username = document.getElementById('regUsername').value.trim();
       const password = document.getElementById('regPassword').value;
 
+      if (!lastName || !firstName) {
+        window.UI.showToast('Le nom et le prénom sont obligatoires pour pouvoir récupérer tes récompenses physiques.', 'error');
+        return;
+      }
+
       try {
-        const data = await window.API.register(username, password);
+        const data = await window.API.register(username, password, lastName, firstName);
         window.API.setToken(data.token);
         window.State.setUser(data.user);
         if (window.SyncEngine) window.SyncEngine.authenticateSocket();
@@ -103,6 +113,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.UI.showToast(data.message, 'success');
         window.sound.playJackpot();
         window.UI.triggerConfetti();
+        if (window.AnnouncementManager) {
+          window.AnnouncementManager.check();
+        }
       } catch (err) {
         window.UI.showToast(err.message, 'error');
       }
@@ -388,6 +401,9 @@ async function checkSession() {
     if (window.DragonTowerGame) {
       window.DragonTowerGame.init();
     }
+    if (window.AnnouncementManager) {
+      window.AnnouncementManager.check();
+    }
   } catch (err) {
     window.API.clearToken();
     window.State.setUser(null);
@@ -535,6 +551,11 @@ async function loadProfile() {
     const profileStatWager = document.getElementById('profileStatWager');
 
     if (profileUsername) profileUsername.textContent = u?.username || 'Élève';
+    const profileFullNameText = document.getElementById('profileFullNameText');
+    if (profileFullNameText) {
+      const full = [u?.first_name, u?.last_name].filter(Boolean).join(' ').trim();
+      profileFullNameText.textContent = full || u?.username || 'Élève';
+    }
     if (profileRank) profileRank.textContent = `Rang #${u?.rank || '-'}`;
     if (profileCoins) profileCoins.textContent = `${(Number(u?.coins) || 0).toLocaleString('fr-FR')} 🪙`;
     if (profileGamesPlayed) profileGamesPlayed.textContent = (Number(u?.games_played) || 0).toLocaleString('fr-FR');
@@ -839,19 +860,47 @@ window.openDeliveryModal = function (options) {
   if (subtitleEl) subtitleEl.textContent = 'Félicitations pour ton lot ! Indique ta salle pour que le BDE te l\'apporte.';
   if (costEl) costEl.textContent = '🎉 Lot Gagné aux Roues !';
 
-  // Pré-remplir les champs depuis localStorage pour le confort de l'élève
+  // Pré-remplir les champs avec l'identité officielle enregistrée à l'inscription (verrouillée)
   const lastNameInput = document.getElementById('deliveryLastName');
   const firstNameInput = document.getElementById('deliveryFirstName');
   const phoneInput = document.getElementById('deliveryPhone');
   const roomInput = document.getElementById('deliveryRoomLocation');
   const notesInput = document.getElementById('deliveryNotes');
 
-  if (lastNameInput && !lastNameInput.value) {
-    lastNameInput.value = localStorage.getItem('marsabet_last_name') || '';
+  const registeredUser = window.State && window.State.user;
+  const regLastName = registeredUser ? (registeredUser.last_name || '').trim() : '';
+  const regFirstName = registeredUser ? (registeredUser.first_name || '').trim() : '';
+
+  if (regLastName || regFirstName) {
+    if (lastNameInput) {
+      lastNameInput.value = regLastName;
+      lastNameInput.readOnly = true;
+      lastNameInput.style.backgroundColor = 'rgba(255,255,255,0.06)';
+      lastNameInput.style.cursor = 'not-allowed';
+      lastNameInput.title = 'Identité officielle enregistrée à l\'inscription (verrouillée)';
+    }
+    if (firstNameInput) {
+      firstNameInput.value = regFirstName;
+      firstNameInput.readOnly = true;
+      firstNameInput.style.backgroundColor = 'rgba(255,255,255,0.06)';
+      firstNameInput.style.cursor = 'not-allowed';
+      firstNameInput.title = 'Identité officielle enregistrée à l\'inscription (verrouillée)';
+    }
+  } else {
+    if (lastNameInput) {
+      lastNameInput.value = localStorage.getItem('marsabet_last_name') || '';
+      lastNameInput.readOnly = false;
+      lastNameInput.style.backgroundColor = '';
+      lastNameInput.style.cursor = '';
+    }
+    if (firstNameInput) {
+      firstNameInput.value = localStorage.getItem('marsabet_first_name') || '';
+      firstNameInput.readOnly = false;
+      firstNameInput.style.backgroundColor = '';
+      firstNameInput.style.cursor = '';
+    }
   }
-  if (firstNameInput && !firstNameInput.value) {
-    firstNameInput.value = localStorage.getItem('marsabet_first_name') || '';
-  }
+
   if (phoneInput && !phoneInput.value) {
     phoneInput.value = localStorage.getItem('marsabet_phone') || '';
   }
@@ -972,6 +1021,103 @@ function escapeHtml(str) {
     tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
   );
 }
+
+// ========================================================
+// GESTION DES ANNONCES OFFICIELLES BDE (MODAL BLOQUANTE ÉLÈVE)
+// ========================================================
+const AnnouncementManager = {
+  queue: [],
+  currentIndex: 0,
+
+  async check() {
+    if (!window.State || !window.State.isAuthenticated) return;
+    try {
+      const res = await window.API.getUnreadAnnouncements();
+      if (res && Array.isArray(res.announcements) && res.announcements.length > 0) {
+        this.queue = res.announcements;
+        this.currentIndex = 0;
+        this.showCurrent();
+      }
+    } catch (e) {
+      console.error('Erreur vérification des annonces:', e);
+    }
+  },
+
+  showCurrent() {
+    const modal = document.getElementById('studentAnnouncementModal');
+    if (!modal) return;
+
+    if (this.currentIndex >= this.queue.length) {
+      modal.classList.remove('active');
+      return;
+    }
+
+    const current = this.queue[this.currentIndex];
+    const counterEl = document.getElementById('studentAnnounceCounter');
+    const titleEl = document.getElementById('studentAnnounceTitle');
+    const contentEl = document.getElementById('studentAnnounceContent');
+    const acknowledgeBtn = document.getElementById('btnAcknowledgeAnnouncement');
+
+    if (counterEl) {
+      if (this.queue.length > 1) {
+        counterEl.style.display = 'inline-block';
+        counterEl.textContent = `Annonce ${this.currentIndex + 1} sur ${this.queue.length}`;
+      } else {
+        counterEl.style.display = 'none';
+      }
+    }
+
+    if (titleEl) titleEl.textContent = current.title || 'Annonce BDE';
+    if (contentEl) contentEl.textContent = current.content || '';
+
+    if (acknowledgeBtn) {
+      acknowledgeBtn.disabled = false;
+      acknowledgeBtn.textContent = (this.currentIndex + 1 < this.queue.length) ? "J'ai compris ▶ (Suivant)" : "J'ai compris 👍";
+    }
+
+    modal.classList.add('active');
+  },
+
+  async acknowledgeCurrent() {
+    if (this.currentIndex >= this.queue.length) {
+      const modal = document.getElementById('studentAnnouncementModal');
+      if (modal) modal.classList.remove('active');
+      return;
+    }
+
+    const current = this.queue[this.currentIndex];
+    const acknowledgeBtn = document.getElementById('btnAcknowledgeAnnouncement');
+    if (acknowledgeBtn) {
+      acknowledgeBtn.disabled = true;
+      acknowledgeBtn.textContent = 'Validation... ⏳';
+    }
+
+    try {
+      await window.API.markAnnouncementRead(current.id);
+    } catch (e) {
+      console.error('Erreur acquittement annonce:', e);
+    }
+
+    this.currentIndex++;
+    if (this.currentIndex < this.queue.length) {
+      this.showCurrent();
+    } else {
+      const modal = document.getElementById('studentAnnouncementModal');
+      if (modal) modal.classList.remove('active');
+    }
+  }
+};
+
+window.AnnouncementManager = AnnouncementManager;
+
+document.addEventListener('DOMContentLoaded', () => {
+  const acknowledgeBtn = document.getElementById('btnAcknowledgeAnnouncement');
+  if (acknowledgeBtn) {
+    acknowledgeBtn.addEventListener('click', () => {
+      window.AnnouncementManager.acknowledgeCurrent();
+    });
+  }
+});
 
 window.loadLeaderboard = loadLeaderboard;
 window.loadProfile = loadProfile;

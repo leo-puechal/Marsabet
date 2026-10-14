@@ -231,7 +231,7 @@ exports.getAllUsers = (req, res) => {
     const { search, role, sortBy = 'coins', sortOrder = 'desc' } = req.query;
 
     let query = `
-      SELECT id, username, coins, role, daily_streak, last_daily_claim,
+      SELECT id, username, first_name, last_name, coins, role, daily_streak, last_daily_claim,
              total_wagered, total_won, games_played, biggest_win, created_at
       FROM users
       WHERE 1=1
@@ -244,8 +244,9 @@ exports.getAllUsers = (req, res) => {
     }
 
     if (search && search.trim()) {
-      query += ' AND username LIKE ?';
-      params.push(`%${search.trim()}%`);
+      query += ' AND (username LIKE ? OR first_name LIKE ? OR last_name LIKE ?)';
+      const s = `%${search.trim()}%`;
+      params.push(s, s, s);
     }
 
     const allowedSort = ['coins', 'username', 'created_at', 'total_wagered', 'games_played', 'biggest_win'];
@@ -429,6 +430,40 @@ exports.deleteUser = (req, res) => {
   } catch (err) {
     console.error('Erreur deleteUser admin:', err);
     return res.status(500).json({ error: 'Erreur lors de la suppression de l\'utilisateur.' });
+  }
+};
+
+// Corriger l'identité (Nom & Prénom) d'un élève (Admin BDE en cas d'erreur de saisie)
+exports.updateUserIdentity = (req, res) => {
+  try {
+    const { id } = req.params;
+    const firstName = (req.body.firstName || req.body.first_name || '').trim();
+    const lastName = (req.body.lastName || req.body.last_name || '').trim();
+
+    if (!firstName || !lastName) {
+      return res.status(400).json({ error: 'Le nom et le prénom sont obligatoires.' });
+    }
+
+    const targetUser = db.prepare('SELECT id, username, first_name, last_name FROM users WHERE id = ?').get(id);
+    if (!targetUser) {
+      return res.status(404).json({ error: 'Utilisateur introuvable.' });
+    }
+
+    db.prepare('UPDATE users SET first_name = ?, last_name = ? WHERE id = ?').run(firstName, lastName, id);
+
+    return res.json({
+      success: true,
+      message: `Identité de "${targetUser.username}" mise à jour : ${firstName} ${lastName}`,
+      user: {
+        id: targetUser.id,
+        username: targetUser.username,
+        first_name: firstName,
+        last_name: lastName
+      }
+    });
+  } catch (err) {
+    console.error('Erreur updateUserIdentity admin:', err);
+    return res.status(500).json({ error: 'Erreur lors de la modification de l\'identité.' });
   }
 };
 

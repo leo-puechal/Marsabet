@@ -26,6 +26,12 @@ function getYesterdayString() {
 exports.register = async (req, res) => {
   try {
     const { username, password } = req.body;
+    const lastName = (req.body.lastName || req.body.last_name || '').trim();
+    const firstName = (req.body.firstName || req.body.first_name || '').trim();
+
+    if (!lastName || !firstName) {
+      return res.status(400).json({ error: 'Le nom et le prénom sont obligatoires pour pouvoir récupérer tes récompenses physiques.' });
+    }
 
     if (!username || typeof username !== 'string' || username.trim().length < 3 || username.trim().length > 20) {
       return res.status(400).json({ error: 'Le pseudo doit comporter entre 3 et 20 caractères.' });
@@ -47,14 +53,14 @@ exports.register = async (req, res) => {
     const passwordHash = await bcrypt.hash(password, salt);
 
     const insert = db.prepare(`
-      INSERT INTO users (username, password_hash, coins, daily_streak, last_daily_claim)
-      VALUES (?, ?, ?, 0, NULL)
+      INSERT INTO users (username, password_hash, first_name, last_name, coins, daily_streak, last_daily_claim)
+      VALUES (?, ?, ?, ?, ?, 0, NULL)
     `);
 
-    const result = insert.run(cleanUsername, passwordHash, config.startingCoins);
+    const result = insert.run(cleanUsername, passwordHash, firstName, lastName, config.startingCoins);
 
     const newUser = db.prepare(`
-      SELECT id, username, role, coins, daily_streak, last_daily_claim, total_wagered, total_won, games_played, biggest_win, created_at
+      SELECT id, username, first_name, last_name, role, coins, daily_streak, last_daily_claim, total_wagered, total_won, games_played, biggest_win, created_at
       FROM users WHERE id = ?
     `).get(result.lastInsertRowid);
 
@@ -105,6 +111,8 @@ exports.login = async (req, res) => {
     const safeUser = {
       id: user.id,
       username: user.username,
+      first_name: user.first_name || '',
+      last_name: user.last_name || '',
       role: user.role || 'student',
       coins: user.coins,
       daily_streak: user.daily_streak,

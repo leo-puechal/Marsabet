@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const adminController = require('../controllers/adminController');
+const announcementController = require('../controllers/announcementController');
 const authMiddleware = require('../middlewares/authMiddleware');
 const adminMiddleware = require('../middlewares/adminMiddleware');
 
@@ -28,6 +29,14 @@ router.put('/wheels/:id/segments', adminController.updateWheelSegments);
 router.get('/users', adminController.getAllUsers);
 router.patch('/users/:id/coins', adminController.updateUserCoins);
 router.patch('/users/:id/role', adminController.updateUserRole);
+router.patch('/users/:id/identity', adminController.updateUserIdentity);
 router.delete('/users/:id', adminController.deleteUser);
+
+// Annonces officielles BDE
+router.get('/announcements', announcementController.adminGetAnnouncements);
+router.post('/announcements', announcementController.adminCreateAnnouncement);
+router.put('/announcements/:id', announcementController.adminUpdateAnnouncement);
+router.patch('/announcements/:id/toggle', announcementController.adminToggleAnnouncement);
+router.delete('/announcements/:id', announcementController.adminDeleteAnnouncement);
 
 module.exports = router;
