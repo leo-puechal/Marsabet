@@ -802,6 +802,10 @@ async function confirmWheelDelivery(orderId, userId, { lastName, firstName, room
   const cleanPhone = (phone && typeof phone === 'string') ? phone.trim() : null;
   const cleanNotes = (notes && typeof notes === 'string') ? notes.trim() : null;
 
+  if (cleanLastName.length > 50 || cleanFirstName.length > 50 || cleanRoomLocation.length > 100 || (cleanPhone && cleanPhone.length > 30) || (cleanNotes && cleanNotes.length > 500)) {
+    throw new Error('Informations de livraison trop longues (limite dépassée).');
+  }
+
   const order = db.prepare(`
     SELECT d.*, u.username
     FROM delivery_orders d

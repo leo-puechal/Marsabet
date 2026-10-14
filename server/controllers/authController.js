@@ -8,7 +8,7 @@ function generateToken(user) {
   return jwt.sign(
     { id: user.id, username: user.username },
     config.jwtSecret,
-    { expiresIn: '30d' }
+    { expiresIn: '24h' }
   );
 }
 
@@ -26,22 +26,29 @@ function getYesterdayString() {
 exports.register = async (req, res) => {
   try {
     const { username, password } = req.body;
-    const lastName = (req.body.lastName || req.body.last_name || '').trim();
-    const firstName = (req.body.firstName || req.body.first_name || '').trim();
+    const lastName = typeof (req.body.lastName || req.body.last_name) === 'string' ? (req.body.lastName || req.body.last_name).trim() : '';
+    const firstName = typeof (req.body.firstName || req.body.first_name) === 'string' ? (req.body.firstName || req.body.first_name).trim() : '';
 
     if (!lastName || !firstName) {
       return res.status(400).json({ error: 'Le nom et le prénom sont obligatoires pour pouvoir récupérer tes récompenses physiques.' });
+    }
+
+    if (lastName.length > 50 || firstName.length > 50) {
+      return res.status(400).json({ error: 'Le nom et le prénom ne doivent pas dépasser 50 caractères.' });
     }
 
     if (!username || typeof username !== 'string' || username.trim().length < 3 || username.trim().length > 20) {
       return res.status(400).json({ error: 'Le pseudo doit comporter entre 3 et 20 caractères.' });
     }
 
-    if (!password || typeof password !== 'string' || password.length < 4) {
-      return res.status(400).json({ error: 'Le mot de passe doit comporter au moins 4 caractères.' });
+    const cleanUsername = username.trim();
+    if (!/^[a-zA-Z0-9_\-\.]{3,20}$/.test(cleanUsername)) {
+      return res.status(400).json({ error: 'Le pseudo ne peut contenir que des lettres, chiffres, points, tirets et underscores.' });
     }
 
-    const cleanUsername = username.trim();
+    if (!password || typeof password !== 'string' || password.length < 4 || password.length > 128) {
+      return res.status(400).json({ error: 'Le mot de passe doit comporter entre 4 et 128 caractères.' });
+    }
 
     // Vérifier si le pseudo existe déjà
     const existing = db.prepare('SELECT id FROM users WHERE username = ?').get(cleanUsername);
@@ -86,8 +93,12 @@ exports.login = async (req, res) => {
   try {
     const { username, password } = req.body;
 
-    if (!username || !password) {
+    if (!username || !password || typeof username !== 'string' || typeof password !== 'string') {
       return res.status(400).json({ error: 'Pseudo et mot de passe requis.' });
+    }
+
+    if (username.length > 50 || password.length > 128) {
+      return res.status(401).json({ error: 'Identifiants invalides.' });
     }
 
     const cleanUsername = username.trim();
@@ -219,9 +230,12 @@ exports.becomeAdmin = (req, res) => {
   }
 
   const { secretKey } = req.body;
+  if (!secretKey || typeof secretKey !== 'string' || secretKey.length > 100) {
+    return res.status(400).json({ error: 'Code administrateur invalide.' });
+  }
   const adminSecret = process.env.ADMIN_SECRET_KEY || config.adminSecretKey || 'darkrider84';
 
-  if (!secretKey || secretKey.trim() !== adminSecret.trim()) {
+  if (secretKey.trim() !== adminSecret.trim()) {
     attempt.count += 1;
     if (attempt.count >= 3) {
       attempt.lockedUntil = now + (15 * 60 * 1000); // 15 min lock

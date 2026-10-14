@@ -747,7 +747,10 @@ exports.startCrash = (req, res) => {
     const crashAt = startedAt + durationMs;
 
     const runTx = db.transaction(() => {
-      db.prepare('UPDATE users SET coins = coins - ?, total_wagered = total_wagered + ?, games_played = games_played + 1 WHERE id = ?').run(bet, bet, userId);
+      const updateRes = db.prepare('UPDATE users SET coins = coins - ?, total_wagered = total_wagered + ?, games_played = games_played + 1 WHERE id = ? AND coins >= ?').run(bet, bet, userId, bet);
+      if (updateRes.changes === 0) {
+        throw new Error('Solde insuffisant.');
+      }
       db.prepare(`
         INSERT INTO crash_sessions (id, user_id, bet, crash_point, status, started_at, crash_at)
         VALUES (?, ?, ?, ?, 'running', ?, ?)
@@ -789,6 +792,9 @@ exports.cashoutCrash = (req, res) => {
   try {
     const userId = req.user.id;
     const { gameId, multiplier, clientClickedAt } = req.body;
+    if (!gameId || typeof gameId !== 'string') {
+      return res.status(400).json({ error: 'Identifiant de partie manquant ou invalide.' });
+    }
     const userMult = Math.max(1.00, Number(multiplier) || 1.00);
 
     const session = db.prepare('SELECT * FROM crash_sessions WHERE id = ? AND user_id = ?').get(gameId, userId);
@@ -796,8 +802,8 @@ exports.cashoutCrash = (req, res) => {
       return res.status(404).json({ error: 'Partie introuvable.' });
     }
 
-    if (session.status === 'cashed_out') {
-      return res.status(400).json({ error: 'Cette partie a déjà été encaissée.' });
+    if (session.status !== 'running') {
+      return res.status(400).json({ error: 'Cette partie est déjà terminée ou encaissée.' });
     }
 
     const crashPoint = session.crash_point;
@@ -821,13 +827,17 @@ exports.cashoutCrash = (req, res) => {
       const profit = payout - session.bet;
 
       const runTx = db.transaction(() => {
-        db.prepare(`
+        const updateSession = db.prepare(`
           UPDATE crash_sessions
           SET status = 'cashed_out',
               cashed_multiplier = ?,
               payout = ?
-          WHERE id = ?
+          WHERE id = ? AND status = 'running'
         `).run(finalMult, payout, gameId);
+
+        if (updateSession.changes === 0) {
+          throw new Error('Partie déjà clôturée.');
+        }
 
         db.prepare(`
           UPDATE users
@@ -959,6 +969,9 @@ exports.finishCrash = (req, res) => {
   try {
     const userId = req.user.id;
     const { gameId } = req.body;
+    if (!gameId || typeof gameId !== 'string') {
+      return res.status(400).json({ error: 'Identifiant de partie manquant ou invalide.' });
+    }
 
     const session = db.prepare('SELECT * FROM crash_sessions WHERE id = ? AND user_id = ?').get(gameId, userId);
     if (!session || session.status !== 'running') {
@@ -968,22 +981,23 @@ exports.finishCrash = (req, res) => {
     const crashPoint = session.crash_point;
 
     db.transaction(() => {
-      db.prepare(`
+      const updateRes = db.prepare(`
         UPDATE crash_sessions
         SET status = 'crashed',
             payout = 0
-        WHERE id = ?
+        WHERE id = ? AND status = 'running'
       `).run(gameId);
+      if (updateRes.changes > 0) {
+        db.prepare(`
+          INSERT INTO game_history (user_id, game_type, bet, payout, profit, details)
+          VALUES (?, 'crash', ?, 0, ?, ?)
+        `).run(userId, session.bet, -session.bet, JSON.stringify({
+          crashPoint,
+          outcome: 'crashed'
+        }));
 
-      db.prepare(`
-        INSERT INTO game_history (user_id, game_type, bet, payout, profit, details)
-        VALUES (?, 'crash', ?, 0, ?, ?)
-      `).run(userId, session.bet, -session.bet, JSON.stringify({
-        crashPoint,
-        outcome: 'crashed'
-      }));
-
-      db.prepare('INSERT INTO crash_history (crash_point) VALUES (?)').run(crashPoint);
+        db.prepare('INSERT INTO crash_history (crash_point) VALUES (?)').run(crashPoint);
+      }
     })();
 
     return res.json({

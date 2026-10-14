@@ -203,8 +203,8 @@ exports.redeemPromoCode = (req, res) => {
     const userId = req.user.id;
     const { code } = req.body;
 
-    if (!code || typeof code !== 'string') {
-      return res.status(400).json({ error: 'Veuillez saisir un code promo.' });
+    if (!code || typeof code !== 'string' || code.trim().length === 0 || code.trim().length > 50) {
+      return res.status(400).json({ error: 'Veuillez saisir un code promo valide (entre 1 et 50 caractères).' });
     }
 
     const result = promoCodeService.redeemCode(code, userId);

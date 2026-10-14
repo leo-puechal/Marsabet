@@ -18,8 +18,39 @@ const adminRoutes = require('./routes/admin.routes');
 const contestRoutes = require('./routes/contest.routes');
 const announcementRoutes = require('./routes/announcement.routes');
 
+const helmet = require('helmet');
+const {
+  apiLimiter,
+  authLimiter,
+  promoLimiter,
+  gameActionLimiter,
+  bonusLimiter
+} = require('./middlewares/rateLimiter');
+
 const app = express();
 const server = http.createServer(app);
+
+// En-têtes HTTP de sécurité renforcés via Helmet
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'"],
+        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+        fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
+        imgSrc: ["'self'", "data:", "blob:", "https:"],
+        connectSrc: ["'self'", "ws:", "wss:", "http:", "https:"],
+        mediaSrc: ["'self'", "data:", "blob:"],
+        objectSrc: ["'none'"],
+        frameAncestors: ["'self'"],
+        upgradeInsecureRequests: null
+      }
+    },
+    crossOriginEmbedderPolicy: false,
+    crossOriginResourcePolicy: { policy: 'cross-origin' }
+  })
+);
 
 // Configuration CORS dynamique pour accepter localhost, .local et n'importe quel sous-réseau local (Wi-Fi/LAN)
 const lanRegex = /^https?:\/\/(localhost|127\.0\.0\.1|.*\.local|192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3})(:\d+)?$/;
@@ -40,8 +71,8 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
 // Initialisation de Socket.io pour la synchronisation temps réel inter-appareils
 const io = new Server(server, {
@@ -51,6 +82,16 @@ socketService.init(io);
 
 // Fichiers statiques du Frontend
 app.use(express.static(path.join(__dirname, '../public')));
+
+// Application des limiteurs de débit (Rate Limiting) sur les endpoints sensibles
+app.use('/api', apiLimiter);
+app.use('/api/auth/register', authLimiter);
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/daily-bonus', bonusLimiter);
+app.use('/api/user/redeem-code', promoLimiter);
+app.use('/api/users/redeem-code', promoLimiter);
+app.use('/api/games', gameActionLimiter);
+app.use('/api/wheels/:id/spin', bonusLimiter);
 
 // API Routes
 app.use('/api/auth', authRoutes);
@@ -111,10 +152,16 @@ app.use((req, res) => {
   res.sendFile(path.join(__dirname, '../public/index.html'));
 });
 
-// Gestionnaire d'erreurs global
+// Gestionnaire d'erreurs global (protection anti-fuite d'informations sensibles en production)
 app.use((err, req, res, next) => {
-  console.error('Erreur non gérée:', err);
-  res.status(500).json({ error: 'Erreur interne du serveur.' });
+  if (process.env.NODE_ENV !== 'production') {
+    console.error('Erreur non gérée:', err);
+  }
+  const isProduction = process.env.NODE_ENV === 'production';
+  const message = isProduction
+    ? 'Une erreur interne est survenue sur le serveur.'
+    : (err.message || 'Erreur interne du serveur.');
+  res.status(err.status || 500).json({ error: message });
 });
 
 // Gestion propre des erreurs de démarrage (port déjà occupé)

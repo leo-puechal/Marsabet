@@ -531,8 +531,8 @@ async function loadProfile() {
     const u = data?.user || {};
     const vip = data?.vipInfo || {
       currentTier: { name: 'Bronze', icon: '🥉', color: '#CD7F32', badgeClass: 'vip-bronze', bonusMultiplier: 1.0, perk: 'Statut joueur de base', perks: ['Statut joueur de base'] },
-      nextTier: { name: 'Argent', minWager: 50000 },
-      wagerNeeded: 50000,
+      nextTier: { name: 'Argent', minWager: 500000 },
+      wagerNeeded: 500000,
       progressPercent: 0
     };
 
