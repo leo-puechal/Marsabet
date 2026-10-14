@@ -3072,8 +3072,9 @@
         </div>
 
         <div class="form-group">
-          <label class="form-label" for="adminUserCoinsReason">Motif ou remarque (optionnel)</label>
-          <input type="text" id="adminUserCoinsReason" class="form-input" placeholder="Ex: Récompense événement, ajustement stand...">
+          <label class="form-label" for="adminUserCoinsReason">Motif / Justification obligatoire <span style="color:#EF4444;">*</span></label>
+          <input type="text" id="adminUserCoinsReason" class="form-input" required placeholder="Ex: Récompense événement, compensation bug..." style="border-color:rgba(212,175,55,0.4);">
+          <small style="color:var(--text-muted); font-size:0.75rem; margin-top:3px; display:block;">Cette note sera enregistrée dans l'audit et consultable dans la fiche détaillée du joueur.</small>
         </div>
 
         <div style="display:flex; justify-content:flex-end; gap:0.75rem; margin-top:1.25rem;">
@@ -3198,12 +3199,190 @@
     </div>
   </div>
 
+  <!-- Modale Admin : Fiche Détaillée & Statistiques Joueur -->
+  <div class="modal-overlay" id="adminPlayerDetailModal">
+    <div class="modal-content admin-player-modal-content" style="max-width:960px; width:95%; max-height:92vh; overflow-y:auto; padding:1.75rem;">
+      <button class="modal-close" id="closeAdminPlayerDetailModal">&times;</button>
+      
+      <!-- En-tête joueur -->
+      <div id="playerDetailHeader" style="display:flex; justify-content:space-between; align-items:flex-start; gap:1.25rem; flex-wrap:wrap; border-bottom:1px solid rgba(212,175,55,0.25); padding-bottom:1.25rem; margin-bottom:1.25rem;">
+        <div style="display:flex; align-items:center; gap:1rem;">
+          <div id="playerDetailAvatar" style="width:58px; height:58px; border-radius:50%; background:linear-gradient(135deg, #0e2754, #1a365d); border:2.5px solid var(--gold-primary); display:flex; align-items:center; justify-content:center; font-size:1.8rem; box-shadow:0 4px 15px rgba(0,0,0,0.4);">
+            👤
+          </div>
+          <div>
+            <div style="display:flex; align-items:center; gap:0.6rem; flex-wrap:wrap;">
+              <h2 id="playerDetailUsername" style="font-family:var(--font-display); font-size:1.45rem; color:#FFF; margin:0;">
+                Joueur
+              </h2>
+              <span id="playerDetailRoleBadge" class="admin-role-badge role-student">🎓 Élève</span>
+              <span id="playerDetailVipBadge" class="vip-badge vip-bronze">🥉 BRONZE</span>
+              <span id="playerDetailOnlineStatus" class="online-status-pill status-away">⚪ Hors ligne</span>
+            </div>
+            <div style="font-size:0.9rem; color:var(--text-secondary); margin-top:0.25rem;">
+              <strong id="playerDetailFullName" style="color:#FFF;">-</strong>
+              <span style="margin:0 0.4rem; color:var(--text-muted);">•</span>
+              <span id="playerDetailEmail" style="color:#38BDF8; font-family:var(--font-mono); font-size:0.85rem;">-</span>
+              <span style="margin:0 0.4rem; color:var(--text-muted);">•</span>
+              <span style="color:var(--text-muted); font-size:0.8rem;">ID #<span id="playerDetailId">-</span></span>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex; gap:0.6rem; align-items:center; flex-wrap:wrap;">
+          <button class="btn btn-gold btn-sm" id="playerDetailAdjustCoinsBtn" style="padding:0.5rem 0.9rem; font-weight:700;">
+            🪙 Ajuster le Solde
+          </button>
+          <button class="btn btn-outline btn-sm" id="playerDetailEditIdentityBtn" style="padding:0.5rem 0.9rem;">
+            ✏️ Corriger Nom
+          </button>
+        </div>
+      </div>
+
+      <!-- Grille métriques clés (4 cartes) -->
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:0.85rem; margin-bottom:1.5rem;">
+        <!-- Solde & Wager -->
+        <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(212,175,55,0.3); border-radius:10px; padding:1rem;">
+          <div style="font-size:0.75rem; text-transform:uppercase; color:var(--text-muted); font-weight:700; letter-spacing:0.5px;">Économie</div>
+          <div id="playerDetailCoins" style="font-size:1.4rem; font-weight:900; color:var(--gold-primary); margin:0.3rem 0;">0 🪙</div>
+          <div style="font-size:0.8rem; color:var(--text-secondary);">Wager total : <strong id="playerDetailWager" style="color:#FFF;">0 🪙</strong></div>
+        </div>
+
+        <!-- Inscription & Sécurité IP -->
+        <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(56,189,248,0.3); border-radius:10px; padding:1rem;">
+          <div style="font-size:0.75rem; text-transform:uppercase; color:var(--text-muted); font-weight:700; letter-spacing:0.5px;">Sécurité & Réseau</div>
+          <div id="playerDetailIp" style="font-size:1.1rem; font-weight:700; color:#38BDF8; font-family:var(--font-mono); margin:0.3rem 0;">127.0.0.1</div>
+          <div id="playerDetailIpWarning" style="font-size:0.75rem; color:var(--text-muted);">Inscrit le <span id="playerDetailCreatedAt">-</span></div>
+        </div>
+
+        <!-- Activité Casino -->
+        <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(168,85,247,0.3); border-radius:10px; padding:1rem;">
+          <div style="font-size:0.75rem; text-transform:uppercase; color:var(--text-muted); font-weight:700; letter-spacing:0.5px;">Activité Jeux</div>
+          <div style="font-size:1.4rem; font-weight:900; color:#E9D5FF; margin:0.3rem 0;"><span id="playerDetailGamesCount">0</span> parties</div>
+          <div style="font-size:0.8rem; color:var(--text-secondary);">Plus gros gain : <strong id="playerDetailBiggestWin" style="color:var(--win-green);">0 🪙</strong></div>
+        </div>
+
+        <!-- Fidélité & Streak -->
+        <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(251,146,60,0.3); border-radius:10px; padding:1rem;">
+          <div style="font-size:0.75rem; text-transform:uppercase; color:var(--text-muted); font-weight:700; letter-spacing:0.5px;">Fidélité & Bonus</div>
+          <div style="font-size:1.35rem; font-weight:900; color:#FDBA74; margin:0.3rem 0;">🔥 <span id="playerDetailStreak">0</span> jours consécutifs</div>
+          <div style="font-size:0.8rem; color:var(--text-secondary);">Bonus VIP : <strong id="playerDetailVipMultiplier" style="color:#FFF;">x1.0</strong></div>
+        </div>
+      </div>
+
+      <!-- Navigation onglets de la fiche -->
+      <div class="player-detail-tabs-bar" style="display:flex; gap:0.5rem; border-bottom:1px solid rgba(255,255,255,0.1); margin-bottom:1.25rem; overflow-x:auto;">
+        <button type="button" class="player-tab-btn active" data-tab="games" id="tabBtnPlayerGames">
+          🎮 Parties Jouées (<span id="playerTabBadgeGames">0</span>)
+        </button>
+        <button type="button" class="player-tab-btn" data-tab="promos" id="tabBtnPlayerPromos">
+          🏷️ Codes Promo (<span id="playerTabBadgePromos">0</span>)
+        </button>
+        <button type="button" class="player-tab-btn" data-tab="adjustments" id="tabBtnPlayerAdjustments">
+          ⚖️ Ajustements Admin (<span id="playerTabBadgeAdjustments">0</span>)
+        </button>
+        <button type="button" class="player-tab-btn" data-tab="deliveries" id="tabBtnPlayerDeliveries">
+          📦 Demandes Récompenses (<span id="playerTabBadgeDeliveries">0</span>)
+        </button>
+      </div>
+
+      <!-- Contenu Onglet 1 : Parties Jouées -->
+      <div id="playerContentGames" class="player-detail-tab-content">
+        <!-- Répartition par jeu -->
+        <div id="playerGamesBreakdown" style="display:flex; flex-wrap:wrap; gap:0.5rem; margin-bottom:1rem;"></div>
+
+        <div class="table-responsive" style="max-height:420px; overflow-y:auto; border:1px solid rgba(255,255,255,0.08); border-radius:8px;">
+          <table class="data-table" style="width:100%; font-size:0.85rem;">
+            <thead>
+              <tr style="position:sticky; top:0; background:#081A3A; z-index:2;">
+                <th>Date / Heure</th>
+                <th>Jeu</th>
+                <th>Mise</th>
+                <th>Résultat</th>
+                <th>Profit Net</th>
+                <th>Détails</th>
+              </tr>
+            </thead>
+            <tbody id="playerDetailGamesList">
+              <tr><td colspan="6" style="text-align:center; padding:2rem; color:var(--text-muted);">Chargement...</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <!-- Pagination -->
+        <div id="playerGamesPagination" style="display:flex; justify-content:space-between; align-items:center; margin-top:0.75rem; font-size:0.85rem; color:var(--text-secondary);">
+          <span id="playerGamesPageInfo">Page 1 / 1</span>
+          <div style="display:flex; gap:0.5rem;">
+            <button type="button" class="btn btn-outline btn-sm" id="btnPlayerGamesPrev" disabled>◀ Précédent</button>
+            <button type="button" class="btn btn-outline btn-sm" id="btnPlayerGamesNext" disabled>Suivant ▶</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Contenu Onglet 2 : Codes Promo -->
+      <div id="playerContentPromos" class="player-detail-tab-content" style="display:none;">
+        <div class="table-responsive" style="max-height:420px; overflow-y:auto; border:1px solid rgba(255,255,255,0.08); border-radius:8px;">
+          <table class="data-table" style="width:100%; font-size:0.85rem;">
+            <thead>
+              <tr style="position:sticky; top:0; background:#081A3A; z-index:2;">
+                <th>Code Promo</th>
+                <th>Coins Reçus</th>
+                <th>Date d'activation</th>
+              </tr>
+            </thead>
+            <tbody id="playerDetailPromosList"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Contenu Onglet 3 : Ajustements Admin -->
+      <div id="playerContentAdjustments" class="player-detail-tab-content" style="display:none;">
+        <div class="table-responsive" style="max-height:420px; overflow-y:auto; border:1px solid rgba(255,255,255,0.08); border-radius:8px;">
+          <table class="data-table" style="width:100%; font-size:0.85rem;">
+            <thead>
+              <tr style="position:sticky; top:0; background:#081A3A; z-index:2;">
+                <th>Date</th>
+                <th>Admin Responsable</th>
+                <th>Opération</th>
+                <th>Variation</th>
+                <th>Évolution Solde</th>
+                <th>Note / Motif obligatoire</th>
+              </tr>
+            </thead>
+            <tbody id="playerDetailAdjustmentsList"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Contenu Onglet 4 : Demandes Récompenses -->
+      <div id="playerContentDeliveries" class="player-detail-tab-content" style="display:none;">
+        <div class="table-responsive" style="max-height:420px; overflow-y:auto; border:1px solid rgba(255,255,255,0.08); border-radius:8px;">
+          <table class="data-table" style="width:100%; font-size:0.85rem;">
+            <thead>
+              <tr style="position:sticky; top:0; background:#081A3A; z-index:2;">
+                <th>Date</th>
+                <th>Lot / Récompense</th>
+                <th>Salle / Lieu</th>
+                <th>Téléphone</th>
+                <th>Statut</th>
+                <th>Remarques</th>
+              </tr>
+            </thead>
+            <tbody id="playerDetailDeliveriesList"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; margin-top:1.5rem;">
+        <button type="button" class="btn btn-outline" id="btnClosePlayerDetailFooterBtn" style="padding:0.6rem 1.4rem;">Fermer la fiche</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Modale Connexion / Inscription -->
   <div class="modal-overlay" id="authModal">
     <div class="modal-content">
       <button class="modal-close" id="closeAuthModal">&times;</button>
 
-      <div
+      <div id="authModalTabsBar"
         style="display:flex; gap:0.5rem; margin-bottom:1.5rem; border-bottom:1px solid rgba(212,175,55,0.25); padding-bottom:0.75rem;">
         <button id="tabLogin" class="btn-mult active" style="font-size:0.95rem; font-weight:700;">Connexion</button>
         <button id="tabRegister" class="btn-mult" style="font-size:0.95rem; font-weight:700;">Inscription (5 000
@@ -3244,8 +3423,16 @@
           </div>
         </div>
 
+        <div class="form-group">
+          <label class="form-label" for="regEmail">Email Étudiant Epitech <span style="color:#EF4444;">*</span></label>
+          <input type="email" id="regEmail" class="form-input" placeholder="prenom.nom@epitech.eu" required autocomplete="email">
+          <div style="font-size:0.75rem; color:var(--text-muted); margin-top:4px;">
+            🔒 Un compte unique par adresse email. Un code de vérification te sera envoyé pour débloquer tes 5 000 jetons.
+          </div>
+        </div>
+
         <div style="background:rgba(212,175,55,0.08); border:1px solid rgba(212,175,55,0.25); border-radius:6px; padding:0.65rem 0.85rem; font-size:0.78rem; color:var(--gold-light); margin-bottom:0.9rem; line-height:1.45;">
-          ℹ️ <strong>Information importante :</strong> Ces informations servent uniquement à t’identifier lors de la récupération de tes récompenses physiques. Elles ne pourront plus être modifiées après l’inscription.
+          ℹ️ <strong>Information importante :</strong> Ton identité et ton adresse email scolaire garantissent l'unicité de ton compte et la remise de tes récompenses physiques.
         </div>
 
         <div class="form-group">
@@ -3265,6 +3452,37 @@
         <button type="submit" class="btn btn-gold" style="width:100%; padding:0.8rem; margin-top:0.5rem;">
           Créer mon compte & Recevoir 5 000 🪙
         </button>
+      </form>
+
+      <!-- Étape Vérification Email (Code à 6 chiffres) -->
+      <form id="formVerifyEmail" style="display:none; text-align:center;">
+        <div style="font-size:2.8rem; margin-bottom:0.5rem;">📬</div>
+        <h3 style="color:#FFF; font-family:var(--font-display); font-size:1.3rem; margin-bottom:0.4rem;">
+          Valide ton adresse étudiante
+        </h3>
+        <p style="color:var(--text-secondary); font-size:0.88rem; line-height:1.5; margin-bottom:1.25rem;">
+          Un code de confirmation à 6 chiffres a été envoyé à :<br>
+          <strong id="verifyTargetEmail" style="color:var(--gold-light); font-family:var(--font-mono); font-size:0.95rem;">ton-email@epitech.eu</strong>
+        </p>
+
+        <div class="form-group" style="max-width:260px; margin:0 auto 1.25rem;">
+          <label class="form-label" for="verifyCodeInput" style="font-size:0.8rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px;">Code à 6 chiffres</label>
+          <input type="text" id="verifyCodeInput" class="form-input" placeholder="000000" maxlength="6" required
+            style="text-align:center; font-size:1.8rem; letter-spacing:8px; font-weight:900; font-family:var(--font-mono); padding:0.6rem; color:var(--gold-primary); background:rgba(0,0,0,0.4); border:2px solid var(--gold-primary);">
+        </div>
+
+        <button type="submit" id="btnSubmitVerifyEmail" class="btn btn-gold" style="width:100%; padding:0.85rem; font-weight:800; font-size:1rem;">
+          ✨ Activer & Recevoir 5 000 🪙
+        </button>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:1.25rem; font-size:0.82rem; flex-wrap:wrap; gap:0.5rem;">
+          <button type="button" id="btnResendVerifyCode" class="btn btn-outline btn-sm" style="font-size:0.78rem;">
+            🔄 Renvoyer le code
+          </button>
+          <button type="button" id="btnBackToLoginFromVerify" style="background:none; border:none; color:var(--text-muted); cursor:pointer; text-decoration:underline; font-size:0.82rem;">
+            Retour à la connexion
+          </button>
+        </div>
       </form>
     </div>
   </div>

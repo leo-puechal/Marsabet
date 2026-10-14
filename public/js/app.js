@@ -73,6 +73,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (tabLogin) tabLogin.addEventListener('click', () => window.UI.openAuthModal('login'));
   if (tabRegister) tabRegister.addEventListener('click', () => window.UI.openAuthModal('register'));
 
+  let currentPendingEmail = '';
+
   // Formulaire Connexion
   const formLogin = document.getElementById('formLogin');
   if (formLogin) {
@@ -93,6 +95,12 @@ document.addEventListener('DOMContentLoaded', async () => {
           window.AnnouncementManager.check();
         }
       } catch (err) {
+        if (err.requiresVerification || (err.message && err.message.toLowerCase().includes('activé'))) {
+          currentPendingEmail = err.email || '';
+          window.UI.openAuthModal('verify', { email: currentPendingEmail });
+          window.UI.showToast(err.message || 'Saisis le code de validation reçu par email.', 'warning', 6000);
+          return;
+        }
         window.UI.showToast(err.message, 'error');
       }
     });
@@ -105,6 +113,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       e.preventDefault();
       const lastName = document.getElementById('regLastName')?.value.trim();
       const firstName = document.getElementById('regFirstName')?.value.trim();
+      const email = document.getElementById('regEmail')?.value.trim().toLowerCase();
       const username = document.getElementById('regUsername').value.trim();
       const password = document.getElementById('regPassword').value;
 
@@ -113,13 +122,65 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
       }
 
+      if (!email) {
+        window.UI.showToast('L\'adresse email étudiante Epitech (@epitech.eu) est obligatoire.', 'error');
+        return;
+      }
+
+      const epitechRegex = /^[a-zA-Z0-9_.+-]+@([a-zA-Z0-9-]+\.)*epitech\.(eu|digital)$/i;
+      if (!epitechRegex.test(email)) {
+        window.UI.showToast('Format non autorisé. Utilise ton email étudiant officiel (@epitech.eu).', 'warning');
+        return;
+      }
+
       try {
-        const data = await window.API.register(username, password, lastName, firstName);
+        const data = await window.API.register(username, password, lastName, firstName, email);
+        if (data.requiresVerification) {
+          currentPendingEmail = email;
+          window.UI.openAuthModal('verify', { email });
+          window.UI.showToast(data.message, 'info', 7000);
+        } else {
+          window.API.setToken(data.token);
+          window.State.setUser(data.user);
+          if (window.SyncEngine) window.SyncEngine.authenticateSocket();
+          window.UI.closeAuthModal();
+          window.UI.showToast(data.message, 'success');
+          window.sound.playJackpot();
+          window.UI.triggerConfetti();
+          if (window.AnnouncementManager) {
+            window.AnnouncementManager.check();
+          }
+        }
+      } catch (err) {
+        window.UI.showToast(err.message, 'error');
+      }
+    });
+  }
+
+  // Formulaire Validation Code Email
+  const formVerifyEmail = document.getElementById('formVerifyEmail');
+  if (formVerifyEmail) {
+    formVerifyEmail.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const code = document.getElementById('verifyCodeInput')?.value.trim();
+      if (!code || code.length !== 6) {
+        window.UI.showToast('Veuillez entrer le code à 6 chiffres reçu par email.', 'warning');
+        return;
+      }
+
+      const submitBtn = document.getElementById('btnSubmitVerifyEmail');
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-small"></span> Vérification...';
+      }
+
+      try {
+        const data = await window.API.verifyEmail(currentPendingEmail, code);
         window.API.setToken(data.token);
         window.State.setUser(data.user);
         if (window.SyncEngine) window.SyncEngine.authenticateSocket();
         window.UI.closeAuthModal();
-        window.UI.showToast(data.message, 'success');
+        window.UI.showToast(data.message, 'success', 5000);
         window.sound.playJackpot();
         window.UI.triggerConfetti();
         if (window.AnnouncementManager) {
@@ -127,7 +188,43 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
       } catch (err) {
         window.UI.showToast(err.message, 'error');
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = '✨ Activer & Recevoir 5 000 🪙';
+        }
       }
+    });
+  }
+
+  // Renvoyer le code de validation
+  const btnResendVerifyCode = document.getElementById('btnResendVerifyCode');
+  if (btnResendVerifyCode) {
+    btnResendVerifyCode.addEventListener('click', async () => {
+      if (!currentPendingEmail) {
+        window.UI.showToast('Adresse email inconnue. Reconnecte-toi.', 'warning');
+        window.UI.openAuthModal('login');
+        return;
+      }
+      btnResendVerifyCode.disabled = true;
+      btnResendVerifyCode.textContent = 'Envoi...';
+      try {
+        const res = await window.API.resendVerificationCode(currentPendingEmail);
+        window.UI.showToast(res.message || 'Nouveau code envoyé par email !', 'success', 4000);
+      } catch (err) {
+        window.UI.showToast(err.message, 'error');
+      } finally {
+        btnResendVerifyCode.disabled = false;
+        btnResendVerifyCode.textContent = '🔄 Renvoyer le code';
+      }
+    });
+  }
+
+  // Bouton retour à la connexion depuis l'étape vérification
+  const btnBackToLogin = document.getElementById('btnBackToLoginFromVerify');
+  if (btnBackToLogin) {
+    btnBackToLogin.addEventListener('click', () => {
+      window.UI.openAuthModal('login');
     });
   }
 
@@ -451,18 +548,20 @@ async function loadLeaderboard() {
     const podiumP3Name = document.getElementById('podiumP3Name');
     const podiumP3Score = document.getElementById('podiumP3Score');
 
+    const isAdmin = !!(window.State && window.State.user && (window.State.user.role === 'admin' || window.State.user.role === 'bde'));
+
     if (podiumP1Name) {
-      podiumP1Name.innerHTML = p1 ? `<span class="vip-badge ${p1.vipBadgeClass || 'vip-bronze'}" style="margin-right:4px; font-size:0.65rem;">${p1.vipIcon || '🥉'}</span> ${escapeHtml(p1.username)}` : 'En attente';
+      podiumP1Name.innerHTML = p1 ? `<span class="vip-badge ${p1.vipBadgeClass || 'vip-bronze'}" style="margin-right:4px; font-size:0.65rem;">${p1.vipIcon || '🥉'}</span> <span ${isAdmin ? `style="cursor:pointer; text-decoration:underline;" onclick="window.AdminBDE && window.AdminBDE.openPlayerDetailModal(${p1.id})" title="Admin : Voir la fiche joueur"` : ''}>${escapeHtml(p1.username)}</span>` : 'En attente';
     }
     if (podiumP1Score) podiumP1Score.textContent = p1 ? `${p1.coins.toLocaleString()} 🪙` : '-';
 
     if (podiumP2Name) {
-      podiumP2Name.innerHTML = p2 ? `<span class="vip-badge ${p2.vipBadgeClass || 'vip-bronze'}" style="margin-right:4px; font-size:0.65rem;">${p2.vipIcon || '🥉'}</span> ${escapeHtml(p2.username)}` : 'En attente';
+      podiumP2Name.innerHTML = p2 ? `<span class="vip-badge ${p2.vipBadgeClass || 'vip-bronze'}" style="margin-right:4px; font-size:0.65rem;">${p2.vipIcon || '🥉'}</span> <span ${isAdmin ? `style="cursor:pointer; text-decoration:underline;" onclick="window.AdminBDE && window.AdminBDE.openPlayerDetailModal(${p2.id})" title="Admin : Voir la fiche joueur"` : ''}>${escapeHtml(p2.username)}</span>` : 'En attente';
     }
     if (podiumP2Score) podiumP2Score.textContent = p2 ? `${p2.coins.toLocaleString()} 🪙` : '-';
 
     if (podiumP3Name) {
-      podiumP3Name.innerHTML = p3 ? `<span class="vip-badge ${p3.vipBadgeClass || 'vip-bronze'}" style="margin-right:4px; font-size:0.65rem;">${p3.vipIcon || '🥉'}</span> ${escapeHtml(p3.username)}` : 'En attente';
+      podiumP3Name.innerHTML = p3 ? `<span class="vip-badge ${p3.vipBadgeClass || 'vip-bronze'}" style="margin-right:4px; font-size:0.65rem;">${p3.vipIcon || '🥉'}</span> <span ${isAdmin ? `style="cursor:pointer; text-decoration:underline;" onclick="window.AdminBDE && window.AdminBDE.openPlayerDetailModal(${p3.id})" title="Admin : Voir la fiche joueur"` : ''}>${escapeHtml(p3.username)}</span>` : 'En attente';
     }
     if (podiumP3Score) podiumP3Score.textContent = p3 ? `${p3.coins.toLocaleString()} 🪙` : '-';
 
@@ -483,13 +582,16 @@ async function loadLeaderboard() {
       const vipClass = u.vipBadgeClass || 'vip-bronze';
       const vipIcon = u.vipIcon || '🥉';
       const vipRank = u.vipRank || 'Bronze';
+      const adminClick = isAdmin ? `onclick="window.AdminBDE && window.AdminBDE.openPlayerDetailModal(${u.id})" style="cursor:pointer; ${isCurrent ? 'background: rgba(212, 175, 55, 0.15);' : ''}" class="admin-user-row-hover" title="Admin : Voir la fiche de ${escapeHtml(u.username)}"` : (isCurrent ? 'style="background: rgba(212, 175, 55, 0.15); font-weight: bold;"' : '');
 
       return `
-        <tr style="${isCurrent ? 'background: rgba(212, 175, 55, 0.15); font-weight: bold;' : ''}">
+        <tr ${adminClick}>
           <td><span class="leader-rank-badge">${badge}</span></td>
           <td>
             <span class="vip-badge ${vipClass}" style="margin-right:6px; font-size:0.65rem;">${vipIcon} ${vipRank}</span>
-            <strong>${escapeHtml(u.username)}</strong> ${isCurrent ? '<span style="color:var(--gold-light); font-size:0.75rem;">(Toi)</span>' : ''}
+            <strong>${escapeHtml(u.username)}</strong>
+            ${isCurrent ? '<span style="color:var(--gold-light); font-size:0.75rem;">(Toi)</span>' : ''}
+            ${isAdmin ? '<span style="font-size:0.75rem; color:var(--gold-light); margin-left:5px; opacity:0.85;" title="Fiche Admin">📊</span>' : ''}
           </td>
           <td class="leader-coins">${u.coins.toLocaleString()} 🪙</td>
           <td>🔥 ${u.daily_streak}j</td>

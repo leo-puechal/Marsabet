@@ -25,30 +25,49 @@ const UI = {
   },
 
   // Modal Auth
-  openAuthModal(mode = 'login') {
+  openAuthModal(mode = 'login', extraData = {}) {
     const modal = document.getElementById('authModal');
     const tabLogin = document.getElementById('tabLogin');
     const tabRegister = document.getElementById('tabRegister');
     const formLogin = document.getElementById('formLogin');
     const formRegister = document.getElementById('formRegister');
+    const formVerify = document.getElementById('formVerifyEmail');
+    const tabsBar = document.getElementById('authModalTabsBar');
 
     if (!modal) return;
     modal.classList.add('active');
 
+    if (formVerify) formVerify.style.display = 'none';
+    if (tabsBar) tabsBar.style.display = 'flex';
+
     if (mode === 'login') {
-      tabLogin.classList.add('active');
-      tabRegister.classList.remove('active');
-      formLogin.style.display = 'block';
-      formRegister.style.display = 'none';
+      if (tabLogin) tabLogin.classList.add('active');
+      if (tabRegister) tabRegister.classList.remove('active');
+      if (formLogin) formLogin.style.display = 'block';
+      if (formRegister) formRegister.style.display = 'none';
       const userInp = document.getElementById('loginUsername');
       if (userInp) setTimeout(() => userInp.focus(), 100);
-    } else {
-      tabRegister.classList.add('active');
-      tabLogin.classList.remove('active');
-      formRegister.style.display = 'block';
-      formLogin.style.display = 'none';
-      const regInp = document.getElementById('regUsername');
+    } else if (mode === 'register') {
+      if (tabRegister) tabRegister.classList.add('active');
+      if (tabLogin) tabLogin.classList.remove('active');
+      if (formRegister) formRegister.style.display = 'block';
+      if (formLogin) formLogin.style.display = 'none';
+      const regInp = document.getElementById('regLastName');
       if (regInp) setTimeout(() => regInp.focus(), 100);
+    } else if (mode === 'verify') {
+      if (tabsBar) tabsBar.style.display = 'none';
+      if (formLogin) formLogin.style.display = 'none';
+      if (formRegister) formRegister.style.display = 'none';
+      if (formVerify) formVerify.style.display = 'block';
+      if (extraData.email) {
+        const el = document.getElementById('verifyTargetEmail');
+        if (el) el.textContent = extraData.email;
+      }
+      const codeInp = document.getElementById('verifyCodeInput');
+      if (codeInp) {
+        codeInp.value = '';
+        setTimeout(() => codeInp.focus(), 100);
+      }
     }
   },
 

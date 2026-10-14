@@ -727,4 +727,64 @@
   font-weight: 600;
 }
 
+/* Modale Fiche Joueur Admin */
+.admin-player-modal-content {
+  background: radial-gradient(circle at top right, rgba(14, 39, 84, 0.95), #06142B 70%);
+  border: 1.5px solid rgba(212, 175, 55, 0.4);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8), 0 0 40px rgba(212, 175, 55, 0.15);
+}
+
+.player-detail-tabs-bar {
+  display: flex;
+  gap: 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  padding-bottom: 0.3rem;
+}
+
+.player-tab-btn {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-secondary);
+  padding: 0.65rem 1rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.player-tab-btn:hover {
+  color: #FFF;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 6px 6px 0 0;
+}
+
+.player-tab-btn.active {
+  color: var(--gold-primary);
+  border-bottom-color: var(--gold-primary);
+  background: rgba(212, 175, 55, 0.08);
+  border-radius: 6px 6px 0 0;
+}
+
+.admin-clickable-user {
+  cursor: pointer;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.admin-clickable-user:hover {
+  opacity: 0.85;
+  text-decoration: underline;
+  text-decoration-color: var(--gold-primary);
+}
+
+.admin-user-row-hover {
+  transition: background-color 0.15s ease;
+}
+
+.admin-user-row-hover:hover {
+  background: rgba(212, 175, 55, 0.06) !important;
+}
+
+
 

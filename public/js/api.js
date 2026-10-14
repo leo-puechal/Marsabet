@@ -39,7 +39,11 @@ const API = {
           this.clearToken();
           window.dispatchEvent(new CustomEvent('auth:expired'));
         }
-        throw new Error(data.error || 'Une erreur est survenue.');
+        const err = new Error(data.error || 'Une erreur est survenue.');
+        if (data.requiresVerification) err.requiresVerification = true;
+        if (data.email) err.email = data.email;
+        if (data.username) err.username = data.username;
+        throw err;
       }
 
       return data;
@@ -49,7 +53,7 @@ const API = {
   },
 
   // Auth endpoints
-  async register(username, password, lastName, firstName) {
+  async register(username, password, lastName, firstName, email) {
     let payload;
     if (typeof username === 'object' && username !== null) {
       payload = username;
@@ -60,10 +64,29 @@ const API = {
         lastName,
         firstName,
         last_name: lastName,
-        first_name: firstName
+        first_name: firstName,
+        email
       };
     }
     return this.request('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+  },
+
+  async verifyEmail(emailOrPayload, code) {
+    const payload = typeof emailOrPayload === 'object' ? emailOrPayload : { email: emailOrPayload, code };
+    return this.request('/auth/verify-email', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+  },
+
+  async resendVerificationCode(emailOrUsername) {
+    const payload = typeof emailOrUsername === 'object'
+      ? emailOrUsername
+      : (String(emailOrUsername).includes('@') ? { email: emailOrUsername } : { username: emailOrUsername });
+    return this.request('/auth/resend-verification', {
       method: 'POST',
       body: JSON.stringify(payload)
     });
@@ -166,6 +189,11 @@ const API = {
   async adminGetUsers(params = {}) {
     const q = new URLSearchParams(params).toString();
     return this.request(`/admin/users${q ? '?' + q : ''}`);
+  },
+
+  async adminGetUserDetails(userId, params = {}) {
+    const q = new URLSearchParams(params).toString();
+    return this.request(`/admin/users/${encodeURIComponent(userId)}/details${q ? '?' + q : ''}`);
   },
 
   async adminUpdateUserCoins(userId, data) {

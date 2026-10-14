@@ -284,7 +284,12 @@ exports.getAllUsers = (req, res) => {
 exports.updateUserCoins = (req, res) => {
   try {
     const { id } = req.params;
-    const { coins, mode = 'set', reason = 'Modification administrateur BDE' } = req.body;
+    const { coins, mode = 'set', reason } = req.body;
+
+    const cleanReason = (typeof reason === 'string') ? reason.trim() : '';
+    if (!cleanReason || cleanReason.length < 3) {
+      return res.status(400).json({ error: 'Une note ou raison explicative obligatoire doit être renseignée pour tout ajustement de solde (minimum 3 caractères).' });
+    }
 
     const targetUser = db.prepare('SELECT id, username, coins, role FROM users WHERE id = ?').get(id);
     if (!targetUser) {
@@ -313,13 +318,24 @@ exports.updateUserCoins = (req, res) => {
 
     db.prepare('UPDATE users SET coins = ? WHERE id = ?').run(newBalance, id);
 
-    // Enregistrer transaction dans les logs d'audit si applicable
+    // Enregistrer transaction dans l'audit des ajustements admin et transactions
+    const amountDiff = newBalance - targetUser.coins;
+    const adminId = req.user ? req.user.id : 0;
+    const adminUsername = req.user ? req.user.username : 'admin';
+
     try {
+      db.prepare(`
+        INSERT INTO admin_adjustments (user_id, admin_id, admin_username, amount, previous_balance, new_balance, mode, reason)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(id, adminId, adminUsername, amountDiff, targetUser.coins, newBalance, mode, cleanReason);
+
       db.prepare(`
         INSERT INTO transactions (user_id, amount, type, description)
         VALUES (?, ?, 'admin_adjustment', ?)
-      `).run(id, newBalance - targetUser.coins, reason);
-    } catch (e) {}
+      `).run(id, amountDiff, cleanReason);
+    } catch (e) {
+      console.error('Erreur insertion audit admin_adjustments:', e);
+    }
 
     // Notifier l'utilisateur en temps réel via WebSocket s'il est connecté
     try {
@@ -340,6 +356,137 @@ exports.updateUserCoins = (req, res) => {
   } catch (err) {
     console.error('Erreur updateUserCoins admin:', err);
     return res.status(500).json({ error: 'Erreur lors de la modification du solde.' });
+  }
+};
+
+// Récupérer la fiche détaillée complète d'un joueur pour l'admin
+exports.getUserDetails = (req, res) => {
+  try {
+    const { id } = req.params;
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(50, Math.max(5, parseInt(req.query.limit, 10) || 15));
+    const offset = (page - 1) * limit;
+
+    const user = db.prepare(`
+      SELECT id, username, first_name, last_name, email, role, coins, daily_streak,
+             last_daily_claim, total_wagered, total_won, games_played, biggest_win,
+             registration_ip, email_verified, created_at
+      FROM users
+      WHERE id = ?
+    `).get(id);
+
+    if (!user) {
+      return res.status(404).json({ error: 'Utilisateur introuvable.' });
+    }
+
+    const vipService = require('../services/vipService');
+    const vipInfo = vipService.getVipInfo(user.total_wagered || 0);
+
+    const isOnline = presenceService.isUserOnline(user.id);
+    const onlinePresence = isOnline ? presenceService.getUserPresence(user.id) : null;
+
+    // Détection des comptes partageant la même IP d'inscription
+    let sameIpAccounts = [];
+    if (user.registration_ip && user.registration_ip !== '127.0.0.1' && user.registration_ip !== '::1') {
+      sameIpAccounts = db.prepare(`
+        SELECT id, username, first_name, last_name, role, coins, created_at
+        FROM users
+        WHERE registration_ip = ? AND id != ?
+      `).all(user.registration_ip, user.id);
+    }
+
+    // Statistiques par type de jeu
+    const statsByGame = db.prepare(`
+      SELECT game_type, COUNT(*) as count, SUM(bet) as total_bet, SUM(payout) as total_payout, SUM(profit) as net_profit
+      FROM game_history
+      WHERE user_id = ? AND game_type != 'daily_bonus'
+      GROUP BY game_type
+    `).all(id) || [];
+
+    // Total des parties et pagination
+    const totalGamesRow = db.prepare('SELECT COUNT(*) as total FROM game_history WHERE user_id = ?').get(id);
+    const totalGames = totalGamesRow ? totalGamesRow.total : 0;
+    const totalPages = Math.ceil(totalGames / limit) || 1;
+
+    // Historique des parties paginé
+    const rawGames = db.prepare(`
+      SELECT id, game_type, bet, payout, profit, details, created_at
+      FROM game_history
+      WHERE user_id = ?
+      ORDER BY created_at DESC
+      LIMIT ? OFFSET ?
+    `).all(id, limit, offset) || [];
+
+    const games = rawGames.map(g => {
+      let detailsObj = null;
+      if (g.details) {
+        try { detailsObj = typeof g.details === 'object' ? g.details : JSON.parse(g.details); }
+        catch (e) { detailsObj = { raw: g.details }; }
+      }
+      return {
+        id: g.id,
+        game_type: g.game_type,
+        bet: g.bet,
+        payout: g.payout,
+        profit: g.profit,
+        details: detailsObj,
+        created_at: g.created_at
+      };
+    });
+
+    // Historique des codes promo utilisés
+    const promoCodes = db.prepare(`
+      SELECT cu.id, cu.coins_awarded, cu.used_at, p.code
+      FROM code_utilisations cu
+      JOIN promo_codes p ON cu.code_id = p.id
+      WHERE cu.user_id = ?
+      ORDER BY cu.used_at DESC
+    `).all(id) || [];
+
+    // Historique des ajustements manuels de solde
+    const adjustments = db.prepare(`
+      SELECT a.id, a.admin_id, a.admin_username, a.amount, a.previous_balance,
+             a.new_balance, a.mode, a.reason, a.created_at
+      FROM admin_adjustments a
+      WHERE a.user_id = ?
+      ORDER BY a.created_at DESC
+    `).all(id) || [];
+
+    // Historique des livraisons et récompenses
+    const deliveries = db.prepare(`
+      SELECT d.id, d.item_name, d.variant_name, d.quantity, d.coins_paid,
+             d.room_location, d.phone, d.notes, d.source, d.status,
+             d.delivered_at, d.created_at
+      FROM delivery_orders d
+      WHERE d.user_id = ?
+      ORDER BY d.created_at DESC
+    `).all(id) || [];
+
+    return res.json({
+      success: true,
+      user: {
+        ...user,
+        isOnline,
+        onlinePresence,
+        vipInfo,
+        sameIpAccountsCount: sameIpAccounts.length,
+        sameIpAccounts
+      },
+      statsByGame,
+      games,
+      pagination: {
+        page,
+        limit,
+        totalGames,
+        totalPages
+      },
+      promoCodes,
+      adjustments,
+      deliveries
+    });
+  } catch (err) {
+    console.error('Erreur getUserDetails admin:', err);
+    return res.status(500).json({ error: 'Impossible de charger la fiche détaillée du joueur.' });
   }
 };
 

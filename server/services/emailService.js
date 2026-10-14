@@ -183,6 +183,99 @@ Commande n° : #${delivery.id}
   }
 }
 
+async function sendVerificationEmail(email, code, username = '') {
+  const emailUser = process.env.EMAIL_USER;
+  const emailPass = process.env.EMAIL_PASS;
+
+  console.log(`[EmailService] 📧 Code de vérification généré pour ${email} (${username}) : [ ${code} ]`);
+
+  if (!emailUser || !emailPass) {
+    console.warn(`[EmailService] ⚠️ Identifiants Gmail non configurés. Code disponible dans la console: ${code}`);
+    return {
+      success: true,
+      status: 'dev_logged',
+      code
+    };
+  }
+
+  try {
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: emailUser.trim(),
+        pass: emailPass.replace(/\s+/g, '')
+      }
+    });
+
+    const subject = `[Marsabet] Ton code de validation : ${code}`;
+    const textContent = `Salut ${username || 'Astronaute'} !\n\nBienvenue sur Marsabet, le casino étudiant du BDE.\n\nTon code de confirmation pour activer ton compte et recevoir tes 5 000 jetons est :\n\n${code}\n\nCe code expire dans 15 minutes.\n\nÀ très vite sur Marsabet !`;
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html lang="fr">
+      <head><meta charset="utf-8"></head>
+      <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #040E24; color: #FFFFFF; padding: 20px; margin: 0;">
+        <div style="max-width: 540px; margin: 0 auto; background: #0A1F44; border: 2px solid #D4AF37; border-radius: 14px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+          <div style="background: linear-gradient(135deg, #0A1F44 0%, #153775 100%); padding: 25px 20px; text-align: center; border-bottom: 2px solid #D4AF37;">
+            <div style="font-size: 2.5rem; margin-bottom: 6px;">🪐</div>
+            <h1 style="color: #FDE047; font-size: 24px; margin: 0; text-transform: uppercase; letter-spacing: 1px; font-weight: 800;">
+              Marsabet Casino
+            </h1>
+            <p style="color: #CBD5E1; font-size: 14px; margin: 6px 0 0;">
+              Activation de ton compte étudiant Epitech
+            </p>
+          </div>
+          <div style="padding: 28px 24px; text-align: center;">
+            <p style="font-size: 16px; color: #E2E8F0; margin-top: 0;">
+              Salut <strong style="color: #FDE047;">${username || 'Astronaute'}</strong> ! 👋
+            </p>
+            <p style="font-size: 14.5px; color: #94A3B8; line-height: 1.5; margin-bottom: 24px;">
+              Pour finaliser ton inscription et débloquer tes <strong>5 000 jetons</strong> de bienvenue, saisis ce code de confirmation sur Marsabet :
+            </p>
+            <div style="background: rgba(255, 255, 255, 0.05); border: 2px dashed #D4AF37; border-radius: 10px; padding: 18px 24px; display: inline-block; margin-bottom: 24px;">
+              <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 2px; color: #FDE047; margin-bottom: 6px; font-weight: 700;">Code de vérification</div>
+              <div style="font-size: 34px; font-weight: 900; letter-spacing: 8px; color: #FFFFFF; font-family: 'Courier New', Courier, monospace;">
+                ${code}
+              </div>
+            </div>
+            <p style="font-size: 13px; color: #64748B; margin-bottom: 0;">
+              ⏳ Ce code est valable pendant 15 minutes.<br>Si tu n'es pas à l'origine de cette demande, ignore simplement ce message.
+            </p>
+          </div>
+          <div style="background: #06142B; padding: 14px 20px; text-align: center; border-top: 1px solid rgba(255, 255, 255, 0.1); font-size: 12px; color: #64748B;">
+            Marsabet — Plateforme BDE Epitech Marseille
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    const info = await transporter.sendMail({
+      from: `"Marsabet Casino" <${emailUser}>`,
+      to: email,
+      subject,
+      text: textContent,
+      html: htmlContent
+    });
+
+    console.log(`[EmailService] ✅ Email de validation envoyé à ${email} (Message ID: ${info.messageId})`);
+    return {
+      success: true,
+      status: 'sent',
+      messageId: info.messageId
+    };
+  } catch (err) {
+    console.error(`[EmailService] ❌ Erreur lors de l'envoi de l'email à ${email}:`, err.message);
+    return {
+      success: true,
+      status: 'fallback_logged',
+      error: err.message,
+      code
+    };
+  }
+}
+
 module.exports = {
-  sendDeliveryNotification
+  sendDeliveryNotification,
+  sendVerificationEmail
 };

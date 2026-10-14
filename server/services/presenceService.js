@@ -78,6 +78,18 @@ class PresenceService {
     }
   }
 
+  // Vérifie si un utilisateur est actuellement en ligne
+  isUserOnline(userId) {
+    if (!userId) return false;
+    return this.onlineUsers.has(Number(userId));
+  }
+
+  // Récupère la présence d'un utilisateur spécifique
+  getUserPresence(userId) {
+    if (!userId) return null;
+    return this.onlineUsers.get(Number(userId)) || null;
+  }
+
   // Récupère la liste formatée des joueurs en ligne avec leur solde temps réel
   getOnlinePlayers() {
     const now = Date.now();

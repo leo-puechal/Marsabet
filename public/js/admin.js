@@ -242,6 +242,66 @@ const AdminBDE = {
         this.saveAnnouncement();
       });
     }
+
+    // Modal Fiche Joueur Admin (Statistiques & Détails)
+    const closePlayerModalBtn = document.getElementById('closeAdminPlayerDetailModal');
+    if (closePlayerModalBtn) {
+      closePlayerModalBtn.addEventListener('click', () => this.closePlayerDetailModal());
+    }
+
+    const playerDetailModal = document.getElementById('adminPlayerDetailModal');
+    if (playerDetailModal) {
+      playerDetailModal.addEventListener('click', (e) => {
+        if (e.target === playerDetailModal) {
+          this.closePlayerDetailModal();
+        }
+      });
+    }
+
+    // Onglets de la modale Fiche Joueur
+    document.querySelectorAll('.player-tab-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const tab = e.currentTarget.dataset.tab;
+        this.switchPlayerDetailTab(tab);
+      });
+    });
+
+    // Pagination parties de la modale joueur
+    const btnGamesPrev = document.getElementById('btnPlayerGamesPrev');
+    const btnGamesNext = document.getElementById('btnPlayerGamesNext');
+    if (btnGamesPrev) {
+      btnGamesPrev.addEventListener('click', () => {
+        if (this.currentPlayerGamesPage > 1) {
+          this.loadPlayerGamesPage(this.currentPlayerGamesPage - 1);
+        }
+      });
+    }
+    if (btnGamesNext) {
+      btnGamesNext.addEventListener('click', () => {
+        if (this.currentPlayerData && this.currentPlayerGamesPage < (this.currentPlayerData.pagination?.totalPages || 1)) {
+          this.loadPlayerGamesPage(this.currentPlayerGamesPage + 1);
+        }
+      });
+    }
+
+    // Actions rapides depuis la modale joueur
+    const adjustCoinsBtn = document.getElementById('playerDetailAdjustCoinsBtn');
+    if (adjustCoinsBtn) {
+      adjustCoinsBtn.addEventListener('click', () => {
+        if (this.currentPlayerData && this.currentPlayerData.user) {
+          this.openUserCoinsModal(this.currentPlayerData.user);
+        }
+      });
+    }
+
+    const editIdentityBtn = document.getElementById('playerDetailEditIdentityBtn');
+    if (editIdentityBtn) {
+      editIdentityBtn.addEventListener('click', () => {
+        if (this.currentPlayerData && this.currentPlayerData.user) {
+          this.openUserIdentityModal(this.currentPlayerData.user);
+        }
+      });
+    }
   },
 
   checkPermission() {
@@ -362,6 +422,12 @@ const AdminBDE = {
       return;
     }
 
+    if (!reason || reason.length < 3) {
+      window.UI.showToast('Une note / justification explicative est obligatoire pour tout ajustement de solde (minimum 3 caractères).', 'warning');
+      if (reasonInput) reasonInput.focus();
+      return;
+    }
+
     if (submitBtn) {
       submitBtn.disabled = true;
       submitBtn.innerHTML = '<span class="spinner-small"></span> Enregistrement...';
@@ -376,6 +442,9 @@ const AdminBDE = {
 
       this.closeUserCoinsModal();
       this.loadUsers();
+      if (this.currentPlayerId && String(this.currentPlayerId) === String(userId)) {
+        this.openPlayerDetailModal(userId, this.currentPlayerGamesPage);
+      }
 
       // Si l'admin a modifié son propre solde, actualiser le state local
       if (window.State && window.State.user && String(window.State.user.id) === String(userId)) {
@@ -438,6 +507,9 @@ const AdminBDE = {
       window.UI.showToast(res.message || 'Identité mise à jour avec succès !', 'success');
       this.closeUserIdentityModal();
       this.loadUsers();
+      if (this.currentPlayerId && String(this.currentPlayerId) === String(userId)) {
+        this.openPlayerDetailModal(userId, this.currentPlayerGamesPage);
+      }
 
       // Si l'admin a modifié sa propre identité, rafraîchir le state local
       if (window.State && window.State.user && String(window.State.user.id) === String(userId)) {
@@ -565,13 +637,13 @@ const AdminBDE = {
         const avatarIcon = isAdmin ? '🛡️' : '👤';
 
         return `
-          <tr>
+          <tr class="admin-user-row-hover">
             <td>
-              <div class="admin-user-cell">
+              <div class="admin-user-cell admin-clickable-user" onclick="AdminBDE.openPlayerDetailModal(${u.id})" title="Voir la fiche détaillée de ${escapeHtml(u.username)}">
                 <div class="admin-user-avatar">${avatarIcon}</div>
                 <div>
                   <div style="font-weight:700; color:#FFF; font-size:0.95rem; display:flex; align-items:center; gap:6px;">
-                    ${escapeHtml(u.username)}
+                    ${escapeHtml(u.username)} <span style="font-size:0.75rem; opacity:0.7;">📊</span>
                     ${isSelf ? '<span style="font-size:0.7rem; background:rgba(212,175,55,0.25); color:var(--gold-light); padding:1px 6px; border-radius:4px;">(Toi)</span>' : ''}
                     ${isMaster ? '<span style="font-size:0.7rem; background:rgba(168,85,247,0.25); color:#E9D5FF; padding:1px 6px; border-radius:4px;">Maître</span>' : ''}
                   </div>
@@ -601,6 +673,9 @@ const AdminBDE = {
             </td>
             <td style="text-align:right;">
               <div style="display:inline-flex; gap:0.4rem; justify-content:flex-end; flex-wrap:wrap;">
+                <button class="admin-btn-action" style="border-color:var(--gold-primary); color:var(--gold-light);" onclick="AdminBDE.openPlayerDetailModal(${u.id})" title="Fiche détaillée et historique de ${escapeHtml(u.username)}">
+                  📊 Fiche
+                </button>
                 <button class="admin-btn-action admin-btn-coins" onclick="AdminBDE.openUserCoinsModal(${JSON.stringify(u).replace(/"/g, '&quot;')})" title="Modifier le solde de pièces">
                   🪙 Solde
                 </button>
@@ -1966,10 +2041,10 @@ const AdminBDE = {
       return `
         <tr>
           <td>
-            <div class="admin-user-cell">
+            <div class="admin-user-cell admin-clickable-user" onclick="AdminBDE.openPlayerDetailModal(${p.userId})" title="Voir la fiche détaillée de ${safeUsernameAttr}">
               <div class="admin-user-avatar">${esc(initial)}</div>
               <div>
-                <div style="font-weight:700; color:var(--gold-light); font-size:0.95rem;">${esc(p.username)}</div>
+                <div style="font-weight:700; color:var(--gold-light); font-size:0.95rem;">${esc(p.username)} <span style="font-size:0.75rem; opacity:0.7;">📊</span></div>
                 <div style="margin-top:0.2rem;">${roleBadge}</div>
               </div>
             </div>
@@ -1987,12 +2062,450 @@ const AdminBDE = {
           <td>${activityBadge}</td>
           <td>${sessionsDisplay}</td>
           <td style="text-align:right;">
-            <button class="admin-btn-action admin-btn-coins" 
-              onclick="AdminBDE.openUserCoinsModal({ id: ${p.userId}, username: '${safeUsernameAttr}', coins: ${Number(p.coins || 0)} })"
-              title="Ajuster le solde de ${safeUsernameAttr}">
-              💰 Solde
-            </button>
+            <div style="display:inline-flex; gap:0.4rem; justify-content:flex-end; flex-wrap:wrap;">
+              <button class="admin-btn-action" style="border-color:var(--gold-primary); color:var(--gold-light);"
+                onclick="AdminBDE.openPlayerDetailModal(${p.userId})"
+                title="Fiche détaillée et statistiques de ${safeUsernameAttr}">
+                📊 Fiche
+              </button>
+              <button class="admin-btn-action admin-btn-coins" 
+                onclick="AdminBDE.openUserCoinsModal({ id: ${p.userId}, username: '${safeUsernameAttr}', coins: ${Number(p.coins || 0)} })"
+                title="Ajuster le solde de ${safeUsernameAttr}">
+                🪙 Solde
+              </button>
+            </div>
           </td>
+        </tr>
+      `;
+    }).join('');
+  },
+
+  // ==========================================
+  // SECTION FICHE JOUEUR DÉTAILLÉE (ADMIN)
+  // ==========================================
+
+  currentPlayerId: null,
+  currentPlayerData: null,
+  currentPlayerGamesPage: 1,
+  currentPlayerActiveTab: 'games',
+
+  async openPlayerDetailModal(userId, page = 1) {
+    if (!userId) return;
+    this.currentPlayerId = userId;
+    this.currentPlayerGamesPage = page;
+
+    const modal = document.getElementById('adminPlayerDetailModal');
+    if (!modal) return;
+    modal.classList.add('active');
+
+    // Réinitialiser les affichages
+    const elUsername = document.getElementById('playerDetailUsername');
+    const elFullName = document.getElementById('playerDetailFullName');
+    const elEmail = document.getElementById('playerDetailEmail');
+    const elId = document.getElementById('playerDetailId');
+
+    if (elUsername) elUsername.textContent = 'Chargement...';
+    if (elFullName) elFullName.textContent = 'Vérification en cours...';
+    if (elEmail) elEmail.textContent = '...';
+    if (elId) elId.textContent = userId;
+
+    const gamesListEl = document.getElementById('playerDetailGamesList');
+    if (gamesListEl) gamesListEl.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:2rem; color:var(--text-muted);"><span class="spinner-small" style="display:inline-block; margin-right:8px;"></span> Chargement de la fiche joueur...</td></tr>';
+    
+    const promosListEl = document.getElementById('playerDetailPromosList');
+    if (promosListEl) promosListEl.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:2rem; color:var(--text-muted);">Chargement...</td></tr>';
+    
+    const adjustListEl = document.getElementById('playerDetailAdjustmentsList');
+    if (adjustListEl) adjustListEl.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:2rem; color:var(--text-muted);">Chargement...</td></tr>';
+    
+    const delivListEl = document.getElementById('playerDetailDeliveriesList');
+    if (delivListEl) delivListEl.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:2rem; color:var(--text-muted);">Chargement...</td></tr>';
+
+    try {
+      const data = await window.API.adminGetUserDetails(userId, { page, limit: 15 });
+      this.currentPlayerData = data;
+      this.renderPlayerDetailData(data);
+    } catch (err) {
+      console.error('Erreur openPlayerDetailModal:', err);
+      window.UI?.showToast(err.message || 'Impossible de charger la fiche joueur.', 'error');
+      if (gamesListEl) {
+        gamesListEl.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:2rem; color:var(--lose-red);">Erreur: ${window.escapeHtml ? window.escapeHtml(err.message) : err.message}</td></tr>`;
+      }
+    }
+  },
+
+  async loadPlayerGamesPage(page) {
+    if (!this.currentPlayerId) return;
+    this.currentPlayerGamesPage = page;
+
+    const tbody = document.getElementById('playerDetailGamesList');
+    if (tbody) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:2rem; color:var(--text-muted);"><span class="spinner-small" style="display:inline-block; margin-right:8px;"></span> Chargement de la page ' + page + '...</td></tr>';
+    }
+
+    try {
+      const data = await window.API.adminGetUserDetails(this.currentPlayerId, { page, limit: 15 });
+      if (this.currentPlayerData) {
+        this.currentPlayerData.games = data.games;
+        this.currentPlayerData.pagination = data.pagination;
+      } else {
+        this.currentPlayerData = data;
+      }
+      this.renderPlayerGamesTab(data.games, data.pagination);
+    } catch (err) {
+      console.error('Erreur loadPlayerGamesPage:', err);
+      if (tbody) tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:2rem; color:var(--lose-red);">Erreur lors du chargement des parties.</td></tr>`;
+    }
+  },
+
+  closePlayerDetailModal() {
+    const modal = document.getElementById('adminPlayerDetailModal');
+    if (modal) modal.classList.remove('active');
+    this.currentPlayerId = null;
+  },
+
+  switchPlayerDetailTab(tabName) {
+    this.currentPlayerActiveTab = tabName;
+    document.querySelectorAll('.player-tab-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.tab === tabName);
+    });
+
+    const tabs = ['games', 'promos', 'adjustments', 'deliveries'];
+    tabs.forEach(t => {
+      const el = document.getElementById(`playerContent${t.charAt(0).toUpperCase() + t.slice(1)}`);
+      if (el) {
+        el.style.display = (t === tabName) ? 'block' : 'none';
+      }
+    });
+  },
+
+  renderPlayerDetailData(data) {
+    if (!data || !data.user) return;
+    const u = data.user;
+    const esc = typeof window.escapeHtml === 'function' ? window.escapeHtml : (s) => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+    // Header info
+    const elUsername = document.getElementById('playerDetailUsername');
+    const elFullName = document.getElementById('playerDetailFullName');
+    const elEmail = document.getElementById('playerDetailEmail');
+    const elId = document.getElementById('playerDetailId');
+    const elAvatar = document.getElementById('playerDetailAvatar');
+    const elRoleBadge = document.getElementById('playerDetailRoleBadge');
+    const elVipBadge = document.getElementById('playerDetailVipBadge');
+    const elOnlineStatus = document.getElementById('playerDetailOnlineStatus');
+
+    if (elUsername) elUsername.textContent = u.username;
+    if (elFullName) {
+      const full = `${u.first_name || ''} ${u.last_name || ''}`.trim();
+      elFullName.textContent = full || 'Nom non renseigné';
+    }
+    if (elEmail) {
+      elEmail.innerHTML = u.email
+        ? `✉️ ${esc(u.email)} ${u.email_verified ? '<span title="Email vérifié" style="color:#34D399; font-weight:700;">✓</span>' : '<span title="Email non vérifié" style="color:#F87171; font-weight:700;">⚠️</span>'}`
+        : '<em>Aucun email</em>';
+    }
+    if (elId) elId.textContent = u.id;
+    if (elAvatar) elAvatar.textContent = (u.username || '?').charAt(0).toUpperCase();
+
+    // Rôle badge
+    if (elRoleBadge) {
+      if (u.role === 'admin') {
+        elRoleBadge.className = 'admin-role-badge role-admin';
+        elRoleBadge.textContent = '🛡️ Admin BDE';
+      } else {
+        elRoleBadge.className = 'admin-role-badge role-student';
+        elRoleBadge.textContent = '🎓 Élève';
+      }
+    }
+
+    // VIP badge
+    const vip = u.vipInfo || { rank: 'Bronze', icon: '🥉', badgeClass: 'vip-bronze', bonusMultiplier: 1.0 };
+    if (elVipBadge) {
+      elVipBadge.className = `vip-badge ${vip.badgeClass || 'vip-bronze'}`;
+      elVipBadge.textContent = `${vip.icon || '🥉'} ${vip.rank.toUpperCase()}`;
+    }
+
+    // Online status
+    if (elOnlineStatus) {
+      if (u.isOnline) {
+        elOnlineStatus.className = 'online-status-pill status-active';
+        elOnlineStatus.innerHTML = '<span class="pulse-icon">●</span> En ligne';
+      } else {
+        elOnlineStatus.className = 'online-status-pill status-away';
+        elOnlineStatus.innerHTML = '⚪ Hors ligne';
+      }
+    }
+
+    // 4 Key metric cards
+    const elCoins = document.getElementById('playerDetailCoins');
+    const elWager = document.getElementById('playerDetailWager');
+    const elIp = document.getElementById('playerDetailIp');
+    const elIpWarning = document.getElementById('playerDetailIpWarning');
+    const elCreatedAt = document.getElementById('playerDetailCreatedAt');
+    const elGamesCount = document.getElementById('playerDetailGamesCount');
+    const elBiggestWin = document.getElementById('playerDetailBiggestWin');
+    const elStreak = document.getElementById('playerDetailStreak');
+    const elVipMultiplier = document.getElementById('playerDetailVipMultiplier');
+
+    if (elCoins) elCoins.textContent = `${Number(u.coins || 0).toLocaleString('fr-FR')} 🪙`;
+    if (elWager) elWager.textContent = `${Number(u.total_wagered || 0).toLocaleString('fr-FR')} 🪙`;
+
+    const createdAtStr = u.created_at ? new Date(u.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A';
+    if (elCreatedAt) elCreatedAt.textContent = createdAtStr;
+
+    // IP Registration & multi-account warning
+    if (elIp) {
+      elIp.textContent = u.registration_ip || 'Non enregistrée';
+    }
+    if (elIpWarning) {
+      if (u.sameIpAccountsCount > 0) {
+        const otherNames = (u.sameIpAccounts || []).map(a => a.username).join(', ');
+        elIpWarning.innerHTML = `Inscrit le ${createdAtStr} • <span style="color:#F87171; font-weight:700;">⚠️ ${u.sameIpAccountsCount} autre(s) compte(s) avec cette IP :</span> <span style="color:#FCA5A5;">${esc(otherNames)}</span>`;
+      } else {
+        elIpWarning.innerHTML = `Inscrit le ${createdAtStr} • <span style="color:#34D399;">✓ IP d'inscription unique</span>`;
+      }
+    }
+
+    if (elGamesCount) elGamesCount.textContent = (data.pagination?.totalGames || u.games_played || 0).toLocaleString('fr-FR');
+    if (elBiggestWin) elBiggestWin.textContent = `${Number(u.biggest_win || 0).toLocaleString('fr-FR')} 🪙`;
+    if (elStreak) elStreak.textContent = u.daily_streak || 0;
+    if (elVipMultiplier) elVipMultiplier.textContent = `x${(vip.bonusMultiplier || 1.0).toFixed(2)}`;
+
+    // Tab badges
+    const badgeGames = document.getElementById('playerTabBadgeGames');
+    const badgePromos = document.getElementById('playerTabBadgePromos');
+    const badgeAdjustments = document.getElementById('playerTabBadgeAdjustments');
+    const badgeDeliveries = document.getElementById('playerTabBadgeDeliveries');
+
+    if (badgeGames) badgeGames.textContent = (data.pagination?.totalGames || 0).toLocaleString('fr-FR');
+    if (badgePromos) badgePromos.textContent = (data.promoCodes?.length || 0);
+    if (badgeAdjustments) badgeAdjustments.textContent = (data.adjustments?.length || 0);
+    if (badgeDeliveries) badgeDeliveries.textContent = (data.deliveries?.length || 0);
+
+    // Breakdown par type de jeu
+    const breakdownEl = document.getElementById('playerGamesBreakdown');
+    if (breakdownEl) {
+      if (data.statsByGame && data.statsByGame.length > 0) {
+        const gameIcons = {
+          blackjack: '🃏 Blackjack',
+          roulette: '🎡 Roulette',
+          slots: '🎰 Machines',
+          mines: '💣 Mines',
+          crash: '🚀 Crash',
+          plinko: '⚪ Plinko',
+          keno: '🎱 Keno',
+          dice: '🎲 Dés',
+          wheel: '🎡 Roue',
+          videopoker: '🎴 Vidéo Poker',
+          dragontower: '🐲 Tour Dragon',
+          scratch: '🎫 Grattage'
+        };
+        breakdownEl.innerHTML = data.statsByGame.map(s => {
+          const name = gameIcons[s.game_type] || s.game_type;
+          const net = s.net_profit || 0;
+          const netColor = net > 0 ? '#34D399' : (net < 0 ? '#F87171' : 'var(--text-muted)');
+          return `
+            <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:6px; padding:0.35rem 0.65rem; font-size:0.78rem;">
+              <strong>${name}</strong>: ${s.count} parties · P/L: <span style="font-weight:700; color:${netColor};">${net > 0 ? '+' : ''}${net.toLocaleString('fr-FR')} 🪙</span>
+            </div>
+          `;
+        }).join('');
+      } else {
+        breakdownEl.innerHTML = '<div style="font-size:0.8rem; color:var(--text-muted);">Aucune partie enregistrée pour ce joueur.</div>';
+      }
+    }
+
+    // Render Tab 1 : Games
+    this.renderPlayerGamesTab(data.games || [], data.pagination || {});
+
+    // Render Tab 2 : Promo Codes
+    this.renderPlayerPromosTab(data.promoCodes || []);
+
+    // Render Tab 3 : Admin Adjustments
+    this.renderPlayerAdjustmentsTab(data.adjustments || []);
+
+    // Render Tab 4 : Deliveries
+    this.renderPlayerDeliveriesTab(data.deliveries || []);
+  },
+
+  renderPlayerGamesTab(games, pagination) {
+    const tbody = document.getElementById('playerDetailGamesList');
+    if (!tbody) return;
+    const esc = typeof window.escapeHtml === 'function' ? window.escapeHtml : (s) => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+    if (!games || games.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:2rem; color:var(--text-muted);">Aucune partie jouée sur cette page.</td></tr>';
+      return;
+    }
+
+    const gameNames = {
+      blackjack: '🃏 Blackjack',
+      roulette: '🎡 Roulette',
+      slots: '🎰 Machines à Sous',
+      mines: '💣 Mines',
+      crash: '🚀 Crash Spatial',
+      plinko: '⚪ Plinko',
+      keno: '🎱 Keno Cosmique',
+      dice: '🎲 Dés Cosmiques',
+      wheel: '🎡 Roue de la Fortune',
+      videopoker: '🎴 Vidéo Poker',
+      dragontower: '🐲 Tour du Dragon',
+      scratch: '🎫 Carte à Gratter'
+    };
+
+    tbody.innerHTML = games.map(g => {
+      const dateStr = g.created_at ? new Date(g.created_at).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'N/A';
+      const gameLabel = gameNames[g.game_type] || g.game_type;
+      const profit = g.profit !== undefined ? g.profit : (g.payout - g.bet);
+
+      let profitDisplay = '<span style="color:var(--text-muted);">0 🪙</span>';
+      if (profit > 0) {
+        profitDisplay = `<strong style="color:var(--win-green); font-weight:700;">+${profit.toLocaleString('fr-FR')} 🪙</strong>`;
+      } else if (profit < 0) {
+        profitDisplay = `<strong style="color:var(--lose-red); font-weight:700;">${profit.toLocaleString('fr-FR')} 🪙</strong>`;
+      }
+
+      let resultBadge = '';
+      if (g.payout > 0) {
+        resultBadge = `<span class="badge" style="background:rgba(16,185,129,0.18); color:#34D399; border:1px solid rgba(16,185,129,0.4); padding:2px 6px; border-radius:4px; font-size:0.75rem;">Gagné (${g.payout.toLocaleString('fr-FR')} 🪙)</span>`;
+      } else {
+        resultBadge = `<span class="badge" style="background:rgba(239,68,68,0.15); color:#F87171; border:1px solid rgba(239,68,68,0.3); padding:2px 6px; border-radius:4px; font-size:0.75rem;">Perdu</span>`;
+      }
+
+      // Details summary
+      let detailsSummary = '-';
+      if (g.details) {
+        if (typeof g.details === 'object') {
+          const keys = Object.keys(g.details).filter(k => k !== 'deck' && k !== 'cards');
+          if (keys.length > 0) {
+            detailsSummary = keys.slice(0, 3).map(k => `${k}: ${g.details[k]}`).join(', ');
+          }
+        } else {
+          detailsSummary = String(g.details);
+        }
+      }
+
+      return `
+        <tr>
+          <td style="color:var(--text-muted); font-size:0.8rem; font-family:var(--font-mono);">${dateStr}</td>
+          <td><strong style="color:#FFF;">${gameLabel}</strong></td>
+          <td><span style="font-family:var(--font-mono); font-weight:600; color:var(--gold-light);">${Number(g.bet || 0).toLocaleString('fr-FR')} 🪙</span></td>
+          <td>${resultBadge}</td>
+          <td>${profitDisplay}</td>
+          <td style="font-size:0.75rem; color:var(--text-muted); max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${esc(JSON.stringify(g.details || ''))}">${esc(detailsSummary)}</td>
+        </tr>
+      `;
+    }).join('');
+
+    // Pagination
+    const page = pagination.page || 1;
+    const totalPages = pagination.totalPages || 1;
+    const pageInfo = document.getElementById('playerGamesPageInfo');
+    const btnPrev = document.getElementById('btnPlayerGamesPrev');
+    const btnNext = document.getElementById('btnPlayerGamesNext');
+
+    if (pageInfo) pageInfo.textContent = `Page ${page} / ${totalPages} (${pagination.totalGames || 0} parties)`;
+    if (btnPrev) btnPrev.disabled = (page <= 1);
+    if (btnNext) btnNext.disabled = (page >= totalPages);
+  },
+
+  renderPlayerPromosTab(promos) {
+    const tbody = document.getElementById('playerDetailPromosList');
+    if (!tbody) return;
+    const esc = typeof window.escapeHtml === 'function' ? window.escapeHtml : (s) => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+    if (!promos || promos.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:2rem; color:var(--text-muted);">Aucun code promo BDE utilisé par cet élève.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = promos.map(p => {
+      const dateStr = p.used_at ? new Date(p.used_at).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'N/A';
+      return `
+        <tr>
+          <td><span style="font-family:var(--font-mono); font-weight:700; color:var(--gold-light); background:rgba(212,175,55,0.12); padding:3px 8px; border-radius:4px; border:1px solid rgba(212,175,55,0.25);">${esc(p.code)}</span></td>
+          <td><strong style="color:var(--win-green); font-size:0.95rem;">+${Number(p.coins_awarded || 0).toLocaleString('fr-FR')} 🪙</strong></td>
+          <td style="color:var(--text-secondary); font-size:0.82rem;">${dateStr}</td>
+        </tr>
+      `;
+    }).join('');
+  },
+
+  renderPlayerAdjustmentsTab(adjustments) {
+    const tbody = document.getElementById('playerDetailAdjustmentsList');
+    if (!tbody) return;
+    const esc = typeof window.escapeHtml === 'function' ? window.escapeHtml : (s) => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+    if (!adjustments || adjustments.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:2rem; color:var(--text-muted);">Aucun ajustement manuel effectué par un administrateur sur ce compte.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = adjustments.map(a => {
+      const dateStr = a.created_at ? new Date(a.created_at).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'N/A';
+      const modeLabel = a.mode === 'add' ? '➕ Ajout' : (a.mode === 'remove' ? '➖ Retrait' : '⚙️ Définition');
+
+      let varDisplay = '';
+      if (a.mode === 'add') {
+        varDisplay = `<strong style="color:var(--win-green);">+${Number(a.amount).toLocaleString('fr-FR')} 🪙</strong>`;
+      } else if (a.mode === 'remove') {
+        varDisplay = `<strong style="color:var(--lose-red);">-${Number(a.amount).toLocaleString('fr-FR')} 🪙</strong>`;
+      } else {
+        varDisplay = `<strong style="color:var(--gold-primary);">${Number(a.amount).toLocaleString('fr-FR')} 🪙</strong>`;
+      }
+
+      return `
+        <tr>
+          <td style="color:var(--text-muted); font-size:0.8rem; font-family:var(--font-mono);">${dateStr}</td>
+          <td><strong style="color:#FFF;">🛡️ ${esc(a.admin_username || 'Admin BDE')}</strong></td>
+          <td><span style="font-size:0.8rem; color:var(--text-secondary);">${modeLabel}</span></td>
+          <td>${varDisplay}</td>
+          <td style="font-size:0.8rem; font-family:var(--font-mono); color:var(--text-secondary);">
+            ${Number(a.previous_balance || 0).toLocaleString('fr-FR')} ➔ <strong style="color:#FFF;">${Number(a.new_balance || 0).toLocaleString('fr-FR')} 🪙</strong>
+          </td>
+          <td>
+            <div style="background:rgba(255,255,255,0.05); border-left:3px solid var(--gold-primary); padding:4px 8px; border-radius:4px; font-size:0.82rem; color:#E2E8F0;">
+              📝 "${esc(a.reason || 'Aucune note')}"
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  },
+
+  renderPlayerDeliveriesTab(deliveries) {
+    const tbody = document.getElementById('playerDetailDeliveriesList');
+    if (!tbody) return;
+    const esc = typeof window.escapeHtml === 'function' ? window.escapeHtml : (s) => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+    if (!deliveries || deliveries.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:2rem; color:var(--text-muted);">Aucune demande de récompense ou lot pour ce joueur.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = deliveries.map(d => {
+      const dateStr = d.created_at ? new Date(d.created_at).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'N/A';
+      
+      let statusBadge = '';
+      if (d.status === 'delivered') {
+        statusBadge = '<span class="stock-badge in-stock">✅ Livré</span>';
+      } else if (d.status === 'cancelled') {
+        statusBadge = '<span class="stock-badge out-of-stock">❌ Annulé</span>';
+      } else {
+        statusBadge = '<span class="stock-badge low-stock">⏳ En attente</span>';
+      }
+
+      return `
+        <tr>
+          <td style="color:var(--text-muted); font-size:0.8rem; font-family:var(--font-mono);">${dateStr}</td>
+          <td>
+            <div style="font-weight:700; color:#FFF;">${esc(d.item_name)}</div>
+            ${d.variant_name ? `<div style="font-size:0.75rem; color:var(--gold-light);">${esc(d.variant_name)}</div>` : ''}
+          </td>
+          <td><span style="font-size:0.85rem; color:var(--text-secondary);">${esc(d.room_location || '-')}</span></td>
+          <td><span style="font-size:0.85rem; font-family:var(--font-mono); color:var(--text-muted);">${esc(d.phone || '-')}</span></td>
+          <td>${statusBadge}</td>
+          <td style="font-size:0.8rem; color:var(--text-muted);">${esc(d.notes || '-')}</td>
         </tr>
       `;
     }).join('');

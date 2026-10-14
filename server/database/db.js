@@ -201,6 +201,61 @@ function initDb() {
   if (!hasLastName) {
     db.exec("ALTER TABLE users ADD COLUMN last_name TEXT DEFAULT ''");
   }
+  const hasEmail = userColumns.some(c => c.name === 'email');
+  if (!hasEmail) {
+    db.exec("ALTER TABLE users ADD COLUMN email TEXT DEFAULT NULL");
+    db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email COLLATE NOCASE) WHERE email IS NOT NULL");
+  }
+  const hasRegIp = userColumns.some(c => c.name === 'registration_ip');
+  if (!hasRegIp) {
+    db.exec("ALTER TABLE users ADD COLUMN registration_ip TEXT DEFAULT NULL");
+  }
+  const hasEmailVerified = userColumns.some(c => c.name === 'email_verified');
+  if (!hasEmailVerified) {
+    db.exec("ALTER TABLE users ADD COLUMN email_verified INTEGER NOT NULL DEFAULT 0");
+  }
+  const hasVerifCode = userColumns.some(c => c.name === 'verification_code');
+  if (!hasVerifCode) {
+    db.exec("ALTER TABLE users ADD COLUMN verification_code TEXT DEFAULT NULL");
+  }
+  const hasVerifExpires = userColumns.some(c => c.name === 'verification_expires');
+  if (!hasVerifExpires) {
+    db.exec("ALTER TABLE users ADD COLUMN verification_expires DATETIME DEFAULT NULL");
+  }
+
+  // Initialiser les comptes existants comme vérifiés avec un email Epitech
+  try {
+    db.prepare("UPDATE users SET email = 'bde@epitech.eu', email_verified = 1 WHERE username = 'bde_admin' AND (email IS NULL OR email = '')").run();
+    db.prepare("UPDATE users SET email = 'leo@epitech.eu', email_verified = 1 WHERE username = 'leo' AND (email IS NULL OR email = '')").run();
+  } catch (e) {}
+
+  // Tables d'audit des ajustements de solde admin et des transactions
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS admin_adjustments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      admin_id INTEGER NOT NULL REFERENCES users(id),
+      admin_username TEXT NOT NULL,
+      amount INTEGER NOT NULL,
+      previous_balance INTEGER NOT NULL,
+      new_balance INTEGER NOT NULL,
+      mode TEXT NOT NULL,
+      reason TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS transactions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      amount INTEGER NOT NULL,
+      type TEXT NOT NULL,
+      description TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_adj_user ON admin_adjustments(user_id, created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_transactions_user ON transactions(user_id, created_at DESC);
+  `);
 
   // Migration de shop_items pour ajouter stock, initial_stock, is_active, created_at, variants, unit si absents
   const itemColumns = db.prepare("PRAGMA table_info(shop_items)").all();

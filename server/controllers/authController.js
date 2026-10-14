@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const db = require('../database/db');
 const config = require('../config/config');
 const vipService = require('../services/vipService');
+const emailService = require('../services/emailService');
 
 function generateToken(user) {
   return jwt.sign(
@@ -23,11 +24,20 @@ function getYesterdayString() {
   return d.toISOString().split('T')[0];
 }
 
+function getClientIp(req) {
+  const forwarded = req.headers['x-forwarded-for'];
+  if (forwarded) {
+    return forwarded.split(',')[0].trim();
+  }
+  return req.socket?.remoteAddress || req.ip || '127.0.0.1';
+}
+
 exports.register = async (req, res) => {
   try {
     const { username, password } = req.body;
     const lastName = typeof (req.body.lastName || req.body.last_name) === 'string' ? (req.body.lastName || req.body.last_name).trim() : '';
     const firstName = typeof (req.body.firstName || req.body.first_name) === 'string' ? (req.body.firstName || req.body.first_name).trim() : '';
+    const email = typeof req.body.email === 'string' ? req.body.email.trim().toLowerCase() : '';
 
     if (!lastName || !firstName) {
       return res.status(400).json({ error: 'Le nom et le prénom sont obligatoires pour pouvoir récupérer tes récompenses physiques.' });
@@ -35,6 +45,22 @@ exports.register = async (req, res) => {
 
     if (lastName.length > 50 || firstName.length > 50) {
       return res.status(400).json({ error: 'Le nom et le prénom ne doivent pas dépasser 50 caractères.' });
+    }
+
+    // Validation stricte de l'email étudiant Epitech (@epitech.eu)
+    if (!email) {
+      return res.status(400).json({ error: 'L\'adresse email étudiante Epitech (@epitech.eu) est obligatoire.' });
+    }
+
+    const epitechEmailRegex = /^[a-zA-Z0-9_.+-]+@([a-zA-Z0-9-]+\.)*epitech\.(eu|digital)$/i;
+    if (!epitechEmailRegex.test(email)) {
+      return res.status(400).json({ error: 'Format d\'email non autorisé. Tu dois obligatoirement utiliser ton adresse email étudiante officielle (@epitech.eu).' });
+    }
+
+    // Vérifier l'unicité de l'email
+    const existingEmail = db.prepare('SELECT id FROM users WHERE LOWER(email) = LOWER(?)').get(email);
+    if (existingEmail) {
+      return res.status(409).json({ error: 'Cette adresse email étudiante est déjà associée à un compte Marsabet.' });
     }
 
     if (!username || typeof username !== 'string' || username.trim().length < 3 || username.trim().length > 20) {
@@ -59,32 +85,45 @@ exports.register = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(password, salt);
 
+    // Stockage de l'adresse IP à l'inscription (pour enquête admin multi-comptes)
+    const registrationIp = getClientIp(req);
+
+    // Génération du code de vérification à 6 chiffres
+    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const verificationExpires = Date.now() + 15 * 60 * 1000; // 15 minutes
+
     const insert = db.prepare(`
-      INSERT INTO users (username, password_hash, first_name, last_name, coins, daily_streak, last_daily_claim)
-      VALUES (?, ?, ?, ?, ?, 0, NULL)
+      INSERT INTO users (username, password_hash, first_name, last_name, email, registration_ip, email_verified, verification_code, verification_expires, coins, daily_streak, last_daily_claim)
+      VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, ?, 0, NULL)
     `);
 
-    const result = insert.run(cleanUsername, passwordHash, firstName, lastName, config.startingCoins);
+    insert.run(
+      cleanUsername,
+      passwordHash,
+      firstName,
+      lastName,
+      email,
+      registrationIp,
+      verificationCode,
+      verificationExpires,
+      config.startingCoins
+    );
 
-    const newUser = db.prepare(`
-      SELECT id, username, first_name, last_name, role, coins, daily_streak, last_daily_claim, total_wagered, total_won, games_played, biggest_win, created_at
-      FROM users WHERE id = ?
-    `).get(result.lastInsertRowid);
-
-    const token = generateToken(newUser);
-    const vipInfo = vipService.getVipInfo(newUser.total_wagered);
+    // Envoi du code par email
+    await emailService.sendVerificationEmail(email, verificationCode, cleanUsername);
 
     return res.status(201).json({
-      message: `Compte créé avec succès ! ${config.startingCoins.toLocaleString('fr-FR')} jetons de bienvenue offerts.`,
-      token,
-      user: {
-        ...newUser,
-        vipInfo,
-        canClaimDaily: true,
-      }
+      success: true,
+      requiresVerification: true,
+      email,
+      username: cleanUsername,
+      message: `Un code de confirmation à 6 chiffres a été envoyé à ${email}. Saisis-le pour activer ton compte et recevoir tes ${config.startingCoins.toLocaleString('fr-FR')} jetons !`
     });
   } catch (error) {
     console.error('Erreur inscription:', error);
+    if (error.message && error.message.includes('UNIQUE constraint failed: users.email')) {
+      return res.status(409).json({ error: 'Cette adresse email est déjà associée à un compte Marsabet.' });
+    }
     return res.status(500).json({ error: 'Une erreur interne est survenue lors de la création du compte.' });
   }
 };
@@ -113,6 +152,23 @@ exports.login = async (req, res) => {
       return res.status(401).json({ error: 'Identifiants invalides (mot de passe incorrect).' });
     }
 
+    // Vérifier si le compte est activé via email
+    if (user.email_verified === 0) {
+      let code = user.verification_code;
+      if (!code || !user.verification_expires || Date.now() > user.verification_expires) {
+        code = Math.floor(100000 + Math.random() * 900000).toString();
+        const expires = Date.now() + 15 * 60 * 1000;
+        db.prepare('UPDATE users SET verification_code = ?, verification_expires = ? WHERE id = ?').run(code, expires, user.id);
+        emailService.sendVerificationEmail(user.email, code, user.username).catch(() => {});
+      }
+      return res.status(403).json({
+        error: 'Ton compte n\'est pas encore activé. Saisis le code de validation envoyé à ton adresse email.',
+        requiresVerification: true,
+        email: user.email,
+        username: user.username
+      });
+    }
+
     const token = generateToken(user);
     const today = getTodayString();
     const canClaimDaily = user.last_daily_claim !== today;
@@ -124,6 +180,7 @@ exports.login = async (req, res) => {
       username: user.username,
       first_name: user.first_name || '',
       last_name: user.last_name || '',
+      email: user.email || '',
       role: user.role || 'student',
       coins: user.coins,
       daily_streak: user.daily_streak,
@@ -147,6 +204,110 @@ exports.login = async (req, res) => {
   } catch (error) {
     console.error('Erreur connexion:', error);
     return res.status(500).json({ error: 'Une erreur interne est survenue.' });
+  }
+};
+
+exports.verifyEmail = async (req, res) => {
+  try {
+    const email = typeof req.body.email === 'string' ? req.body.email.trim().toLowerCase() : '';
+    const username = typeof req.body.username === 'string' ? req.body.username.trim() : '';
+    const code = typeof req.body.code === 'string' ? req.body.code.trim() : (req.body.code ? String(req.body.code).trim() : '');
+
+    if (!code) {
+      return res.status(400).json({ error: 'Code de vérification requis.' });
+    }
+
+    if (!email && !username) {
+      return res.status(400).json({ error: 'Adresse email ou pseudo requis.' });
+    }
+
+    const user = email
+      ? db.prepare('SELECT * FROM users WHERE LOWER(email) = LOWER(?)').get(email)
+      : db.prepare('SELECT * FROM users WHERE username = ?').get(username);
+
+    if (!user) {
+      return res.status(404).json({ error: 'Compte introuvable.' });
+    }
+
+    if (user.email_verified === 1) {
+      const token = generateToken(user);
+      const vipInfo = vipService.getVipInfo(user.total_wagered);
+      return res.json({
+        success: true,
+        alreadyVerified: true,
+        message: 'Ce compte est déjà activé !',
+        token,
+        user: { ...user, vipInfo, canClaimDaily: true }
+      });
+    }
+
+    if (user.verification_code !== code) {
+      return res.status(400).json({ error: 'Code de validation incorrect. Vérifie tes emails ou clique sur "Renvoyer".' });
+    }
+
+    if (user.verification_expires && Date.now() > user.verification_expires) {
+      return res.status(400).json({ error: 'Ce code a expiré (validité 15 min). Clique sur "Renvoyer le code" pour en générer un nouveau.' });
+    }
+
+    // Activer le compte
+    db.prepare('UPDATE users SET email_verified = 1, verification_code = NULL, verification_expires = NULL WHERE id = ?').run(user.id);
+
+    const updatedUser = db.prepare('SELECT id, username, first_name, last_name, email, role, coins, daily_streak, last_daily_claim, total_wagered, total_won, games_played, biggest_win, created_at FROM users WHERE id = ?').get(user.id);
+
+    const token = generateToken(updatedUser);
+    const vipInfo = vipService.getVipInfo(updatedUser.total_wagered);
+
+    return res.json({
+      success: true,
+      message: `Compte activé avec succès ! Bienvenue ${updatedUser.username}, tes ${config.startingCoins.toLocaleString('fr-FR')} jetons de bienvenue sont disponibles !`,
+      token,
+      user: {
+        ...updatedUser,
+        vipInfo,
+        canClaimDaily: true
+      }
+    });
+  } catch (err) {
+    console.error('Erreur verifyEmail:', err);
+    return res.status(500).json({ error: 'Erreur lors de la vérification de l\'email.' });
+  }
+};
+
+exports.resendVerificationCode = async (req, res) => {
+  try {
+    const email = typeof req.body.email === 'string' ? req.body.email.trim().toLowerCase() : '';
+    const username = typeof req.body.username === 'string' ? req.body.username.trim() : '';
+
+    if (!email && !username) {
+      return res.status(400).json({ error: 'Adresse email ou pseudo requis.' });
+    }
+
+    const user = email
+      ? db.prepare('SELECT * FROM users WHERE LOWER(email) = LOWER(?)').get(email)
+      : db.prepare('SELECT * FROM users WHERE username = ?').get(username);
+
+    if (!user) {
+      return res.status(404).json({ error: 'Compte introuvable.' });
+    }
+
+    if (user.email_verified === 1) {
+      return res.status(400).json({ error: 'Ce compte est déjà activé.' });
+    }
+
+    const newCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const expires = Date.now() + 15 * 60 * 1000;
+
+    db.prepare('UPDATE users SET verification_code = ?, verification_expires = ? WHERE id = ?').run(newCode, expires, user.id);
+
+    await emailService.sendVerificationEmail(user.email, newCode, user.username);
+
+    return res.json({
+      success: true,
+      message: `Un nouveau code de validation a été envoyé à ${user.email}.`
+    });
+  } catch (err) {
+    console.error('Erreur resendVerificationCode:', err);
+    return res.status(500).json({ error: 'Erreur lors du renvoi du code.' });
   }
 };
 
