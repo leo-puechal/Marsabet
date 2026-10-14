@@ -68,7 +68,7 @@ exports.register = async (req, res) => {
     const vipInfo = vipService.getVipInfo(newUser.total_wagered);
 
     return res.status(201).json({
-      message: 'Compte créé avec succès ! 1000 jetons de bienvenue offerts.',
+      message: `Compte créé avec succès ! ${config.startingCoins.toLocaleString('fr-FR')} jetons de bienvenue offerts.`,
       token,
       user: {
         ...newUser,

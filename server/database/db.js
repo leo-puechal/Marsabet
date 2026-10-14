@@ -17,7 +17,7 @@ function initDb() {
       password_hash TEXT NOT NULL,
       first_name TEXT DEFAULT '',
       last_name TEXT DEFAULT '',
-      coins INTEGER NOT NULL DEFAULT 1000,
+      coins INTEGER NOT NULL DEFAULT 5000,
       role TEXT NOT NULL DEFAULT 'student',
       daily_streak INTEGER NOT NULL DEFAULT 0,
       last_daily_claim TEXT DEFAULT NULL,

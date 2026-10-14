@@ -7,7 +7,7 @@ module.exports = {
   adminSecretKey: process.env.ADMIN_SECRET_KEY || 'darkrider84',
   adminPassword: process.env.ADMIN_PASSWORD || 'darkrider84',
   dbPath: process.env.DB_PATH || path.join(__dirname, '../database/marsabet.db'),
-  startingCoins: 1000,
+  startingCoins: process.env.STARTING_COINS ? parseInt(process.env.STARTING_COINS, 10) : 5000,
   dailyBonusBase: 100,
   dailyBonusStreakMultiplier: 25, // +25 par jour de streak consécutif (max streak: 7)
   maxStreakBonusDays: 7,
