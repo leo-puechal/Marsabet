@@ -228,6 +228,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
+  // Bouton corriger l'email depuis l'étape vérification (en cas de faute de frappe)
+  const btnBackToRegister = document.getElementById('btnBackToRegisterFromVerify');
+  if (btnBackToRegister) {
+    btnBackToRegister.addEventListener('click', () => {
+      window.UI.openAuthModal('register');
+      const regEmail = document.getElementById('regEmail');
+      if (regEmail && currentPendingEmail) {
+        regEmail.value = currentPendingEmail;
+        setTimeout(() => regEmail.focus(), 150);
+      }
+    });
+  }
+
   // Masquer / afficher le mot de passe (icône œil)
   document.querySelectorAll('.btn-toggle-password').forEach(btn => {
     btn.addEventListener('click', (e) => {

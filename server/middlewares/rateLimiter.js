@@ -9,13 +9,14 @@ const apiLimiter = rateLimit({
   message: { error: 'Trop de requêtes envoyées au serveur. Veuillez patienter un instant.' }
 });
 
-// Limiteur strict pour l'authentification (connexion et inscription) anti-brute-force
+// Limiteur pour l'authentification (connexion et inscription) anti-brute-force
 const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 25, // max 25 tentatives par 15 min par IP
+  windowMs: 60 * 1000, // Fenêtre courte d'1 minute (au lieu de 15 minutes)
+  max: 60, // 60 requêtes par minute par IP
+  skipSuccessfulRequests: true, // Les connexions ou inscriptions réussies ne sont pas décomptées
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: 'Trop de tentatives de connexion ou d’inscription. Veuillez réessayer dans 15 minutes.' }
+  message: { error: 'Trop de tentatives de connexion ou d’inscription. Veuillez réessayer dans 1 minute.' }
 });
 
 // Limiteur pour les codes promo anti-brute-force

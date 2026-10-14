@@ -77,8 +77,33 @@ exports.register = async (req, res) => {
     }
 
     // Vérifier si le pseudo existe déjà
-    const existing = db.prepare('SELECT id FROM users WHERE username = ?').get(cleanUsername);
+    const existing = db.prepare('SELECT id, email, email_verified FROM users WHERE username = ?').get(cleanUsername);
     if (existing) {
+      if (existing.email_verified === 0) {
+        // L'élève a fait une faute de frappe dans son email et recommence avec le même pseudo :
+        // On met à jour son email et on lui renvoie le code d'activation !
+        const salt = await bcrypt.genSalt(10);
+        const passwordHash = await bcrypt.hash(password, salt);
+        const registrationIp = getClientIp(req);
+        const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+        const verificationExpires = Date.now() + 15 * 60 * 1000;
+
+        db.prepare(`
+          UPDATE users
+          SET password_hash = ?, first_name = ?, last_name = ?, email = ?, registration_ip = ?, verification_code = ?, verification_expires = ?
+          WHERE id = ?
+        `).run(passwordHash, firstName, lastName, email, registrationIp, verificationCode, verificationExpires, existing.id);
+
+        await emailService.sendVerificationEmail(email, verificationCode, cleanUsername);
+
+        return res.status(201).json({
+          success: true,
+          requiresVerification: true,
+          email,
+          username: cleanUsername,
+          message: `Adresse email corrigée avec succès ! Un nouveau code de validation a été envoyé à ${email}.`
+        });
+      }
       return res.status(409).json({ error: 'Ce pseudo est déjà pris, choisis-en un autre !' });
     }
 
@@ -128,29 +153,64 @@ exports.register = async (req, res) => {
   }
 };
 
+const failedLoginAttempts = new Map();
+
 exports.login = async (req, res) => {
   try {
     const { username, password } = req.body;
+    const clientIp = getClientIp(req);
+    const now = Date.now();
 
-    if (!username || !password || typeof username !== 'string' || typeof password !== 'string') {
-      return res.status(400).json({ error: 'Pseudo et mot de passe requis.' });
+    const attempt = failedLoginAttempts.get(clientIp) || { count: 0, lockedUntil: 0 };
+    if (attempt.lockedUntil > now) {
+      const remainingSec = Math.ceil((attempt.lockedUntil - now) / 1000);
+      return res.status(429).json({
+        error: `Trop de tentatives erronées (3/3). Veuillez patienter ${remainingSec} seconde${remainingSec > 1 ? 's' : ''} avant de réessayer.`
+      });
     }
 
-    if (username.length > 50 || password.length > 128) {
+    if (!username || !password || typeof username !== 'string' || typeof password !== 'string') {
+      return res.status(400).json({ error: 'Pseudo ou email et mot de passe requis.' });
+    }
+
+    if (username.length > 80 || password.length > 128) {
       return res.status(401).json({ error: 'Identifiants invalides.' });
     }
 
-    const cleanUsername = username.trim();
-    const user = db.prepare('SELECT * FROM users WHERE username = ?').get(cleanUsername);
+    const cleanIdentifier = username.trim();
+    // Permet de se connecter soit avec son pseudo, soit directement avec son email étudiant Epitech
+    const user = db.prepare('SELECT * FROM users WHERE username = ? OR LOWER(email) = LOWER(?)').get(cleanIdentifier, cleanIdentifier);
+
+    const onLoginFailed = (errorDetail) => {
+      attempt.count = (attempt.count || 0) + 1;
+      const remainingTries = Math.max(0, 3 - attempt.count);
+
+      if (attempt.count >= 3) {
+        attempt.lockedUntil = now + (60 * 1000); // 1 minute de pause seulement (au lieu de 15 minutes)
+        attempt.count = 0; // Réinitialisé pour le prochain cycle
+        failedLoginAttempts.set(clientIp, attempt);
+        return res.status(429).json({
+          error: '3 tentatives infructueuses consécutives. Accès temporairement suspendu pour 1 minute.'
+        });
+      }
+
+      failedLoginAttempts.set(clientIp, attempt);
+      return res.status(401).json({
+        error: `${errorDetail} Il te reste ${remainingTries} essai${remainingTries > 1 ? 's' : ''} avant verrouillage.`
+      });
+    };
 
     if (!user) {
-      return res.status(401).json({ error: 'Identifiants invalides (pseudo inconnu).' });
+      return onLoginFailed('Identifiants invalides (pseudo ou email inconnu).');
     }
 
     const match = await bcrypt.compare(password, user.password_hash);
     if (!match) {
-      return res.status(401).json({ error: 'Identifiants invalides (mot de passe incorrect).' });
+      return onLoginFailed('Identifiants invalides (mot de passe incorrect).');
     }
+
+    // Succès de l'authentification : suppression du compteur d'échecs
+    failedLoginAttempts.delete(clientIp);
 
     // Vérifier si le compte est activé via email
     if (user.email_verified === 0) {
