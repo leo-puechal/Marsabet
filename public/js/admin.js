@@ -1,5 +1,15 @@
 // Admin BDE Module for Marsabet
 
+if (typeof window.escapeHtml !== 'function') {
+  window.escapeHtml = function(str) {
+    if (!str && str !== 0) return '';
+    return String(str).replace(/[&<>'"]/g,
+      tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+    );
+  };
+}
+var escapeHtml = window.escapeHtml;
+
 const AdminBDE = {
   activeTab: 'orders', // 'orders', 'users', 'online', 'promos', 'wheels', etc.
   onlinePlayersCache: [],
@@ -42,6 +52,26 @@ const AdminBDE = {
       refreshOnlineBtn.addEventListener('click', () => {
         this.loadOnlinePlayers(true);
         window.UI?.showToast('Liste des joueurs en ligne actualisée.', 'info', 1500);
+      });
+    }
+
+    const onlineTableBody = document.getElementById('adminOnlinePlayersList');
+    if (onlineTableBody) {
+      onlineTableBody.addEventListener('click', (e) => {
+        const actionBtn = e.target.closest('[data-action]');
+        if (actionBtn) {
+          const action = actionBtn.dataset.action;
+          const userId = actionBtn.dataset.userId;
+          if (action === 'view-player') this.openPlayerDetailModal(userId);
+          else if (action === 'edit-coins') this.openUserCoinsModal(userId);
+          return;
+        }
+        const clickable = e.target.closest('.admin-clickable-user');
+        if (clickable) {
+          const actionBtn2 = clickable.querySelector('[data-user-id]');
+          const userId = actionBtn2 ? actionBtn2.dataset.userId : null;
+          if (userId) this.openPlayerDetailModal(userId);
+        }
       });
     }
 
@@ -294,11 +324,42 @@ const AdminBDE = {
       });
     }
 
-    const editIdentityBtn = document.getElementById('playerDetailEditIdentityBtn');
-    if (editIdentityBtn) {
-      editIdentityBtn.addEventListener('click', () => {
-        if (this.currentPlayerData && this.currentPlayerData.user) {
-          this.openUserIdentityModal(this.currentPlayerData.user);
+    const footerClosePlayerBtn = document.getElementById('btnClosePlayerDetailFooterBtn');
+    if (footerClosePlayerBtn) {
+      footerClosePlayerBtn.addEventListener('click', () => this.closePlayerDetailModal());
+    }
+
+    // Délégation d'événements pour le tableau des utilisateurs (garantie 100% de clic)
+    const usersTableBody = document.getElementById('adminUsersList');
+    if (usersTableBody) {
+      usersTableBody.addEventListener('click', (e) => {
+        const actionBtn = e.target.closest('[data-action]');
+        if (actionBtn) {
+          const action = actionBtn.dataset.action;
+          const userId = actionBtn.dataset.userId;
+          if (action === 'view-player') {
+            this.openPlayerDetailModal(userId);
+          } else if (action === 'edit-coins') {
+            this.openUserCoinsModal(userId);
+          } else if (action === 'edit-identity') {
+            this.openUserIdentityModal(userId);
+          } else if (action === 'toggle-role') {
+            const username = actionBtn.dataset.username;
+            const role = actionBtn.dataset.role;
+            this.confirmToggleUserRole(userId, username, role);
+          } else if (action === 'delete-user') {
+            const username = actionBtn.dataset.username;
+            this.confirmDeleteUser(userId, username);
+          }
+          return;
+        }
+
+        const clickableCell = e.target.closest('.admin-clickable-user');
+        if (clickableCell) {
+          const userId = clickableCell.dataset.userId;
+          if (userId) {
+            this.openPlayerDetailModal(userId);
+          }
         }
       });
     }
@@ -379,9 +440,16 @@ const AdminBDE = {
     }
   },
 
-  openUserCoinsModal(user) {
+  openUserCoinsModal(target) {
     const modal = document.getElementById('adminUserCoinsModal');
     if (!modal) return;
+
+    let user = target;
+    if (typeof target === 'number' || typeof target === 'string') {
+      user = (this.usersListCache && this.usersListCache.find(x => String(x.id) === String(target)))
+             || (this.currentPlayerData && String(this.currentPlayerData.user?.id) === String(target) ? this.currentPlayerData.user : null);
+    }
+    if (!user) return;
 
     const idInput = document.getElementById('adminUserCoinsUserId');
     const nameEl = document.getElementById('adminUserCoinsUsername');
@@ -390,10 +458,10 @@ const AdminBDE = {
     const reasonInput = document.getElementById('adminUserCoinsReason');
 
     if (idInput) idInput.value = user.id;
-    if (nameEl) nameEl.textContent = user.username;
-    if (currEl) currEl.textContent = `${Number(user.coins).toLocaleString('fr-FR')} 🪙`;
-    if (amountInput) amountInput.value = user.coins;
-    if (reasonInput) reasonInput.value = '';
+    if (nameEl) nameEl.textContent = user.username || `Joueur #${user.id}`;
+    if (currEl) currEl.textContent = `${Number(user.coins || 0).toLocaleString('fr-FR')} 🪙`;
+    if (amountInput) amountInput.value = user.coins || 0;
+    if (reasonInput) reasonInput.value = 'Ajustement administrateur BDE';
 
     this.setUserCoinsMode('set');
     modal.classList.add('active');
@@ -415,16 +483,10 @@ const AdminBDE = {
     const userId = idInput.value;
     const coins = parseInt(amountInput.value, 10);
     const mode = this.currentCoinsMode || 'set';
-    const reason = reasonInput ? reasonInput.value.trim() : '';
+    const reason = (reasonInput && reasonInput.value.trim().length >= 2) ? reasonInput.value.trim() : 'Ajustement administrateur BDE';
 
     if (isNaN(coins) || coins < 0) {
       window.UI.showToast('Veuillez entrer un montant de pièces valide.', 'warning');
-      return;
-    }
-
-    if (!reason || reason.length < 3) {
-      window.UI.showToast('Une note / justification explicative est obligatoire pour tout ajustement de solde (minimum 3 caractères).', 'warning');
-      if (reasonInput) reasonInput.focus();
       return;
     }
 
@@ -463,10 +525,16 @@ const AdminBDE = {
     }
   },
 
-  openUserIdentityModal(user) {
-    if (!user) return;
+  openUserIdentityModal(target) {
     const modal = document.getElementById('adminUserIdentityModal');
     if (!modal) return;
+
+    let user = target;
+    if (typeof target === 'number' || typeof target === 'string') {
+      user = (this.usersListCache && this.usersListCache.find(x => String(x.id) === String(target)))
+             || (this.currentPlayerData && String(this.currentPlayerData.user?.id) === String(target) ? this.currentPlayerData.user : null);
+    }
+    if (!user) return;
 
     const idInput = document.getElementById('adminIdentityUserId');
     const usernameInput = document.getElementById('adminIdentityUsername');
@@ -639,7 +707,7 @@ const AdminBDE = {
         return `
           <tr class="admin-user-row-hover">
             <td>
-              <div class="admin-user-cell admin-clickable-user" onclick="AdminBDE.openPlayerDetailModal(${u.id})" title="Voir la fiche détaillée de ${escapeHtml(u.username)}">
+              <div class="admin-user-cell admin-clickable-user" data-action="view-player" data-user-id="${u.id}" onclick="AdminBDE.openPlayerDetailModal(${u.id})" title="Voir la fiche détaillée de ${escapeHtml(u.username)}">
                 <div class="admin-user-avatar">${avatarIcon}</div>
                 <div>
                   <div style="font-weight:700; color:#FFF; font-size:0.95rem; display:flex; align-items:center; gap:6px;">
@@ -673,20 +741,20 @@ const AdminBDE = {
             </td>
             <td style="text-align:right;">
               <div style="display:inline-flex; gap:0.4rem; justify-content:flex-end; flex-wrap:wrap;">
-                <button class="admin-btn-action" style="border-color:var(--gold-primary); color:var(--gold-light);" onclick="AdminBDE.openPlayerDetailModal(${u.id})" title="Fiche détaillée et historique de ${escapeHtml(u.username)}">
+                <button class="admin-btn-action" style="border-color:var(--gold-primary); color:var(--gold-light);" data-action="view-player" data-user-id="${u.id}" onclick="AdminBDE.openPlayerDetailModal(${u.id})" title="Fiche détaillée et historique de ${escapeHtml(u.username)}">
                   📊 Fiche
                 </button>
-                <button class="admin-btn-action admin-btn-coins" onclick="AdminBDE.openUserCoinsModal(${JSON.stringify(u).replace(/"/g, '&quot;')})" title="Modifier le solde de pièces">
+                <button class="admin-btn-action admin-btn-coins" data-action="edit-coins" data-user-id="${u.id}" onclick="AdminBDE.openUserCoinsModal(${u.id})" title="Modifier le solde de pièces">
                   🪙 Solde
                 </button>
-                <button class="admin-btn-action" style="border-color:#38BDF8; color:#38BDF8;" onclick="AdminBDE.openUserIdentityModal(${JSON.stringify(u).replace(/"/g, '&quot;')})" title="Corriger Nom et Prénom (faute de frappe)">
+                <button class="admin-btn-action" style="border-color:#38BDF8; color:#38BDF8;" data-action="edit-identity" data-user-id="${u.id}" onclick="AdminBDE.openUserIdentityModal(${u.id})" title="Corriger Nom et Prénom (faute de frappe)">
                   ✏️ Identité
                 </button>
                 ${!isMaster && !isSelf ? `
-                  <button class="admin-btn-action admin-btn-role" onclick="AdminBDE.confirmToggleUserRole(${u.id}, '${escapeHtml(u.username)}', '${u.role}')" title="${isAdmin ? 'Rétrograder en élève' : 'Promouvoir en Admin BDE'}">
+                  <button class="admin-btn-action admin-btn-role" data-action="toggle-role" data-user-id="${u.id}" data-username="${escapeHtml(u.username)}" data-role="${u.role}" onclick="AdminBDE.confirmToggleUserRole(${u.id}, '${escapeHtml(u.username)}', '${u.role}')" title="${isAdmin ? 'Rétrograder en élève' : 'Promouvoir en Admin BDE'}">
                     ${isAdmin ? '🎓 Rétrograder' : '🛡️ Promouvoir'}
                   </button>
-                  <button class="admin-btn-action admin-btn-delete" onclick="AdminBDE.confirmDeleteUser(${u.id}, '${escapeHtml(u.username)}')" title="Supprimer définitivement le compte">
+                  <button class="admin-btn-action admin-btn-delete" data-action="delete-user" data-user-id="${u.id}" data-username="${escapeHtml(u.username)}" onclick="AdminBDE.confirmDeleteUser(${u.id}, '${escapeHtml(u.username)}')" title="Supprimer définitivement le compte">
                     🗑️ Suppr.
                   </button>
                 ` : `
@@ -2064,12 +2132,14 @@ const AdminBDE = {
           <td style="text-align:right;">
             <div style="display:inline-flex; gap:0.4rem; justify-content:flex-end; flex-wrap:wrap;">
               <button class="admin-btn-action" style="border-color:var(--gold-primary); color:var(--gold-light);"
+                data-action="view-player" data-user-id="${p.userId}"
                 onclick="AdminBDE.openPlayerDetailModal(${p.userId})"
                 title="Fiche détaillée et statistiques de ${safeUsernameAttr}">
                 📊 Fiche
               </button>
               <button class="admin-btn-action admin-btn-coins" 
-                onclick="AdminBDE.openUserCoinsModal({ id: ${p.userId}, username: '${safeUsernameAttr}', coins: ${Number(p.coins || 0)} })"
+                data-action="edit-coins" data-user-id="${p.userId}"
+                onclick="AdminBDE.openUserCoinsModal(${p.userId})"
                 title="Ajuster le solde de ${safeUsernameAttr}">
                 🪙 Solde
               </button>
@@ -2218,11 +2288,16 @@ const AdminBDE = {
       }
     }
 
-    // VIP badge
-    const vip = u.vipInfo || { rank: 'Bronze', icon: '🥉', badgeClass: 'vip-bronze', bonusMultiplier: 1.0 };
+    // VIP badge & Multiplicateur
+    const currentTier = (u.vipInfo && u.vipInfo.currentTier) ? u.vipInfo.currentTier : (u.vipInfo || {});
+    const vipName = currentTier.name || currentTier.rank || 'Bronze';
+    const vipIcon = currentTier.icon || '🥉';
+    const vipBadgeClass = currentTier.badgeClass || 'vip-bronze';
+    const vipMultiplier = currentTier.bonusMultiplier || 1.0;
+
     if (elVipBadge) {
-      elVipBadge.className = `vip-badge ${vip.badgeClass || 'vip-bronze'}`;
-      elVipBadge.textContent = `${vip.icon || '🥉'} ${vip.rank.toUpperCase()}`;
+      elVipBadge.className = `vip-badge ${vipBadgeClass}`;
+      elVipBadge.textContent = `${vipIcon} ${vipName.toUpperCase()}`;
     }
 
     // Online status
@@ -2269,7 +2344,7 @@ const AdminBDE = {
     if (elGamesCount) elGamesCount.textContent = (data.pagination?.totalGames || u.games_played || 0).toLocaleString('fr-FR');
     if (elBiggestWin) elBiggestWin.textContent = `${Number(u.biggest_win || 0).toLocaleString('fr-FR')} 🪙`;
     if (elStreak) elStreak.textContent = u.daily_streak || 0;
-    if (elVipMultiplier) elVipMultiplier.textContent = `x${(vip.bonusMultiplier || 1.0).toFixed(2)}`;
+    if (elVipMultiplier) elVipMultiplier.textContent = `x${Number(vipMultiplier || 1.0).toFixed(2)}`;
 
     // Tab badges
     const badgeGames = document.getElementById('playerTabBadgeGames');
