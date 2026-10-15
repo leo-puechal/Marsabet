@@ -286,10 +286,9 @@ exports.updateUserCoins = (req, res) => {
     const { id } = req.params;
     const { coins, mode = 'set', reason } = req.body;
 
-    const cleanReason = (typeof reason === 'string') ? reason.trim() : '';
-    if (!cleanReason || cleanReason.length < 3 || cleanReason.length > 300) {
-      return res.status(400).json({ error: 'Une note ou raison explicative obligatoire doit être renseignée pour tout ajustement de solde (3 à 300 caractères).' });
-    }
+    const cleanReason = (typeof reason === 'string' && reason.trim().length >= 2)
+      ? reason.trim()
+      : 'Ajustement administrateur BDE';
 
     const targetUser = db.prepare('SELECT id, username, coins, role FROM users WHERE id = ?').get(id);
     if (!targetUser) {

@@ -1127,12 +1127,15 @@ function formatDate(dateStr) {
   return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 }
 
-function escapeHtml(str) {
-  if (str === null || str === undefined || str === '') return '';
-  return String(str).replace(/[&<>'"`]/g,
-    tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;', '`': '&#96;' }[tag] || tag)
-  );
+if (typeof window.escapeHtml !== 'function') {
+  window.escapeHtml = function(str) {
+    if (!str && str !== 0) return '';
+    return String(str).replace(/[&<>'"]/g,
+      tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+    );
+  };
 }
+var escapeHtml = window.escapeHtml;
 
 // ========================================================
 // GESTION DES ANNONCES OFFICIELLES BDE (MODAL BLOQUANTE ÉLÈVE)
