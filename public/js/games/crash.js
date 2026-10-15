@@ -5,7 +5,9 @@ const CrashGame = {
     state: 'idle', // 'idle' | 'running' | 'cashed_out' | 'crashed'
     bet: 10,
     currentMultiplier: 1.00,
-    targetCrashPoint: 1.00,
+    targetCrashPoint: 1.00, // inconnu pendant la partie : fourni par le serveur uniquement à la fin
+    crashInfo: null,
+    statusPollId: null,
     gameId: null,
     startTime: null,
     animationFrameId: null,
@@ -25,6 +27,45 @@ const CrashGame = {
 
         this.bindEvents();
         this.loadHistory();
+        this.bindServerEvents();
+    },
+
+    // Le serveur est seul maître du point de crash : il nous prévient (socket) quand la fusée explose.
+    bindServerEvents() {
+        const attach = () => {
+            const sock = window.SyncEngine && window.SyncEngine.socket;
+            if (!sock || this._socketBound === sock) return !!sock;
+            sock.on('crash:ended', (data) => this.onServerCrash(data));
+            this._socketBound = sock;
+            return true;
+        };
+        if (!attach()) {
+            const t = setInterval(() => { if (attach()) clearInterval(t); }, 1000);
+        }
+    },
+
+    onServerCrash(data) {
+        if (!data || data.gameId !== this.gameId || this.state !== 'running') return;
+        this.crashInfo = Number(data.crashPoint);
+    },
+
+    // Repli sans socket : interroge le serveur chaque seconde pendant la partie
+    startStatusPolling() {
+        this.stopStatusPolling();
+        const gameId = this.gameId;
+        this.statusPollId = setInterval(async () => {
+            if (this.state !== 'running' || this.gameId !== gameId) { this.stopStatusPolling(); return; }
+            try {
+                const st = await window.API.getCrashStatus(gameId);
+                if (st && st.status && st.status !== 'running' && this.gameId === gameId && this.state === 'running') {
+                    this.crashInfo = Number(st.crashPoint);
+                }
+            } catch (e) { /* réessai au prochain tick */ }
+        }, 1000);
+    },
+
+    stopStatusPolling() {
+        if (this.statusPollId) { clearInterval(this.statusPollId); this.statusPollId = null; }
     },
 
     getUserBalance() {
@@ -229,7 +270,8 @@ const CrashGame = {
             }
 
             this.gameId = data.gameId || res.gameId;
-            this.targetCrashPoint = Number(data.crashPoint || res.crashPoint);
+            this.targetCrashPoint = 1.00;
+            this.crashInfo = null;
             this.currentMultiplier = 1.00;
             this.state = 'running';
             this.isCashingOut = false;
@@ -261,6 +303,7 @@ const CrashGame = {
 
             // Start animation loop
             if (this.animationFrameId) cancelAnimationFrame(this.animationFrameId);
+            this.startStatusPolling();
             this.loop(performance.now());
 
         } catch (err) {
@@ -274,7 +317,6 @@ const CrashGame = {
         if (this.state !== 'running' || !this.gameId || this.isCashingOut) return;
         this.isCashingOut = true;
 
-        const clientClickedAt = Date.now();
         const frozenMultiplier = Math.max(1.00, Number(this.currentMultiplier.toFixed(2)));
 
         // Retour visuel immédiat sans délai
@@ -292,16 +334,16 @@ const CrashGame = {
         }
 
         try {
-            const res = await window.API.cashoutCrash({
-                gameId: this.gameId,
-                multiplier: frozenMultiplier,
-                clientClickedAt: clientClickedAt
-            });
+            // Seul l'identifiant de partie est envoyé : le multiplicateur est calculé par le serveur
+            const res = await window.API.cashoutCrash({ gameId: this.gameId });
             const data = res.data || res;
 
             if (data.won) {
                 this.state = 'cashed_out';
                 this.isCashingOut = false;
+                this.stopStatusPolling();
+                // La partie du joueur est terminée : le serveur révèle le point de crash pour finir l'animation
+                if (data.crashPoint !== undefined) this.crashInfo = Number(data.crashPoint);
 
                 if (actionBtn) {
                     actionBtn.disabled = true;
@@ -340,6 +382,7 @@ const CrashGame = {
             } else {
                 // Partie crashée avant l'encaissement
                 this.isCashingOut = false;
+                if (data.crashPoint !== undefined) this.crashInfo = Number(data.crashPoint);
                 this.handleCrash();
             }
         } catch (err) {
@@ -382,8 +425,9 @@ const CrashGame = {
 
         this.updatePreviewPayout();
 
-        // Vérifier si le point de crash est atteint (uniquement si aucun encaissement en attente de réponse)
-        if (!this.isCashingOut && this.currentMultiplier >= this.targetCrashPoint) {
+        // Le serveur a annoncé le crash (socket ou polling) : on explose (sauf encaissement en attente de réponse)
+        if (!this.isCashingOut && this.crashInfo !== null &&
+            (this.state === 'running' || (this.state === 'cashed_out' && this.currentMultiplier >= this.crashInfo))) {
             this.handleCrash();
             return;
         }
@@ -398,6 +442,9 @@ const CrashGame = {
         if (this.isCashingOut) return;
 
         this.state = 'crashed';
+        this.stopStatusPolling();
+        if (this.crashInfo !== null && !isNaN(this.crashInfo)) this.targetCrashPoint = this.crashInfo;
+        else this.targetCrashPoint = Math.max(1.00, this.currentMultiplier);
         this.currentMultiplier = this.targetCrashPoint;
 
         if (this.animationFrameId) cancelAnimationFrame(this.animationFrameId);
@@ -430,7 +477,11 @@ const CrashGame = {
 
         // Clôturer la partie auprès du serveur si non encaissée
         try {
-            await window.API.finishCrash({ gameId: this.gameId });
+            const fin = await window.API.finishCrash({ gameId: this.gameId });
+            if (fin && fin.crashPoint !== undefined && this.crashInfo === null) {
+                this.targetCrashPoint = Number(fin.crashPoint);
+                this.currentMultiplier = this.targetCrashPoint;
+            }
         } catch (e) {
             // Ignored
         }

@@ -391,6 +391,10 @@ const API = {
     });
   },
 
+  async getCrashStatus(gameId) {
+    return this.request('/games/crash/status/' + encodeURIComponent(gameId));
+  },
+
   async finishCrash(param) {
     const body = (typeof param === 'object' && param !== null) ? param : { gameId: param };
     return this.request('/games/crash/finish', {

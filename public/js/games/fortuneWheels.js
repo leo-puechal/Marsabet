@@ -146,7 +146,7 @@ const FortuneWheels = {
         const previewPrizes = (wheel.segments || []).slice(0, 4).map(s => {
           const isPhys = s.type === 'physical';
           const icon = s.icon || (isPhys ? '🎁' : '🪙');
-          return `<span style="font-size:0.8rem; background:rgba(255,255,255,0.05); padding:3px 7px; border-radius:4px; border:1px solid rgba(255,255,255,0.08); ${isPhys ? 'color:#FCA5A5; border-color:rgba(239,68,68,0.3);' : ''}">${icon} ${s.label}</span>`;
+          return `<span style="font-size:0.8rem; background:rgba(255,255,255,0.05); padding:3px 7px; border-radius:4px; border:1px solid rgba(255,255,255,0.08); ${isPhys ? 'color:#FCA5A5; border-color:rgba(239,68,68,0.3);' : ''}">${escapeHtml(icon)} ${escapeHtml(s.label)}</span>`;
         }).join('');
 
         const lockedBannerHtml = isLocked
@@ -154,14 +154,14 @@ const FortuneWheels = {
           : '';
 
         return `
-          <div class="wheel-card ${isLocked ? 'wheel-card-locked' : ''}" data-wheel-id="${wheel.id}" onclick="FortuneWheels.openWheel('${wheel.id}')">
+          <div class="wheel-card ${isLocked ? 'wheel-card-locked' : ''}" data-wheel-id="${wheel.id}" onclick="FortuneWheels.openWheel('${escapeHtml(wheel.id)}')">
             <div>
               <div class="wheel-card-header">
-                <div class="wheel-card-icon">${wheel.icon || '🎡'}</div>
+                <div class="wheel-card-icon">${escapeHtml(wheel.icon || '🎡')}</div>
                 <span class="${badgeClass}">${badgeText}</span>
               </div>
-              <h3 class="wheel-card-title">${wheel.name}</h3>
-              <p class="wheel-card-desc">${wheel.description}</p>
+              <h3 class="wheel-card-title">${escapeHtml(wheel.name)}</h3>
+              <p class="wheel-card-desc">${escapeHtml(wheel.description)}</p>
               ${lockedBannerHtml}
               
               <div style="display:flex; flex-wrap:wrap; gap:0.4rem; margin-top:0.85rem; margin-bottom:1.25rem;">
@@ -184,7 +184,7 @@ const FortuneWheels = {
 
     } catch (err) {
       if (container) {
-        container.innerHTML = `<div style="color:#EF4444; padding:2rem; text-align:center;">Erreur lors du chargement des roues : ${err.message}</div>`;
+        container.innerHTML = `<div style="color:#EF4444; padding:2rem; text-align:center;">Erreur lors du chargement des roues : ${escapeHtml(err.message)}</div>`;
       }
     }
   },
@@ -285,8 +285,8 @@ const FortuneWheels = {
         <div class="segment-odd-item ${isPhysical ? 'is-physical' : ''}">
           <div style="display:flex; align-items:center;">
             <div class="odd-color-dot" style="background:${color};"></div>
-            <span style="margin-right:0.4rem;">${seg.icon || (isPhysical ? '🥤' : '🪙')}</span>
-            <span class="odd-label">${seg.label}</span>
+            <span style="margin-right:0.4rem;">${escapeHtml(seg.icon || (isPhysical ? '🥤' : '🪙'))}</span>
+            <span class="odd-label">${escapeHtml(seg.label)}</span>
           </div>
           <div style="display:flex; align-items:center; gap:0.5rem;">
             ${isPhysical ? '<span style="font-size:0.7rem; background:#EF4444; color:#FFF; padding:2px 6px; border-radius:4px; font-weight:700;">RARE BDE</span>' : ''}
@@ -650,7 +650,7 @@ const FortuneWheels = {
       if (banner) {
         banner.style.display = 'block';
         banner.className = 'result-banner win';
-        banner.innerHTML = `🎉 GAGNÉ ! +${wonItem.coins || wonItem.label} COINS crédités immédiatement à ton solde !`;
+        banner.innerHTML = `🎉 GAGNÉ ! +${escapeHtml(wonItem.coins || wonItem.label)} COINS crédités immédiatement à ton solde !`;
       }
       window.UI.showToast(`🎉 Tu as remporté ${wonItem.label} !`, 'success');
     }

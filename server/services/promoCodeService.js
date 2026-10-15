@@ -25,13 +25,13 @@ function createPromoCode({ code, coinsAmount, maxUses = 50, expiresAt = null, cr
   }
 
   const parsedCoins = parseInt(coinsAmount, 10);
-  if (isNaN(parsedCoins) || parsedCoins <= 0) {
-    throw new Error('Le montant de coins doit être un nombre strictement positif.');
+  if (isNaN(parsedCoins) || parsedCoins <= 0 || parsedCoins > 1000000) {
+    throw new Error('Le montant de coins doit être un nombre positif (maximum 1 000 000).');
   }
 
   const parsedUses = parseInt(maxUses, 10);
-  if (isNaN(parsedUses) || parsedUses <= 0) {
-    throw new Error('La limite globale d\'utilisations doit être au minimum de 1.');
+  if (isNaN(parsedUses) || parsedUses <= 0 || parsedUses > 100000) {
+    throw new Error('La limite globale d\'utilisations doit être comprise entre 1 et 100 000.');
   }
 
   // Vérifier unicité

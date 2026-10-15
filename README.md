@@ -58,13 +58,17 @@ npm install
 ```
 
 ### 2. Configuration (.env)
-Un fichier `.env` est configuré par défaut :
+Copie `.env.example` en `.env` et remplis les secrets (aucun secret par défaut n'existe) :
 ```env
 PORT=3001
-JWT_SECRET=marsabet_secret_key_super_secure_epitech_2026
 NODE_ENV=development
+JWT_SECRET=<48+ octets aléatoires>   # obligatoire en production (>= 32 car.)
+ADMIN_PASSWORD=<>= 12 caractères>    # mot de passe de bde_admin (sinon généré et affiché une fois)
+ADMIN_SECRET_KEY=<>= 12 caractères>  # code de promotion admin (sinon fonction désactivée)
 DB_PATH=./server/database/marsabet.db
 ```
+Générer un secret : `node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"`.
+Derrière un reverse-proxy, définir `TRUST_PROXY=1` ; pour un front sur un autre domaine, `ALLOWED_ORIGINS`.
 
 ### 3. Lancement de l'application
 ```bash

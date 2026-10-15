@@ -296,8 +296,8 @@ exports.updateUserCoins = (req, res) => {
     }
 
     let parsedAmount = Number(coins);
-    if (!Number.isInteger(parsedAmount)) {
-      return res.status(400).json({ error: 'Le montant de pièces doit être un nombre entier.' });
+    if (!Number.isSafeInteger(parsedAmount) || parsedAmount > 1000000000) {
+      return res.status(400).json({ error: 'Le montant de pièces doit être un nombre entier (maximum 1 000 000 000).' });
     }
 
     let newBalance = targetUser.coins;
@@ -584,11 +584,16 @@ exports.deleteUser = (req, res) => {
 exports.updateUserIdentity = (req, res) => {
   try {
     const { id } = req.params;
-    const firstName = (req.body.firstName || req.body.first_name || '').trim();
-    const lastName = (req.body.lastName || req.body.last_name || '').trim();
+    const rawFirst = req.body.firstName || req.body.first_name || '';
+    const rawLast = req.body.lastName || req.body.last_name || '';
+    const firstName = typeof rawFirst === 'string' ? rawFirst.trim() : '';
+    const lastName = typeof rawLast === 'string' ? rawLast.trim() : '';
 
     if (!firstName || !lastName) {
       return res.status(400).json({ error: 'Le nom et le prénom sont obligatoires.' });
+    }
+    if (firstName.length > 50 || lastName.length > 50) {
+      return res.status(400).json({ error: 'Le nom et le prénom ne doivent pas dépasser 50 caractères.' });
     }
 
     const targetUser = db.prepare('SELECT id, username, first_name, last_name FROM users WHERE id = ?').get(id);

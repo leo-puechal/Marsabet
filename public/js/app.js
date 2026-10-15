@@ -825,7 +825,7 @@ async function loadProfile() {
           Impossible de charger le profil
         </h3>
         <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:1.5rem;">
-          ${err.message || 'Une erreur est survenue lors de la communication avec le serveur.'}
+          ${escapeHtml(err.message || 'Une erreur est survenue lors de la communication avec le serveur.')}
         </p>
         <button class="btn btn-gold" onclick="loadProfile()">🔄 Réessayer</button>
       `;

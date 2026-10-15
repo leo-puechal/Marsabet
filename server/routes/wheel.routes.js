@@ -2,8 +2,7 @@ const express = require('express');
 const router = express.Router();
 const wheelController = require('../controllers/wheelController');
 const authMiddleware = require('../middlewares/authMiddleware');
-const jwt = require('jsonwebtoken');
-const config = require('../config/config');
+const { verifyToken } = require('../utils/token');
 const db = require('../database/db');
 
 function optionalAuth(req, res, next) {
@@ -13,7 +12,7 @@ function optionalAuth(req, res, next) {
   }
   if (token) {
     try {
-      const decoded = jwt.verify(token, config.jwtSecret);
+      const decoded = verifyToken(token);
       const user = db.prepare('SELECT id, username, role, coins FROM users WHERE id = ?').get(decoded.id);
       if (user) req.user = user;
     } catch (e) {}

@@ -59,8 +59,8 @@ exports.deal = (req, res) => {
     // Déduction atomique de la mise
     let newCoins = 0;
     const deductTx = db.transaction(() => {
-      const deduct = db.prepare('UPDATE users SET coins = coins - ?, total_wagered = total_wagered + ? WHERE id = ? AND coins >= ?')
-        .run(bet, bet, userId, bet);
+      const deduct = db.prepare('UPDATE users SET coins = coins - ? WHERE id = ? AND coins >= ?')
+        .run(bet, userId, bet);
       if (deduct.changes === 0) {
         throw new Error('Solde insuffisant.');
       }
