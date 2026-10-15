@@ -556,10 +556,24 @@ exports.playPlinko = (req, res) => {
 };
 
 // ======================== ROUE QUOTIDIENNE GRATUITE ========================
+// La roue quotidienne existe sous deux routes (/games/free-wheel et /wheels/quotidienne) qui doivent partager
+// le même cooldown, sinon un joueur peut l'encaisser deux fois par jour.
+function getEffectiveLastFreeSpin(userId, user) {
+  let last = user.last_free_spin || null;
+  try {
+    const row = db.prepare("SELECT last_spin_at FROM user_wheel_cooldowns WHERE user_id = ? AND wheel_id = 'quotidienne'").get(userId);
+    if (row && row.last_spin_at) {
+      if (!last || new Date(row.last_spin_at).getTime() > new Date(last).getTime()) last = row.last_spin_at;
+    }
+  } catch (e) {}
+  return last;
+}
+
 exports.getFreeWheelStatus = (req, res) => {
   try {
     const userId = req.user.id;
     const user = db.prepare('SELECT last_free_spin, free_spin_streak, total_wagered FROM users WHERE id = ?').get(userId);
+    user.last_free_spin = getEffectiveLastFreeSpin(userId, user);
 
     const COOLDOWN_MS = 24 * 60 * 60 * 1000; // 24h en millisecondes
     const STREAK_RESET_MS = 48 * 60 * 60 * 1000; // Si > 48h sans tourner, streak reset à 0
@@ -600,6 +614,7 @@ exports.spinFreeWheel = (req, res) => {
   try {
     const userId = req.user.id;
     const user = db.prepare('SELECT coins, last_free_spin, free_spin_streak, total_wagered FROM users WHERE id = ?').get(userId);
+    user.last_free_spin = getEffectiveLastFreeSpin(userId, user);
 
     const COOLDOWN_MS = 24 * 60 * 60 * 1000;
     const STREAK_RESET_MS = 48 * 60 * 60 * 1000;
@@ -640,6 +655,15 @@ exports.spinFreeWheel = (req, res) => {
             free_spin_streak = ?
         WHERE id = ?
       `).run(newCoins, nowIso, newStreak, userId);
+
+      // Synchronise le cooldown de la roue "quotidienne" du module Roues de la Fortune
+      db.prepare(`
+        INSERT INTO user_wheel_cooldowns (user_id, wheel_id, last_spin_at, streak)
+        VALUES (?, 'quotidienne', ?, ?)
+        ON CONFLICT(user_id, wheel_id) DO UPDATE SET
+          last_spin_at = excluded.last_spin_at,
+          streak = excluded.streak
+      `).run(userId, nowIso, newStreak);
 
       db.prepare(`
         INSERT INTO game_history (user_id, game_type, bet, payout, profit, details)
@@ -719,6 +743,77 @@ exports.getCrashHistory = (req, res) => {
   }
 };
 
+// ----------------------------------------------------------------------------
+// CRASH — la partie est entièrement pilotée par le serveur :
+//  - le point de crash n'est JAMAIS envoyé au client avant la fin de la partie ;
+//  - le multiplicateur d'encaissement est calculé par le serveur à partir du temps écoulé
+//    (le multiplicateur envoyé par le client est ignoré) ;
+//  - la fin de partie est poussée au client par socket (crash:ended) et vérifiable via /crash/status.
+// ----------------------------------------------------------------------------
+const crashTimers = new Map();
+
+// Clôture une partie encore "running" en perte (idempotent). Retourne true si la partie vient d'être clôturée.
+function finalizeCrashLoss(session, outcomeDetails = {}) {
+  const changed = db.transaction(() => {
+    const upd = db.prepare(`
+      UPDATE crash_sessions SET status = 'crashed', payout = 0
+      WHERE id = ? AND status = 'running'
+    `).run(session.id);
+    if (upd.changes === 0) return false;
+
+    db.prepare(`
+      INSERT INTO game_history (user_id, game_type, bet, payout, profit, details)
+      VALUES (?, 'crash', ?, 0, ?, ?)
+    `).run(session.user_id, session.bet, -session.bet, JSON.stringify({
+      crashPoint: session.crash_point,
+      outcome: 'crashed',
+      ...outcomeDetails
+    }));
+    db.prepare('INSERT INTO crash_history (crash_point) VALUES (?)').run(session.crash_point);
+    return true;
+  })();
+
+  if (changed) {
+    try {
+      contestService.recordGameProgress(session.user_id, 'crash', session.bet, 0, {
+        multiplier: 0,
+        crashPoint: session.crash_point,
+        isWin: false
+      });
+    } catch (cErr) {}
+    try {
+      socketService.notifyCrashEnded(session.user_id, { gameId: session.id, crashPoint: session.crash_point });
+    } catch (sockErr) {}
+  }
+  return changed;
+}
+
+function scheduleCrashFinalization(session) {
+  const delay = Math.max(0, session.crash_at - Date.now()) + 50;
+  const timer = setTimeout(() => {
+    crashTimers.delete(session.id);
+    try {
+      const fresh = db.prepare('SELECT * FROM crash_sessions WHERE id = ?').get(session.id);
+      if (fresh && fresh.status === 'running') finalizeCrashLoss(fresh);
+    } catch (e) {
+      console.error('Erreur clôture automatique crash:', e);
+    }
+  }, delay);
+  if (timer.unref) timer.unref();
+  crashTimers.set(session.id, timer);
+}
+
+// Au démarrage : clôturer les parties restées "running" pendant un arrêt du serveur
+try {
+  const stale = db.prepare("SELECT * FROM crash_sessions WHERE status = 'running'").all();
+  for (const sess of stale) {
+    if (sess.crash_at && sess.crash_at > Date.now()) scheduleCrashFinalization(sess);
+    else finalizeCrashLoss(sess);
+  }
+} catch (e) {
+  console.warn('Nettoyage des parties Crash orphelines impossible:', e.message);
+}
+
 exports.startCrash = (req, res) => {
   try {
     const userId = req.user.id;
@@ -738,12 +833,16 @@ exports.startCrash = (req, res) => {
       return res.status(400).json({ error: 'Solde insuffisant pour cette mise.' });
     }
 
-    // Déduction immédiate de la mise et calcul des timestamps
+    // Une seule partie de Crash à la fois par joueur (empêche de multiplier les parties parallèles)
+    const running = db.prepare("SELECT id FROM crash_sessions WHERE user_id = ? AND status = 'running'").get(userId);
+    if (running) {
+      return res.status(400).json({ error: 'Une partie de Crash est déjà en cours.' });
+    }
+
     const gameId = crypto.randomUUID();
     const crashPoint = crashEngine.generateCrashPoint();
     const startedAt = Date.now();
-    const durationSec = crashEngine.getDurationForMultiplier(crashPoint);
-    const durationMs = Math.round(durationSec * 1000);
+    const durationMs = Math.round(crashEngine.getDurationForMultiplier(crashPoint) * 1000);
     const crashAt = startedAt + durationMs;
 
     const runTx = db.transaction(() => {
@@ -760,42 +859,77 @@ exports.startCrash = (req, res) => {
 
     const updatedCoins = runTx();
 
+    scheduleCrashFinalization({ id: gameId, crash_at: crashAt });
+
+    // ⚠️ Ni crashPoint, ni crashAt, ni la durée ne sont renvoyés : ils permettraient de gagner à coup sûr.
     return res.json({
       success: true,
       gameId,
       bet,
-      crashPoint,
       startedAt,
-      crashAt,
-      durationMs,
       coins: updatedCoins,
       data: {
         gameId,
         bet,
-        crashPoint,
         startedAt,
-        crashAt,
-        durationMs,
         coins: updatedCoins
       }
     });
   } catch (err) {
     console.error('Erreur démarrage crash:', err);
-    return res.status(err.message === 'Solde insuffisant.' ? 400 : 500).json({ error: err.message || 'Erreur lors du démarrage du tour de Crash.' });
+    return res.status(err.message === 'Solde insuffisant.' ? 400 : 500).json({
+      error: err.message === 'Solde insuffisant.' ? err.message : 'Erreur lors du démarrage du tour de Crash.'
+    });
+  }
+};
+
+// État de la partie (repli si le socket n'est pas disponible). Ne révèle le point de crash qu'une fois la partie terminée.
+exports.getCrashStatus = (req, res) => {
+  try {
+    const userId = req.user.id;
+    const gameId = String(req.params.gameId || '');
+    let session = db.prepare('SELECT * FROM crash_sessions WHERE id = ? AND user_id = ?').get(gameId, userId);
+    if (!session) {
+      return res.status(404).json({ error: 'Partie introuvable.' });
+    }
+
+    const now = Date.now();
+    if (session.status === 'running' && now >= session.crash_at) {
+      finalizeCrashLoss(session);
+      session = db.prepare('SELECT * FROM crash_sessions WHERE id = ?').get(gameId);
+    }
+
+    if (session.status === 'running') {
+      return res.json({
+        status: 'running',
+        multiplier: crashEngine.getMultiplierAtTime((now - session.started_at) / 1000)
+      });
+    }
+
+    const coins = db.prepare('SELECT coins FROM users WHERE id = ?').get(userId).coins;
+    return res.json({
+      status: session.status,
+      crashPoint: session.crash_point,
+      cashedMultiplier: session.cashed_multiplier || null,
+      payout: session.payout || 0,
+      coins
+    });
+  } catch (err) {
+    console.error('Erreur statut crash:', err);
+    return res.status(500).json({ error: 'Impossible de lire l\'état de la partie.' });
   }
 };
 
 exports.cashoutCrash = (req, res) => {
-  // Enregistrer le timestamp exact de réception de la requête dès la première milliseconde
+  // Horodatage serveur dès la réception : seule référence de temps fiable
   const requestReceivedAt = Date.now();
 
   try {
     const userId = req.user.id;
-    const { gameId, multiplier, clientClickedAt } = req.body;
+    const { gameId } = req.body;
     if (!gameId || typeof gameId !== 'string') {
       return res.status(400).json({ error: 'Identifiant de partie manquant ou invalide.' });
     }
-    const userMult = Math.max(1.00, Number(multiplier) || 1.00);
 
     const session = db.prepare('SELECT * FROM crash_sessions WHERE id = ? AND user_id = ?').get(gameId, userId);
     if (!session) {
@@ -807,22 +941,15 @@ exports.cashoutCrash = (req, res) => {
     }
 
     const crashPoint = session.crash_point;
-    const crashAt = session.crash_at || (session.started_at ? session.started_at + Math.round(crashEngine.getDurationForMultiplier(crashPoint) * 1000) : null);
+    const crashAt = session.crash_at;
+    const elapsedSec = (requestReceivedAt - session.started_at) / 1000;
 
-    // Déterminer le timestamp d'encaissement effectif (timestamp de réception ou clic client vérifié)
-    const effectiveClickTime = (clientClickedAt && typeof clientClickedAt === 'number' && clientClickedAt <= requestReceivedAt && (!session.started_at || clientClickedAt >= session.started_at - 100))
-      ? clientClickedAt
-      : requestReceivedAt;
+    // Le multiplicateur est celui du serveur à l'instant de la requête (jamais celui annoncé par le client)
+    const serverMult = crashEngine.getMultiplierAtTime(elapsedSec);
 
-    // Vérifier si l'encaissement a eu lieu avant le crash :
-    // 1. Soit le multiplicateur au clic est inférieur ou égal au crashPoint
-    // 2. Soit le timestamp d'encaissement est intervenu avant le timestamp exact du crash déterminé pour ce tour
-    const isTimely = crashAt ? (effectiveClickTime <= crashAt || requestReceivedAt <= crashAt) : false;
-    const isMultiplierValid = userMult <= crashPoint;
-
-    if (isMultiplierValid || isTimely) {
-      // Gain valide : multiplicateur plafonné au crashPoint en cas de décalage minime
-      const finalMult = Math.min(userMult, crashPoint);
+    if (requestReceivedAt < crashAt && serverMult < crashPoint) {
+      // Encaissement valide
+      const finalMult = Math.max(1.00, serverMult);
       const payout = Math.floor(session.bet * finalMult);
       const profit = payout - session.bet;
 
@@ -853,7 +980,6 @@ exports.cashoutCrash = (req, res) => {
         `).run(userId, session.bet, payout, profit, JSON.stringify({
           multiplier: finalMult,
           crashPoint,
-          clickTimestamp: effectiveClickTime,
           requestReceivedAt,
           crashAt,
           outcome: 'cashed_out'
@@ -865,6 +991,9 @@ exports.cashoutCrash = (req, res) => {
       });
 
       const updatedCoins = runTx();
+
+      const timer = crashTimers.get(gameId);
+      if (timer) { clearTimeout(timer); crashTimers.delete(gameId); }
 
       try {
         contestService.recordGameProgress(userId, 'crash', session.bet, payout, {
@@ -906,65 +1035,36 @@ exports.cashoutCrash = (req, res) => {
           coins: updatedCoins
         }
       });
-    } else {
-      // Trop tard : partie crashée avant l'encaissement
-      db.transaction(() => {
-        db.prepare(`
-          UPDATE crash_sessions
-          SET status = 'crashed',
-              payout = 0
-          WHERE id = ?
-        `).run(gameId);
+    }
 
-        db.prepare(`
-          INSERT INTO game_history (user_id, game_type, bet, payout, profit, details)
-          VALUES (?, 'crash', ?, 0, ?, ?)
-        `).run(userId, session.bet, -session.bet, JSON.stringify({
-          multiplier: userMult,
-          crashPoint,
-          clickTimestamp: effectiveClickTime,
-          requestReceivedAt,
-          crashAt,
-          outcome: 'crashed'
-        }));
+    // Trop tard : la partie avait déjà crashé
+    finalizeCrashLoss(session, { requestReceivedAt, crashAt });
+    const currentCoins = db.prepare('SELECT coins FROM users WHERE id = ?').get(userId).coins;
 
-        db.prepare('INSERT INTO crash_history (crash_point) VALUES (?)').run(crashPoint);
-      })();
-
-      try {
-        contestService.recordGameProgress(userId, 'crash', session.bet, 0, {
-          multiplier: 0,
-          crashPoint,
-          isWin: false
-        });
-      } catch (cErr) {}
-
-      const currentCoins = db.prepare('SELECT coins FROM users WHERE id = ?').get(userId).coins;
-
-      return res.json({
-        success: true,
+    return res.json({
+      success: true,
+      won: false,
+      multiplier: 0,
+      payout: 0,
+      profit: -session.bet,
+      crashPoint,
+      coins: currentCoins,
+      data: {
         won: false,
         multiplier: 0,
         payout: 0,
         profit: -session.bet,
         crashPoint,
-        coins: currentCoins,
-        data: {
-          won: false,
-          multiplier: 0,
-          payout: 0,
-          profit: -session.bet,
-          crashPoint,
-          coins: currentCoins
-        }
-      });
-    }
+        coins: currentCoins
+      }
+    });
   } catch (err) {
     console.error('Erreur cashout crash:', err);
-    return res.status(500).json({ error: err.message || 'Erreur lors de l\'encaissement.' });
+    return res.status(500).json({ error: 'Erreur lors de l\'encaissement.' });
   }
 };
 
+// Le client signale la fin de l'animation. On ne clôture / ne révèle rien tant que le serveur n'a pas atteint le crash.
 exports.finishCrash = (req, res) => {
   try {
     const userId = req.user.id;
@@ -973,36 +1073,22 @@ exports.finishCrash = (req, res) => {
       return res.status(400).json({ error: 'Identifiant de partie manquant ou invalide.' });
     }
 
-    const session = db.prepare('SELECT * FROM crash_sessions WHERE id = ? AND user_id = ?').get(gameId, userId);
-    if (!session || session.status !== 'running') {
+    let session = db.prepare('SELECT * FROM crash_sessions WHERE id = ? AND user_id = ?').get(gameId, userId);
+    if (!session) {
       return res.json({ success: true });
     }
 
-    const crashPoint = session.crash_point;
-
-    db.transaction(() => {
-      const updateRes = db.prepare(`
-        UPDATE crash_sessions
-        SET status = 'crashed',
-            payout = 0
-        WHERE id = ? AND status = 'running'
-      `).run(gameId);
-      if (updateRes.changes > 0) {
-        db.prepare(`
-          INSERT INTO game_history (user_id, game_type, bet, payout, profit, details)
-          VALUES (?, 'crash', ?, 0, ?, ?)
-        `).run(userId, session.bet, -session.bet, JSON.stringify({
-          crashPoint,
-          outcome: 'crashed'
-        }));
-
-        db.prepare('INSERT INTO crash_history (crash_point) VALUES (?)').run(crashPoint);
+    if (session.status === 'running') {
+      if (Date.now() < session.crash_at) {
+        return res.json({ success: true, running: true });
       }
-    })();
+      finalizeCrashLoss(session);
+      session = db.prepare('SELECT * FROM crash_sessions WHERE id = ?').get(gameId);
+    }
 
     return res.json({
       success: true,
-      crashPoint
+      crashPoint: session.crash_point
     });
   } catch (err) {
     console.error('Erreur finish crash:', err);

@@ -5,6 +5,26 @@ const nodemailer = require('nodemailer');
  * Utilisé lorsqu'un élève valide une demande de livraison directe (boutique ou lot roue)
  */
 
+// Échappe tout contenu saisi par un utilisateur avant insertion dans le HTML de l'email (anti injection / phishing)
+function esc(value) {
+  return String(value === null || value === undefined ? '' : value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+// Supprime les retours à la ligne (injection d'en-têtes d'email)
+function oneLine(value) {
+  return String(value === null || value === undefined ? '' : value).replace(/[\r\n]+/g, ' ').trim();
+}
+
+// Numéro de téléphone : uniquement chiffres, espaces, + . - ( )
+function cleanPhone(value) {
+  return String(value || '').replace(/[^0-9+\-.() ]/g, '').slice(0, 30);
+}
+
 async function sendDeliveryNotification(delivery) {
   const bdeEmail = process.env.BDE_EMAIL || 'marsatek.bde@gmail.com';
   const emailUser = process.env.EMAIL_USER;
@@ -40,7 +60,7 @@ async function sendDeliveryNotification(delivery) {
     ? `${delivery.item_name} (${delivery.variant_name})`
     : delivery.item_name;
 
-  const subject = `[Marsabet BDE] Nouvelle demande de livraison : ${displayName} — ${delivery.room_location} (${delivery.first_name} ${delivery.last_name})`;
+  const subject = oneLine(`[Marsabet BDE] Nouvelle demande de livraison : ${displayName} — ${delivery.room_location} (${delivery.first_name} ${delivery.last_name})`);
 
   const htmlContent = `
     <!DOCTYPE html>
@@ -70,18 +90,18 @@ async function sendDeliveryNotification(delivery) {
             <table style="width: 100%; border-collapse: collapse; font-size: 15px;">
               <tr>
                 <td style="padding: 6px 0; color: #94A3B8; width: 140px;">Élève :</td>
-                <td style="padding: 6px 0; font-weight: bold; color: #FFFFFF;">${delivery.first_name} ${delivery.last_name} (${delivery.username || 'Élève'})</td>
+                <td style="padding: 6px 0; font-weight: bold; color: #FFFFFF;">${esc(delivery.first_name)} ${esc(delivery.last_name)} (${esc(delivery.username || 'Élève')})</td>
               </tr>
               <tr>
                 <td style="padding: 6px 0; color: #94A3B8;">Salle / Lieu :</td>
                 <td style="padding: 6px 0; font-weight: bold; color: #38BDF8; font-size: 16px;">
-                  🏛️ <span style="background: rgba(56, 189, 248, 0.2); padding: 3px 8px; border-radius: 4px; border: 1px solid #38BDF8;">${delivery.room_location}</span>
+                  🏛️ <span style="background: rgba(56, 189, 248, 0.2); padding: 3px 8px; border-radius: 4px; border: 1px solid #38BDF8;">${esc(delivery.room_location)}</span>
                 </td>
               </tr>
               <tr>
                 <td style="padding: 6px 0; color: #94A3B8;">Téléphone :</td>
                 <td style="padding: 6px 0; font-weight: bold; color: #FFFFFF;">
-                  ${delivery.phone ? `📞 <a href="tel:${delivery.phone}" style="color: #FDE047; text-decoration: none;">${delivery.phone}</a>` : '<em>Non renseigné</em>'}
+                  ${cleanPhone(delivery.phone) ? `📞 <a href="tel:${esc(cleanPhone(delivery.phone))}" style="color: #FDE047; text-decoration: none;">${esc(cleanPhone(delivery.phone))}</a>` : '<em>Non renseigné</em>'}
                 </td>
               </tr>
             </table>
@@ -95,7 +115,7 @@ async function sendDeliveryNotification(delivery) {
             <table style="width: 100%; border-collapse: collapse; font-size: 15px;">
               <tr>
                 <td style="padding: 6px 0; color: #94A3B8; width: 140px;">Produit :</td>
-                <td style="padding: 6px 0; font-weight: bold; color: #FFFFFF; font-size: 16px;">${displayName}</td>
+                <td style="padding: 6px 0; font-weight: bold; color: #FFFFFF; font-size: 16px;">${esc(displayName)}</td>
               </tr>
               <tr>
                 <td style="padding: 6px 0; color: #94A3B8;">Quantité :</td>
@@ -121,7 +141,7 @@ async function sendDeliveryNotification(delivery) {
               📝 Précision / Remarque de l'élève
             </h2>
             <div style="color: #FFFFFF; font-size: 15px; line-height: 1.5; white-space: pre-wrap; background: rgba(0, 0, 0, 0.25); padding: 10px 14px; border-radius: 6px;">
-              ${delivery.notes}
+              ${esc(delivery.notes)}
             </div>
           </div>
           ` : ''}
@@ -187,14 +207,16 @@ async function sendVerificationEmail(email, code, username = '') {
   const emailUser = process.env.EMAIL_USER;
   const emailPass = process.env.EMAIL_PASS;
 
-  console.log(`[EmailService] 📧 Code de vérification généré pour ${email} (${username}) : [ ${code} ]`);
-
   if (!emailUser || !emailPass) {
-    console.warn(`[EmailService] ⚠️ Identifiants Gmail non configurés. Code disponible dans la console: ${code}`);
+    // Code affiché dans la console uniquement en développement (jamais en production : les logs ne sont pas secrets)
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn(`[EmailService] ⚠️ Identifiants Gmail non configurés. Code de ${username} (${email}) : ${code}`);
+    } else {
+      console.warn('[EmailService] ⚠️ EMAIL_USER / EMAIL_PASS non configurés : impossible d\'envoyer le code de vérification.');
+    }
     return {
       success: true,
-      status: 'dev_logged',
-      code
+      status: 'dev_logged'
     };
   }
 
@@ -227,7 +249,7 @@ async function sendVerificationEmail(email, code, username = '') {
           </div>
           <div style="padding: 28px 24px; text-align: center;">
             <p style="font-size: 16px; color: #E2E8F0; margin-top: 0;">
-              Salut <strong style="color: #FDE047;">${username || 'Astronaute'}</strong> ! 👋
+              Salut <strong style="color: #FDE047;">${esc(username || 'Astronaute')}</strong> ! 👋
             </p>
             <p style="font-size: 14.5px; color: #94A3B8; line-height: 1.5; margin-bottom: 24px;">
               Pour finaliser ton inscription et débloquer tes <strong>5 000 jetons</strong> de bienvenue, saisis ce code de confirmation sur Marsabet :
@@ -269,8 +291,7 @@ async function sendVerificationEmail(email, code, username = '') {
     return {
       success: true,
       status: 'fallback_logged',
-      error: err.message,
-      code
+      error: err.message
     };
   }
 }

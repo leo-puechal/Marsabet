@@ -12,7 +12,7 @@ const apiLimiter = rateLimit({
 // Limiteur pour l'authentification (connexion et inscription) anti-brute-force
 const authLimiter = rateLimit({
   windowMs: 60 * 1000, // Fenêtre courte d'1 minute (au lieu de 15 minutes)
-  max: 60, // 60 requêtes par minute par IP
+  max: 20, // 20 requêtes par minute par IP
   skipSuccessfulRequests: true, // Les connexions ou inscriptions réussies ne sont pas décomptées
   standardHeaders: true,
   legacyHeaders: false,

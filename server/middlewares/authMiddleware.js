@@ -1,5 +1,4 @@
-const jwt = require('jsonwebtoken');
-const config = require('../config/config');
+const { verifyToken } = require('../utils/token');
 const db = require('../database/db');
 const presenceService = require('../services/presenceService');
 
@@ -15,7 +14,7 @@ function authMiddleware(req, res, next) {
   }
 
   try {
-    const decoded = jwt.verify(token, config.jwtSecret);
+    const decoded = verifyToken(token);
     const user = db.prepare('SELECT id, username, first_name, last_name, role, coins, daily_streak, last_daily_claim, total_wagered, total_won, games_played, biggest_win, created_at FROM users WHERE id = ?').get(decoded.id);
 
     if (!user) {

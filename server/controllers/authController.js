@@ -1,17 +1,36 @@
 const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
+const { signToken } = require('../utils/token');
 const db = require('../database/db');
 const config = require('../config/config');
 const vipService = require('../services/vipService');
 const emailService = require('../services/emailService');
 
+const BCRYPT_ROUNDS = 12;
+const MIN_PASSWORD_LENGTH = 8;
+const CODE_TTL_MS = 15 * 60 * 1000;
+const MAX_VERIFY_ATTEMPTS = 5;
+const RESEND_COOLDOWN_MS = 60 * 1000;
+
 function generateToken(user) {
-  return jwt.sign(
-    { id: user.id, username: user.username },
-    config.jwtSecret,
-    { expiresIn: '24h' }
-  );
+  return signToken(user);
 }
+
+// Code de vérification à 6 chiffres généré avec un CSPRNG (Math.random est prédictible)
+function generateVerificationCode() {
+  return crypto.randomInt(100000, 1000000).toString();
+}
+
+function safeEqual(a, b) {
+  const bufA = Buffer.from(String(a));
+  const bufB = Buffer.from(String(b));
+  if (bufA.length !== bufB.length) return false;
+  return crypto.timingSafeEqual(bufA, bufB);
+}
+
+// Suivi mémoire des essais de validation (par compte) et des renvois de code
+const verifyAttempts = new Map();
+const lastResendAt = new Map();
 
 function getTodayString() {
   const d = new Date();
@@ -24,12 +43,10 @@ function getYesterdayString() {
   return d.toISOString().split('T')[0];
 }
 
+// L'IP vient de req.ip : Express ne lit X-Forwarded-For que si 'trust proxy' est configuré (TRUST_PROXY).
+// Lire l'en-tête directement permettrait à n'importe quel client de se faire passer pour une autre IP.
 function getClientIp(req) {
-  const forwarded = req.headers['x-forwarded-for'];
-  if (forwarded) {
-    return forwarded.split(',')[0].trim();
-  }
-  return req.socket?.remoteAddress || req.ip || '127.0.0.1';
+  return req.ip || req.socket?.remoteAddress || '127.0.0.1';
 }
 
 exports.register = async (req, res) => {
@@ -37,7 +54,7 @@ exports.register = async (req, res) => {
     const { username, password } = req.body;
     const lastName = typeof (req.body.lastName || req.body.last_name) === 'string' ? (req.body.lastName || req.body.last_name).trim() : '';
     const firstName = typeof (req.body.firstName || req.body.first_name) === 'string' ? (req.body.firstName || req.body.first_name).trim() : '';
-    const email = typeof req.body.email === 'string' ? req.body.email.trim().toLowerCase() : '';
+    let email = typeof req.body.email === 'string' ? req.body.email.trim().toLowerCase() : '';
 
     if (!lastName || !firstName) {
       return res.status(400).json({ error: 'Le nom et le prénom sont obligatoires pour pouvoir récupérer tes récompenses physiques.' });
@@ -52,10 +69,13 @@ exports.register = async (req, res) => {
       return res.status(400).json({ error: 'L\'adresse email étudiante Epitech (@epitech.eu) est obligatoire.' });
     }
 
-    const epitechEmailRegex = /^[a-zA-Z0-9_.+-]+@([a-zA-Z0-9-]+\.)*epitech\.(eu|digital)$/i;
-    if (!epitechEmailRegex.test(email)) {
+    const epitechEmailRegex = /^[a-zA-Z0-9_.+-]{1,64}@epitech\.(eu|digital)$/i;
+    if (email.length > 100 || !epitechEmailRegex.test(email)) {
       return res.status(400).json({ error: 'Format d\'email non autorisé. Tu dois obligatoirement utiliser ton adresse email étudiante officielle (@epitech.eu).' });
     }
+
+    // Forme canonique : "prenom.nom+x@epitech.eu" et "prenom.nom@epitech.eu" désignent la même boîte
+    email = email.replace(/\+[^@]*@/, '@');
 
     // Vérifier l'unicité de l'email
     const existingEmail = db.prepare('SELECT id FROM users WHERE LOWER(email) = LOWER(?)').get(email);
@@ -72,8 +92,8 @@ exports.register = async (req, res) => {
       return res.status(400).json({ error: 'Le pseudo ne peut contenir que des lettres, chiffres, points, tirets et underscores.' });
     }
 
-    if (!password || typeof password !== 'string' || password.length < 4 || password.length > 128) {
-      return res.status(400).json({ error: 'Le mot de passe doit comporter entre 4 et 128 caractères.' });
+    if (!password || typeof password !== 'string' || password.length < MIN_PASSWORD_LENGTH || password.length > 128) {
+      return res.status(400).json({ error: `Le mot de passe doit comporter entre ${MIN_PASSWORD_LENGTH} et 128 caractères.` });
     }
 
     // Vérifier si le pseudo existe déjà
@@ -82,11 +102,11 @@ exports.register = async (req, res) => {
       if (existing.email_verified === 0) {
         // L'élève a fait une faute de frappe dans son email et recommence avec le même pseudo :
         // On met à jour son email et on lui renvoie le code d'activation !
-        const salt = await bcrypt.genSalt(10);
-        const passwordHash = await bcrypt.hash(password, salt);
+        const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
         const registrationIp = getClientIp(req);
-        const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
-        const verificationExpires = Date.now() + 15 * 60 * 1000;
+        const verificationCode = generateVerificationCode();
+        const verificationExpires = Date.now() + CODE_TTL_MS;
+        verifyAttempts.delete(existing.id);
 
         db.prepare(`
           UPDATE users
@@ -107,15 +127,14 @@ exports.register = async (req, res) => {
       return res.status(409).json({ error: 'Ce pseudo est déjà pris, choisis-en un autre !' });
     }
 
-    const salt = await bcrypt.genSalt(10);
-    const passwordHash = await bcrypt.hash(password, salt);
+    const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
 
     // Stockage de l'adresse IP à l'inscription (pour enquête admin multi-comptes)
     const registrationIp = getClientIp(req);
 
     // Génération du code de vérification à 6 chiffres
-    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
-    const verificationExpires = Date.now() + 15 * 60 * 1000; // 15 minutes
+    const verificationCode = generateVerificationCode();
+    const verificationExpires = Date.now() + CODE_TTL_MS; // 15 minutes
 
     const insert = db.prepare(`
       INSERT INTO users (username, password_hash, first_name, last_name, email, registration_ip, email_verified, verification_code, verification_expires, coins, daily_streak, last_daily_claim)
@@ -154,6 +173,18 @@ exports.register = async (req, res) => {
 };
 
 const failedLoginAttempts = new Map();
+const DUMMY_HASH = bcrypt.hashSync('marsabet-dummy-password', BCRYPT_ROUNDS);
+
+// Purge périodique des compteurs expirés (évite la croissance infinie des Map)
+setInterval(() => {
+  const t = Date.now();
+  for (const [key, val] of failedLoginAttempts) {
+    if (val.lockedUntil < t && !val.count) failedLoginAttempts.delete(key);
+  }
+  for (const [key, val] of lastResendAt) {
+    if (t - val > RESEND_COOLDOWN_MS) lastResendAt.delete(key);
+  }
+}, 10 * 60 * 1000).unref();
 
 exports.login = async (req, res) => {
   try {
@@ -200,13 +231,11 @@ exports.login = async (req, res) => {
       });
     };
 
-    if (!user) {
-      return onLoginFailed('Identifiants invalides (pseudo ou email inconnu).');
-    }
-
-    const match = await bcrypt.compare(password, user.password_hash);
-    if (!match) {
-      return onLoginFailed('Identifiants invalides (mot de passe incorrect).');
+    // Message identique que le compte existe ou non (anti-énumération), et bcrypt toujours exécuté
+    // pour ne pas révéler l'existence d'un compte par le temps de réponse.
+    const match = await bcrypt.compare(password, user ? user.password_hash : DUMMY_HASH);
+    if (!user || !match) {
+      return onLoginFailed('Identifiants invalides.');
     }
 
     // Succès de l'authentification : suppression du compteur d'échecs
@@ -216,8 +245,8 @@ exports.login = async (req, res) => {
     if (user.email_verified === 0) {
       let code = user.verification_code;
       if (!code || !user.verification_expires || Date.now() > user.verification_expires) {
-        code = Math.floor(100000 + Math.random() * 900000).toString();
-        const expires = Date.now() + 15 * 60 * 1000;
+        code = generateVerificationCode();
+        const expires = Date.now() + CODE_TTL_MS;
         db.prepare('UPDATE users SET verification_code = ?, verification_expires = ? WHERE id = ?').run(code, expires, user.id);
         emailService.sendVerificationEmail(user.email, code, user.username).catch(() => {});
       }
@@ -271,10 +300,10 @@ exports.verifyEmail = async (req, res) => {
   try {
     const email = typeof req.body.email === 'string' ? req.body.email.trim().toLowerCase() : '';
     const username = typeof req.body.username === 'string' ? req.body.username.trim() : '';
-    const code = typeof req.body.code === 'string' ? req.body.code.trim() : (req.body.code ? String(req.body.code).trim() : '');
+    const code = typeof req.body.code === 'string' ? req.body.code.trim() : (typeof req.body.code === 'number' ? String(req.body.code) : '');
 
-    if (!code) {
-      return res.status(400).json({ error: 'Code de vérification requis.' });
+    if (!code || !/^\d{6}$/.test(code)) {
+      return res.status(400).json({ error: 'Code de vérification invalide (6 chiffres attendus).' });
     }
 
     if (!email && !username) {
@@ -285,29 +314,32 @@ exports.verifyEmail = async (req, res) => {
       ? db.prepare('SELECT * FROM users WHERE LOWER(email) = LOWER(?)').get(email)
       : db.prepare('SELECT * FROM users WHERE username = ?').get(username);
 
-    if (!user) {
-      return res.status(404).json({ error: 'Compte introuvable.' });
+    const invalid = () => res.status(400).json({ error: 'Code de validation incorrect ou expiré. Vérifie tes emails ou clique sur "Renvoyer".' });
+
+    // Un compte déjà activé n'est JAMAIS connecté par cette route : sinon connaître l'email ou le pseudo
+    // d'un joueur suffirait à obtenir un jeton de session à sa place.
+    if (!user || user.email_verified === 1) {
+      return invalid();
     }
 
-    if (user.email_verified === 1) {
-      const token = generateToken(user);
-      const vipInfo = vipService.getVipInfo(user.total_wagered);
-      return res.json({
-        success: true,
-        alreadyVerified: true,
-        message: 'Ce compte est déjà activé !',
-        token,
-        user: { ...user, vipInfo, canClaimDaily: true }
-      });
+    // Anti brute-force du code à 6 chiffres : 5 essais max, puis le code est invalidé
+    const attempts = (verifyAttempts.get(user.id) || 0) + 1;
+    if (attempts > MAX_VERIFY_ATTEMPTS) {
+      db.prepare('UPDATE users SET verification_code = NULL, verification_expires = NULL WHERE id = ?').run(user.id);
+      verifyAttempts.delete(user.id);
+      return res.status(429).json({ error: 'Trop d\'essais. Ce code est annulé : clique sur "Renvoyer le code" pour en recevoir un nouveau.' });
+    }
+    verifyAttempts.set(user.id, attempts);
+
+    if (!user.verification_code || !user.verification_expires || Date.now() > user.verification_expires) {
+      return invalid();
     }
 
-    if (user.verification_code !== code) {
-      return res.status(400).json({ error: 'Code de validation incorrect. Vérifie tes emails ou clique sur "Renvoyer".' });
+    if (!safeEqual(user.verification_code, code)) {
+      return invalid();
     }
 
-    if (user.verification_expires && Date.now() > user.verification_expires) {
-      return res.status(400).json({ error: 'Ce code a expiré (validité 15 min). Clique sur "Renvoyer le code" pour en générer un nouveau.' });
-    }
+    verifyAttempts.delete(user.id);
 
     // Activer le compte
     db.prepare('UPDATE users SET email_verified = 1, verification_code = NULL, verification_expires = NULL WHERE id = ?').run(user.id);
@@ -346,25 +378,29 @@ exports.resendVerificationCode = async (req, res) => {
       ? db.prepare('SELECT * FROM users WHERE LOWER(email) = LOWER(?)').get(email)
       : db.prepare('SELECT * FROM users WHERE username = ?').get(username);
 
-    if (!user) {
-      return res.status(404).json({ error: 'Compte introuvable.' });
+    // Réponse neutre : ne révèle ni l'existence ni l'état d'un compte
+    const neutral = { success: true, message: 'Si un compte en attente d\'activation correspond, un nouveau code vient d\'être envoyé.' };
+
+    if (!user || user.email_verified === 1) {
+      return res.json(neutral);
     }
 
-    if (user.email_verified === 1) {
-      return res.status(400).json({ error: 'Ce compte est déjà activé.' });
+    // Anti-spam d'emails : 1 renvoi par minute et par compte
+    const last = lastResendAt.get(user.id) || 0;
+    if (Date.now() - last < RESEND_COOLDOWN_MS) {
+      return res.status(429).json({ error: 'Patiente environ une minute avant de demander un nouveau code.' });
     }
+    lastResendAt.set(user.id, Date.now());
 
-    const newCode = Math.floor(100000 + Math.random() * 900000).toString();
-    const expires = Date.now() + 15 * 60 * 1000;
+    const newCode = generateVerificationCode();
+    const expires = Date.now() + CODE_TTL_MS;
 
     db.prepare('UPDATE users SET verification_code = ?, verification_expires = ? WHERE id = ?').run(newCode, expires, user.id);
+    verifyAttempts.delete(user.id);
 
     await emailService.sendVerificationEmail(user.email, newCode, user.username);
 
-    return res.json({
-      success: true,
-      message: `Un nouveau code de validation a été envoyé à ${user.email}.`
-    });
+    return res.json(neutral);
   } catch (err) {
     console.error('Erreur resendVerificationCode:', err);
     return res.status(500).json({ error: 'Erreur lors du renvoi du code.' });
@@ -444,6 +480,12 @@ exports.becomeAdmin = (req, res) => {
   const userId = req.user.id;
   const now = Date.now();
 
+  // Pas de clé configurée côté serveur = promotion par code désactivée (jamais de clé par défaut)
+  const adminSecret = config.adminSecretKey;
+  if (!adminSecret || adminSecret.trim().length < 12) {
+    return res.status(403).json({ error: 'La promotion par code administrateur est désactivée sur ce serveur.' });
+  }
+
   const attempt = failedAdminAttempts.get(userId) || { count: 0, lockedUntil: 0 };
   if (attempt.lockedUntil > now) {
     const remainingMin = Math.ceil((attempt.lockedUntil - now) / 60000);
@@ -454,13 +496,14 @@ exports.becomeAdmin = (req, res) => {
   if (!secretKey || typeof secretKey !== 'string' || secretKey.length > 100) {
     return res.status(400).json({ error: 'Code administrateur invalide.' });
   }
-  const adminSecret = process.env.ADMIN_SECRET_KEY || config.adminSecretKey || 'darkrider84';
 
-  if (secretKey.trim() !== adminSecret.trim()) {
+  if (!safeEqual(secretKey.trim(), adminSecret.trim())) {
     attempt.count += 1;
     if (attempt.count >= 3) {
+      attempt.count = 0;
       attempt.lockedUntil = now + (15 * 60 * 1000); // 15 min lock
       failedAdminAttempts.set(userId, attempt);
+      console.warn(`[SECURITY] Tentatives de promotion admin échouées pour l'utilisateur #${userId} (IP ${getClientIp(req)})`);
       return res.status(429).json({ error: 'Trop de tentatives erronées. Accès temporairement bloqué pendant 15 minutes.' });
     }
     failedAdminAttempts.set(userId, attempt);
@@ -470,6 +513,7 @@ exports.becomeAdmin = (req, res) => {
   // Succès : réinitialiser les tentatives
   failedAdminAttempts.delete(userId);
   db.prepare("UPDATE users SET role = 'admin' WHERE id = ?").run(req.user.id);
+  console.warn(`[SECURITY] Utilisateur #${userId} (${req.user.username}) promu administrateur via le code secret.`);
   const updatedUser = db.prepare('SELECT id, username, role, coins FROM users WHERE id = ?').get(req.user.id);
 
   return res.json({

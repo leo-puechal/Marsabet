@@ -156,13 +156,13 @@ const State = {
       if (headerUsername) {
         headerUsername.textContent = this.user.username;
         if (this.user.role === 'admin' || this.user.role === 'bde') {
-          headerUsername.innerHTML = `${this.user.username} <span style="font-size:0.7rem; background:#EF4444; color:#FFF; padding:2px 6px; border-radius:99px; margin-left:4px;">BDE</span>`;
+          headerUsername.innerHTML = `${(window.escapeHtml ? window.escapeHtml(this.user.username) : "")} <span style="font-size:0.7rem; background:#EF4444; color:#FFF; padding:2px 6px; border-radius:99px; margin-left:4px;">BDE</span>`;
         }
       }
       if (sidebarUserName) {
         sidebarUserName.textContent = this.user.username;
         if (this.user.role === 'admin' || this.user.role === 'bde') {
-          sidebarUserName.innerHTML = `${this.user.username} <span style="font-size:0.65rem; background:#EF4444; color:#FFF; padding:1px 5px; border-radius:99px; margin-left:3px;">BDE</span>`;
+          sidebarUserName.innerHTML = `${(window.escapeHtml ? window.escapeHtml(this.user.username) : "")} <span style="font-size:0.65rem; background:#EF4444; color:#FFF; padding:1px 5px; border-radius:99px; margin-left:3px;">BDE</span>`;
         }
       }
 

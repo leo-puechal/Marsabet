@@ -1,5 +1,4 @@
-const jwt = require('jsonwebtoken');
-const config = require('../config/config');
+const { verifyToken } = require('../utils/token');
 
 const db = require('../database/db');
 const presenceService = require('./presenceService');
@@ -15,7 +14,7 @@ function init(io) {
     socket.on('authenticate', (token) => {
       try {
         if (!token) return;
-        const decoded = jwt.verify(token, config.jwtSecret);
+        const decoded = verifyToken(token);
         if (decoded && decoded.id) {
           // Si le socket avait un autre userId enregistré, nettoyer
           if (socket.userId && socket.userId !== decoded.id) {
@@ -114,6 +113,12 @@ function notifyShopUpdated() {
 }
 
 // Diffuse une mise à jour des commandes et livraisons (pour admin et profils)
+// Notifie un joueur que sa partie de Crash s'est terminée (le point de crash n'est révélé qu'à ce moment)
+function notifyCrashEnded(userId, payload) {
+  if (!ioInstance) return;
+  ioInstance.to(`user_${userId}`).emit('crash:ended', payload);
+}
+
 function notifyOrdersUpdated() {
   if (!ioInstance) return;
   ioInstance.emit('orders:updated');
@@ -126,5 +131,6 @@ module.exports = {
   notifyNewWin,
   notifyLeaderboardUpdated,
   notifyShopUpdated,
-  notifyOrdersUpdated
+  notifyOrdersUpdated,
+  notifyCrashEnded
 };

@@ -502,7 +502,7 @@ function updateWheelSegments(wheelId, newSegments) {
 
     const type = s.type === 'physical' ? 'physical' : 'coins';
     const coins = type === 'coins' ? Math.max(0, parseInt(s.coins !== undefined ? s.coins : s.value, 10) || 0) : 0;
-    const weight = Math.max(0.1, parseFloat(s.weight || s.probabilityPercent || 10));
+    const weight = Math.max(0.1, Math.min(1000, parseFloat(s.weight || s.probabilityPercent || 10) || 10));
     totalWeight += weight;
 
     return {
@@ -513,7 +513,7 @@ function updateWheelSegments(wheelId, newSegments) {
       icon: s.icon ? String(s.icon).trim() : (type === 'physical' ? '🎁' : '🪙'),
       color: s.color || '#1E3A8A',
       textColor: s.textColor || '#FFFFFF',
-      weight: Number(weight.toFixed(1)),
+      weight: Number(Math.min(weight, 1000).toFixed(1)),
       isPhysical: type === 'physical',
       isJackpot: !!s.isJackpot,
       product: type === 'physical' ? (s.product || { itemId: String(s.value || 'custom'), name: label, icon: s.icon || '🎁', category: 'Lots BDE' }) : null
@@ -815,6 +815,10 @@ async function confirmWheelDelivery(orderId, userId, { lastName, firstName, room
 
   if (!order) {
     throw new Error('Demande de lot introuvable.');
+  }
+
+  if (order.status !== 'pending_info') {
+    throw new Error('Cette demande de livraison a déjà été confirmée : elle ne peut plus être modifiée.');
   }
 
   db.prepare(`

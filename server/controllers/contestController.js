@@ -1,6 +1,5 @@
 const contestService = require('../services/contestService');
-const jwt = require('jsonwebtoken');
-const config = require('../config/config');
+const { verifyToken } = require('../utils/token');
 
 // Helper pour extraire l'utilisateur optionnel
 function getOptionalUserId(req) {
@@ -8,11 +7,9 @@ function getOptionalUserId(req) {
     let token = null;
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
       token = req.headers.authorization.split(' ')[1];
-    } else if (req.query && req.query.token) {
-      token = req.query.token;
     }
     if (!token) return null;
-    const decoded = jwt.verify(token, config.jwtSecret);
+    const decoded = verifyToken(token);
     return decoded ? decoded.id : null;
   } catch (e) {
     return null;

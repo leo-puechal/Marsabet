@@ -30,53 +30,70 @@ const {
 const app = express();
 const server = http.createServer(app);
 
+// IP réelle du client : X-Forwarded-For n'est lu QUE si TRUST_PROXY (nb de proxies de confiance) est défini.
+app.set('trust proxy', config.trustProxy);
+
 // En-têtes HTTP de sécurité renforcés via Helmet
 app.use(
   helmet({
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
+        // 'unsafe-inline' reste nécessaire tant que le frontend utilise des gestionnaires onclick="" inline
         scriptSrc: ["'self'", "'unsafe-inline'"],
+        scriptSrcAttr: ["'unsafe-inline'"],
         styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
         fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
-        imgSrc: ["'self'", "data:", "blob:", "https:"],
-        connectSrc: ["'self'", "ws:", "wss:", "http:", "https:"],
+        imgSrc: ["'self'", "data:", "blob:"],
+        connectSrc: ["'self'"],
         mediaSrc: ["'self'", "data:", "blob:"],
         objectSrc: ["'none'"],
-        frameAncestors: ["'self'"],
+        baseUri: ["'self'"],
+        formAction: ["'self'"],
+        frameAncestors: ["'none'"],
         upgradeInsecureRequests: null
       }
     },
     crossOriginEmbedderPolicy: false,
-    crossOriginResourcePolicy: { policy: 'cross-origin' }
+    crossOriginResourcePolicy: { policy: 'same-origin' },
+    referrerPolicy: { policy: 'no-referrer' }
   })
 );
 
-// Configuration CORS dynamique pour accepter localhost, .local et n'importe quel sous-réseau local (Wi-Fi/LAN)
-const lanRegex = /^https?:\/\/(localhost|127\.0\.0\.1|.*\.local|192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3})(:\d+)?$/;
+// CORS : même origine (le frontend est servi par ce serveur, y compris via l'IP du LAN) + liste blanche ALLOWED_ORIGINS.
+// Auparavant TOUTES les origines étaient acceptées avec credentials, ce qui annulait la protection du navigateur.
+function isAllowedOrigin(origin, host) {
+  if (!origin) return true; // requêtes sans Origin (curl, same-origin GET, apps natives)
+  if (config.allowedOrigins.includes(origin)) return true;
+  try {
+    return new URL(origin).host === host;
+  } catch (e) {
+    return false;
+  }
+}
 
-const corsOptions = {
-  origin: (origin, callback) => {
-    // Autoriser les requêtes sans origine (same-origin, curl, requêtes directes mobiles)
-    if (!origin) return callback(null, true);
-    if (lanRegex.test(origin)) {
-      return callback(null, true);
-    }
-    // En environnement de jeu LAN / dev étudiant, tolérance pour toutes les adresses locales
-    return callback(null, true);
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+const corsOptionsDelegate = (req, callback) => {
+  const origin = req.header('Origin');
+  const allowed = isAllowedOrigin(origin, req.header('Host'));
+  callback(null, {
+    origin: allowed,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+  });
 };
 
-app.use(cors(corsOptions));
-app.use(express.json({ limit: '1mb' }));
-app.use(express.urlencoded({ extended: true, limit: '1mb' }));
+app.use(cors(corsOptionsDelegate));
+app.use(express.json({ limit: '100kb' }));
+app.use(express.urlencoded({ extended: false, limit: '100kb' }));
 
 // Initialisation de Socket.io pour la synchronisation temps réel inter-appareils
+// allowRequest bloque le détournement de WebSocket depuis un site tiers (Cross-Site WebSocket Hijacking).
 const io = new Server(server, {
-  cors: corsOptions
+  maxHttpBufferSize: 1e5,
+  allowRequest: (req, callback) => {
+    callback(null, isAllowedOrigin(req.headers.origin, req.headers.host));
+  }
 });
 socketService.init(io);
 
@@ -87,6 +104,9 @@ app.use(express.static(path.join(__dirname, '../public')));
 app.use('/api', apiLimiter);
 app.use('/api/auth/register', authLimiter);
 app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/verify-email', authLimiter);
+app.use('/api/auth/resend-verification', authLimiter);
+app.use('/api/auth/become-admin', authLimiter);
 app.use('/api/auth/daily-bonus', bonusLimiter);
 app.use('/api/user/redeem-code', promoLimiter);
 app.use('/api/users/redeem-code', promoLimiter);

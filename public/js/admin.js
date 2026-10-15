@@ -935,7 +935,7 @@ const AdminBDE = {
         `;
       }).join('');
     } catch (err) {
-      listEl.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:1.5rem; color:#EF4444;">Erreur : ${err.message}</td></tr>`;
+      listEl.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:1.5rem; color:#EF4444;">Erreur : ${escapeHtml(err.message)}</td></tr>`;
     }
   },
 
@@ -984,7 +984,7 @@ const AdminBDE = {
       }
 
       select.innerHTML = this.wheelsData.map(w => `
-        <option value="${w.id}">${w.name} (${w.isFree ? 'Gratuit / 24h' : w.cost + ' coins'})</option>
+        <option value="${escapeHtml(w.id)}">${escapeHtml(w.name)} (${w.isFree ? 'Gratuit / 24h' : w.cost + ' coins'})</option>
       `).join('');
 
       const targetId = this.currentWheelId && this.wheelsData.some(w => w.id === this.currentWheelId)
@@ -1069,7 +1069,7 @@ const AdminBDE = {
               placeholder="🪙" />
           </td>
           <td>
-            <input type="text" value="${seg.label || ''}"
+            <input type="text" value="${escapeHtml(seg.label || '')}"
               oninput="AdminBDE.updateSegmentField(${idx}, 'label', this.value)"
               placeholder="Ex: 500 Coins ou Red Bull" required />
           </td>
@@ -1081,7 +1081,7 @@ const AdminBDE = {
             </select>
           </td>
           <td>
-            <input type="text" value="${seg.value !== undefined ? seg.value : (seg.type === 'coins' ? (seg.coins !== undefined ? seg.coins : '') : (seg.product?.name || seg.product?.itemId || ''))}"
+            <input type="text" value="${escapeHtml(seg.value !== undefined ? seg.value : (seg.type === 'coins' ? (seg.coins !== undefined ? seg.coins : '') : (seg.product?.name || seg.product?.itemId || '')))}"
               oninput="AdminBDE.updateSegmentField(${idx}, 'value', this.value)"
               placeholder="${isPhysical ? 'ID ou Nom produit' : 'Nombre de coins'}" />
           </td>
@@ -1547,14 +1547,14 @@ const AdminBDE = {
         const top1 = c.top3 && c.top3[0];
         let leaderText = '-';
         if (top1) {
-          leaderText = `<strong>${top1.username}</strong> (${c.criterion === 'highest_multiplier' ? 'x' + Number(top1.score).toFixed(2) : Number(top1.score).toLocaleString('fr-FR')})`;
+          leaderText = `<strong>${escapeHtml(top1.username)}</strong> (${c.criterion === 'highest_multiplier' ? 'x' + Number(top1.score).toFixed(2) : Number(top1.score).toLocaleString('fr-FR')})`;
         }
 
         return `
           <tr>
             <td style="color:var(--text-muted); font-weight:700;">${i + 1}</td>
             <td>
-              <div style="font-weight:700; color:#FFF;">${c.title}</div>
+              <div style="font-weight:700; color:#FFF;">${escapeHtml(c.title)}</div>
               <div style="font-size:0.75rem; color:var(--gold-light);">${getGameIcon(c.gameType)} • Min: ${c.minBet || 10} 🪙</div>
             </td>
             <td><span style="font-size:0.8rem; color:#cbd5e1;">${getCritName(c.criterion)}</span></td>
@@ -1877,7 +1877,7 @@ const AdminBDE = {
     } catch (err) {
       console.error('Erreur chargement joueurs en ligne:', err);
       if (tbody && this.onlinePlayersCache.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:2rem; color:var(--lose-red);">Erreur lors de la récupération des joueurs en ligne (${err.message || 'serveur injoignable'}).</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:2rem; color:var(--lose-red);">Erreur lors de la récupération des joueurs en ligne (${escapeHtml(err.message || 'serveur injoignable')}).</td></tr>`;
       }
     }
   },

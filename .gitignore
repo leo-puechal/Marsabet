@@ -6,3 +6,5 @@ node_modules/
 *.db-shm
 .DS_Store
 scratch/
+
+server/database/.jwt_secret

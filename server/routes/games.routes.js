@@ -41,6 +41,7 @@ router.post('/crash/play', gameController.startCrash);
 router.post('/crash/start', gameController.startCrash);
 router.post('/crash/cashout', gameController.cashoutCrash);
 router.post('/crash/finish', gameController.finishCrash);
+router.get('/crash/status/:gameId', gameController.getCrashStatus);
 
 // Free Daily Wheel
 router.get('/free-wheel/status', gameController.getFreeWheelStatus);

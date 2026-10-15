@@ -500,17 +500,43 @@ function initDb() {
 
 
   // Création ou synchronisation du compte admin BDE officiel avec le mot de passe configuré
-  const adminExists = db.prepare("SELECT id FROM users WHERE username = 'bde_admin'").get();
-  const adminPwd = process.env.ADMIN_PASSWORD || config.adminPassword || 'darkrider84';
-  const salt = bcrypt.genSaltSync(10);
-  const hash = bcrypt.hashSync(adminPwd, salt);
-  if (!adminExists) {
+  // Aucun mot de passe par défaut : ADMIN_PASSWORD (>= 12 car.) ou, à défaut, mot de passe aléatoire affiché une seule fois.
+  const adminRow = db.prepare("SELECT id, password_hash FROM users WHERE username = 'bde_admin'").get();
+  const envAdminPwd = config.adminPassword;
+  if (envAdminPwd && envAdminPwd.length < 12) {
+    throw new Error('SECURITY ERROR: ADMIN_PASSWORD doit contenir au moins 12 caractères.');
+  }
+  const generateAdminPassword = () => require('crypto').randomBytes(18).toString('base64url');
+  if (!adminRow) {
+    const pwd = envAdminPwd || generateAdminPassword();
     db.prepare(`
       INSERT INTO users (username, password_hash, coins, role)
       VALUES ('bde_admin', ?, 50000, 'admin')
-    `).run(hash);
+    `).run(bcrypt.hashSync(pwd, 12));
+    if (!envAdminPwd) {
+      console.warn('=============================================================');
+      console.warn('[SECURITY] Compte bde_admin créé. Mot de passe généré (affiché UNE SEULE FOIS) :');
+      console.warn('           ' + pwd);
+      console.warn('           Définis ADMIN_PASSWORD dans .env pour le fixer toi-même.');
+      console.warn('=============================================================');
+    }
+  } else if (envAdminPwd) {
+    // Mot de passe imposé par l'environnement : on ne réécrit le hash que s'il a changé
+    if (!bcrypt.compareSync(envAdminPwd, adminRow.password_hash)) {
+      db.prepare("UPDATE users SET password_hash = ? WHERE id = ?").run(bcrypt.hashSync(envAdminPwd, 12), adminRow.id);
+    }
+    db.prepare("UPDATE users SET role = 'admin' WHERE id = ?").run(adminRow.id);
   } else {
-    db.prepare("UPDATE users SET password_hash = ?, role = 'admin' WHERE username = 'bde_admin'").run(hash);
+    // Anciennes installations : le mot de passe historique "darkrider84" est public dans le dépôt git
+    const LEAKED_DEFAULTS = ['darkrider84', 'marsabet'];
+    if (LEAKED_DEFAULTS.some(p => bcrypt.compareSync(p, adminRow.password_hash))) {
+      const pwd = generateAdminPassword();
+      db.prepare("UPDATE users SET password_hash = ? WHERE id = ?").run(bcrypt.hashSync(pwd, 12), adminRow.id);
+      console.warn('=============================================================');
+      console.warn('[SECURITY] Le compte bde_admin utilisait un mot de passe par défaut public : il a été remplacé.');
+      console.warn('           Nouveau mot de passe (affiché UNE SEULE FOIS) : ' + pwd);
+      console.warn('=============================================================');
+    }
   }
 
   // Initialisation de l'historique de Crash si vide

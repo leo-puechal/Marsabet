@@ -825,7 +825,7 @@ async function loadProfile() {
           Impossible de charger le profil
         </h3>
         <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:1.5rem;">
-          ${err.message || 'Une erreur est survenue lors de la communication avec le serveur.'}
+          ${escapeHtml(err.message || 'Une erreur est survenue lors de la communication avec le serveur.')}
         </p>
         <button class="btn btn-gold" onclick="loadProfile()">🔄 Réessayer</button>
       `;
@@ -1128,9 +1128,9 @@ function formatDate(dateStr) {
 }
 
 function escapeHtml(str) {
-  if (!str) return '';
-  return str.replace(/[&<>'"]/g,
-    tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+  if (str === null || str === undefined || str === '') return '';
+  return String(str).replace(/[&<>'"`]/g,
+    tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;', '`': '&#96;' }[tag] || tag)
   );
 }
 

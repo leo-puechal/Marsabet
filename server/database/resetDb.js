@@ -37,9 +37,11 @@ const resetTx = db.transaction(() => {
   `);
 
   // 5. Créer UNIQUEMENT le compte administrateur officiel BDE
-  const adminPwd = process.env.ADMIN_PASSWORD || config.adminPassword || 'darkrider84';
-  const salt = bcrypt.genSaltSync(10);
-  const hash = bcrypt.hashSync(adminPwd, salt);
+  const adminPwd = config.adminPassword || require('crypto').randomBytes(18).toString('base64url');
+  if (!config.adminPassword) {
+    console.warn('[SECURITY] ADMIN_PASSWORD absent : mot de passe bde_admin généré (affiché une seule fois) : ' + adminPwd);
+  }
+  const hash = bcrypt.hashSync(adminPwd, 12);
   db.prepare(`
     INSERT INTO users (username, password_hash, coins, role, total_wagered, total_won, games_played, biggest_win)
     VALUES ('bde_admin', ?, 50000, 'admin', 0, 0, 0, 0)
